@@ -1,0 +1,10 @@
+{
+    "id": "dynamicpupspawns",
+    "name": "Dynamic Pup Spawns",
+    "version": "0.1",
+    "authors": "WatcherMagic",
+    "description": "Puppies? Kitties? Sluppies!\n\nMakes slugpups spawn dynamically across regions and survive across multiple cycles, same as any other creature. Configurable spawn rate, locations, specific pup IDs, and campaign effects!",
+    "requirements": [ "rwremix", "moreslugcats" ],
+	"requirements_names": [ "RainWorld Remix", "Downpour" ],
+    "tags": [ "Dependency", "Game Mechanics", "Tools" ]
+}
