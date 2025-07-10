@@ -1,27 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>11</LangVersion>
+    <DebugType>portable</DebugType>
+    <BaseOutputPath>bin/</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="BepInEx">
-      <HintPath>..\..\..\Mods\RainWorld\Reference\BepInEx\core\BepInEx.dll</HintPath>
-    </Reference>
-    <Reference Include="HOOKS-Assembly-CSharp">
-      <HintPath>..\..\..\Mods\RainWorld\Reference\BepInEx\plugins\HOOKS-Assembly-CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\Mods\RainWorld\Reference\BepInEx\utils\PUBLIC-Assembly-CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>..\..\..\Mods\RainWorld\Reference\RainWorld_Data\Managed\UnityEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\..\Mods\RainWorld\Reference\RainWorld_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-    </Reference>
+    <Reference Include="../Reference/BepInEx/core/BepInEx.dll"/>
+    <Reference Include="../Reference/BepInEx/plugins/HOOKS-Assembly-CSharp.dll"/>
+    <Reference Include="../Reference/BepInEx/utils/PUBLIC-Assembly-CSharp.dll"/>
+    <Reference Include="../Reference/RainWorld_Data/Managed/UnityEngine.dll"/>
+    <Reference Include="../Reference/RainWorld_Data/Managed/UnityEngine.CoreModule.dll"/>
   </ItemGroup>
 
   <Target Name="GenerateMod" AfterTargets="PostBuildEvent">

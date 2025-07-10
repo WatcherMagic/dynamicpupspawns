@@ -1,7 +1,8 @@
-﻿using BepInEx;
+﻿using System.Collections.Generic;
+using BepInEx;
 using UnityEngine;
 
-namespace RainWorld_Mod_Template
+namespace DynamicPupSpawns
 {
     //BEFORE LOADING MOD, ADD TO modinfo.json FOR EACH DEPENDENCY:
 
@@ -18,7 +19,6 @@ namespace RainWorld_Mod_Template
         public const string PLUGIN_NAME = "Dynamic Pup Spawns";
         public const string PLUGIN_VERSION = "0.1";
 
-        private Dictionary<AbstractRoom, int>? _validSpawnRooms = null;
         private void OnEnable()
         {
             On.World.SpawnPupNPCs += SpawnPups;
@@ -35,9 +35,9 @@ namespace RainWorld_Mod_Template
             //int pupsThisCycle = UnityEngine.Random.Range(0, 11);
             //Debug.Log("Spawning " + pupsThisCycle + " pups");
 
-            _validSpawnRooms = GetRoomsWithDens(self);
+            Dictionary <AbstractRoom, int> validSpawnRooms = GetRoomsWithDens(self);
             string logMessege = "Rooms with Den Nodes:\n";
-            foreach (KeyValuePair<AbstractRoom, int> pair in _validSpawnRooms)
+            foreach (KeyValuePair<AbstractRoom, int> pair in validSpawnRooms)
             {
                 logMessege += pair.Key.name + " : " + pair.Value + "\n";
             }
@@ -46,7 +46,7 @@ namespace RainWorld_Mod_Template
 
             return orig(self);
         }
-        
+
         private Dictionary<AbstractRoom, int> GetRoomsWithDens(World world)
         {
             Dictionary<AbstractRoom, int> roomsWithDens = new Dictionary<AbstractRoom, int>();
