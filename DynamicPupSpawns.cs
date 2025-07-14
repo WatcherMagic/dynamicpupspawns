@@ -45,8 +45,6 @@ namespace dynamicpupspawns
             for (int i = 0; i < pupNum; i++)
             {
                 PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
-                // AbstractRoom spawnRoom = RandomPickRoomByWeight(weightsScale, sortedArrays.ElementAt(0).Value);
-                // Logger.LogInfo("Received randomly selected room.");
                 // Logger.LogInfo(spawnRoom.name + " picked for Pup " + (i + 1));
             }
 
@@ -55,8 +53,7 @@ namespace dynamicpupspawns
 
         private Dictionary<AbstractRoom, int> GetRoomsWithViableDens(World world)
         {
-            Logger.LogInfo("Entered GetRoomsWithViableDens()");
-            
+            //get all rooms in region with den nodes that are not submerged
             Dictionary<AbstractRoom, int> roomsWithDens = new Dictionary<AbstractRoom, int>();
             
             int densInRoom = 0;
@@ -78,13 +75,13 @@ namespace dynamicpupspawns
                     densInRoom = 0;
                 }
             }
-            Logger.LogInfo("Exiting GetRoomWithViableDens()");
             
             return roomsWithDens;
         }
 
         private Dictionary<AbstractRoom, float> CalculateRoomSpawnWeight(Dictionary<AbstractRoom, int> roomsAndDens)
         {
+            //determine chance of pups spawning vs other rooms
              Dictionary<AbstractRoom, float> spawnWeights = new Dictionary<AbstractRoom, float>();
             
              int totalDens = 0;
@@ -102,8 +99,6 @@ namespace dynamicpupspawns
 
         private Dictionary<AbstractRoom[], float[]> CreateParallelRoomWeightArrays(Dictionary<AbstractRoom, float> roomWeights)
         {
-            Logger.LogInfo("Entered CreateParallelRoomWeightArrays()");
-            
             //move weights and rooms into parallel arrays
             float[] weights = new float[roomWeights.Count];
             AbstractRoom[] rooms = new AbstractRoom[roomWeights.Count];
@@ -115,6 +110,7 @@ namespace dynamicpupspawns
                 index++;
             }
 
+            //dict to be returned
             Dictionary<AbstractRoom[], float[]> parallelArrays = new Dictionary<AbstractRoom[], float[]> { { rooms, weights } };
             
             //Debug parallel arrays
@@ -137,14 +133,12 @@ namespace dynamicpupspawns
             }
             Logger.LogInfo(message);
             
-            Logger.LogInfo("Exiting CreateParallelRoomWeightArrays()");
             return parallelArrays;
         }
         
         private float[] AssignSortedRoomScaleValues(float[] weightsArray)
         {
-            Logger.LogInfo("Entered AssignSortedRoomScaleValues()");
-
+            //change indexes of weightsArray to increment to total weight in ascending order
             string message = string.Format("Modifying weightsArray to reflect scale of total weight:\n{0, -7}|{1, 7}\n---------------\n", "OLD", "NEW");
             float scaleValue = 0f;
             for (int i = 0; i < weightsArray.Length; i++)
@@ -157,19 +151,17 @@ namespace dynamicpupspawns
             message += "Total scale weight: " + scaleValue.ToString("0.##%");
             Logger.LogInfo(message);
             
-            Logger.LogInfo("Exiting AssignSortedRoomScaleValues()");
             return weightsArray;
         }
         
         private AbstractRoom PickRandomRoomByWeight(AbstractRoom[] roomsArray, float[] weightsArray)
         {
-            Logger.LogInfo("Entered PickRandomRoomByWeight()");
-            
+            //pick room that corresponds to the randomly selected number on the weight scale
             float totalWeight = weightsArray[weightsArray.Length - 1];
             
             int roomIndex;
             float randNum = Random.Range(0f, totalWeight);
-            Logger.LogInfo("Random number is " + randNum.ToString("0.##%"));
+            Logger.LogInfo("Room selection: random number is " + randNum.ToString("0.##%"));
             for (roomIndex = 0; roomIndex < weightsArray.Length; roomIndex++)
             {
                 if (weightsArray[roomIndex] <= randNum && randNum <= weightsArray[roomIndex + 1])
@@ -179,7 +171,6 @@ namespace dynamicpupspawns
             }
             Logger.LogInfo("Index selected is " + roomIndex + " (" + weightsArray[roomIndex].ToString("0.##%") + " <= " + randNum.ToString("0.##%") + " <= " + weightsArray[roomIndex + 1].ToString("0.##%") + ")");
             
-            Logger.LogInfo("Exiting PickRandomRoomByWeight()");
             return roomsArray[roomIndex];
         }
     }
