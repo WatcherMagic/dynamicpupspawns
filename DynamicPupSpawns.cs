@@ -29,14 +29,6 @@ namespace dynamicpupspawns
         {
             //get rooms with unsubmerged den nodes
             Dictionary <AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
-
-            // string logMessage = "Rooms with Den Nodes:\n";
-            // foreach (KeyValuePair<AbstractRoom, int> pair in validSpawnRooms)
-            // {
-            //     logMessage += pair.Key.name + " : " + pair.Value + "\n";
-            // }
-            // Logger.LogInfo(logMessage);
-            // Debug.Log(logMessage);
             
             //determine room spawn weight based on number of dens in room
             Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
@@ -52,7 +44,7 @@ namespace dynamicpupspawns
             //get random room for each pup
             for (int i = 0; i < pupNum; i++)
             {
-                RandomPickRoomByWeight();
+                PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
                 // AbstractRoom spawnRoom = RandomPickRoomByWeight(weightsScale, sortedArrays.ElementAt(0).Value);
                 // Logger.LogInfo("Received randomly selected room.");
                 // Logger.LogInfo(spawnRoom.name + " picked for Pup " + (i + 1));
@@ -169,32 +161,26 @@ namespace dynamicpupspawns
             return weightsArray;
         }
         
-        private /*AbstractRoom*/ void RandomPickRoomByWeight(/*int[] weightsArray, AbstractRoom[] roomsArray*/)
+        private AbstractRoom PickRandomRoomByWeight(AbstractRoom[] roomsArray, float[] weightsArray)
         {
-            Logger.LogInfo("Entered RandomPickRoomByWeight()");
+            Logger.LogInfo("Entered PickRandomRoomByWeight()");
             
-            // Logger.LogInfo("Picking room...");
-            // int totalWeight = weightsArray[weightsArray.Length - 1];
-            //
-            // int roomIndex = 0;
-            // int randNum = Random.Range(0, totalWeight + 1);
-            // Logger.LogInfo("Random number is " + randNum);
-            // for (int i = 0; i < weightsArray.Length; i++)
-            // {
-            //     if (i == weightsArray.Length)
-            //     {
-            //         Logger.LogInfo("Selected final index");
-            //         roomIndex = i;
-            //     }
-            //     else if (weightsArray[i] <= randNum && randNum <= weightsArray[i + 1])
-            //     {
-            //         Logger.LogInfo("Index selected is " + i + " (" + weightsArray[i] + " <= " + randNum + " <= " + weightsArray[i + 1] + ")");
-            //         roomIndex = i;
-            //         break;
-            //     }
-            // }
-            //
-            // return roomsArray[roomIndex];
+            float totalWeight = weightsArray[weightsArray.Length - 1];
+            
+            int roomIndex;
+            float randNum = Random.Range(0f, totalWeight);
+            Logger.LogInfo("Random number is " + randNum.ToString("0.##%"));
+            for (roomIndex = 0; roomIndex < weightsArray.Length; roomIndex++)
+            {
+                if (weightsArray[roomIndex] <= randNum && randNum <= weightsArray[roomIndex + 1])
+                {
+                    break;
+                }
+            }
+            Logger.LogInfo("Index selected is " + roomIndex + " (" + weightsArray[roomIndex].ToString("0.##%") + " <= " + randNum.ToString("0.##%") + " <= " + weightsArray[roomIndex + 1].ToString("0.##%") + ")");
+            
+            Logger.LogInfo("Exiting PickRandomRoomByWeight()");
+            return roomsArray[roomIndex];
         }
     }
 }
