@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using BepInEx;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -44,13 +45,9 @@ namespace dynamicpupspawns
             int pupNum = Random.Range(_minPupsInRegion, _maxPupsInRegion + 1);
             Logger.LogInfo(pupNum + " pups this cycle");
             
-            //sort dict of rooms and weights into parallel arrays in ascending order
-            //Dictionary<int[], AbstractRoom[]> sortedArrays = CreateParallelRoomWeightArrays(roomWeights);
-            CreateParallelRoomWeightArrays(roomWeights);
-            //Logger.LogInfo("Received sorted weights and rooms.");
-            //int[] weightsScale = AssignSortedRoomScaleValues(sortedArrays.ElementAt(0).Key);
-            AssignSortedRoomScaleValues();
-            //Logger.LogInfo("Received reassigned weights array.");
+            //get dict of rooms and weights in parallel arrays
+            Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
+            float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
             
             //get random room for each pup
             for (int i = 0; i < pupNum; i++)
@@ -132,10 +129,18 @@ namespace dynamicpupspawns
             string message = "parallelArrays dict to be returned:\n";
             foreach (KeyValuePair<AbstractRoom[], float[]> pair in parallelArrays)
             {
-                message += string.Format("{0, -9}|{1, 7}\n-------------------------\n", "ROOM", "WEIGHT");
+                message += string.Format("{0, -9}|{1, 7}\n------------------\n", "ROOM", "WEIGHT");
                 for (int i = 0; i < pair.Key.Length; i++)
                 {
-                    message += string.Format("{0, -9}|{1, 5:0.##%}\n", pair.Key[i].name, pair.Value[i]);
+                    if (i < pair.Value.Length)
+                    {
+                        message += string.Format("{0, -9}|{1, 7:0.##%}\n", pair.Key[i].name, pair.Value[i]);
+                    }
+                    else
+                    {
+                        message += "The arrays are not the same length! Aborting Debug Statement";
+                        break;
+                    }
                 }
             }
             Logger.LogInfo(message);
@@ -144,20 +149,24 @@ namespace dynamicpupspawns
             return parallelArrays;
         }
         
-        private /*int[]*/ void AssignSortedRoomScaleValues(/*int[] weightsArray*/)
+        private float[] AssignSortedRoomScaleValues(float[] weightsArray)
         {
             Logger.LogInfo("Entered AssignSortedRoomScaleValues()");
+
+            string message = string.Format("Modifying weightsArray to reflect scale of total weight:\n{0, -7}|{1, 7}\n---------------\n", "OLD", "NEW");
+            float scaleValue = 0f;
+            for (int i = 0; i < weightsArray.Length; i++)
+            {
+                message += string.Format("{0, -7:0.##%}|", weightsArray[i]);
+                scaleValue += weightsArray[i];
+                weightsArray[i] = scaleValue;
+                message += string.Format("{0, 7:0.##%}\n", weightsArray[i]);
+            }
+            message += "Total scale weight: " + scaleValue.ToString("0.##%");
+            Logger.LogInfo(message);
             
-            // int scaleValue = 0;
-            // for (int i = 0; i < weightsArray.Length; i++)
-            // {
-            //     scaleValue += weightsArray[i];
-            //     weightsArray[i] = scaleValue;
-            // }
-            // Logger.LogInfo("Weights array was modified to correspond to total weight scale and will be returned!");
-            // Logger.LogInfo(weightsArray.ToString());
-            //
-            // return weightsArray;
+            Logger.LogInfo("Exiting AssignSortedRoomScaleValues()");
+            return weightsArray;
         }
         
         private /*AbstractRoom*/ void RandomPickRoomByWeight(/*int[] weightsArray, AbstractRoom[] roomsArray*/)
