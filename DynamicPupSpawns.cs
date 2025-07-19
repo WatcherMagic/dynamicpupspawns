@@ -164,6 +164,10 @@ namespace dynamicpupspawns
             Logger.LogInfo("Room selection: random number is " + randNum.ToString("0.##%"));
             for (roomIndex = 0; roomIndex < weightsArray.Length; roomIndex++)
             {
+                if (roomIndex == weightsArray.Length - 1)
+                {
+                    break;
+                }
                 if (weightsArray[roomIndex] <= randNum && randNum <= weightsArray[roomIndex + 1])
                 {
                     break;
