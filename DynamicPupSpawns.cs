@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using BepInEx;
 using UnityEngine;
@@ -17,7 +18,7 @@ namespace dynamicpupspawns
     [BepInPlugin("dynamicpupspawns", "Dynamic Pup Spawns", "0.1")]
     public class DynamicPupSpawns : BaseUnityPlugin
     {
-        private readonly int _minPupsInRegion = 5;
+        private readonly int _minPupsInRegion = 1;
         private readonly int _maxPupsInRegion = 10;
         
         private void OnEnable()
@@ -44,8 +45,11 @@ namespace dynamicpupspawns
             //get random room for each pup
             for (int i = 0; i < pupNum; i++)
             {
-                PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
-                // Logger.LogInfo(spawnRoom.name + " picked for Pup " + (i + 1));
+                AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
+                if (self.game.IsStorySession) //temp
+                {
+                    PutPupInRoom(self.game, self, spawnRoom, null, self.game.GetStorySession.characterStats.name);
+                }
             }
 
             return orig(self);
@@ -176,6 +180,48 @@ namespace dynamicpupspawns
             Logger.LogInfo("Index selected is " + roomIndex + " (" + weightsArray[roomIndex].ToString("0.##%") + " <= " + randNum.ToString("0.##%") + " <= " + weightsArray[roomIndex + 1].ToString("0.##%") + ")");
             
             return roomsArray[roomIndex];
+        }
+        
+        private void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, Player pup, SlugcatStats.Name curSlug)
+        {
+            bool temp = false;
+            if (ModManager.MSC && game.IsStorySession)
+            {
+                if (ModManager.Watcher && curSlug == Watcher.WatcherEnums.SlugcatStatsName.Watcher)
+                {
+                    temp = true;
+                }
+                //spawn new pup with random ID
+                if (pup == null && !temp)
+                {
+                    //copied from AbstractRoom.RealizeRoom()
+                    AbstractCreature abstractPup = new AbstractCreature(world,
+                        StaticWorld.GetCreatureTemplate(MoreSlugcats.MoreSlugcatsEnums.CreatureTemplateType.SlugNPC),
+                        null,
+                        new WorldCoordinate(room.index, -1, -1, 0),
+                        game.GetNewID());
+
+                    try
+                    {
+                        room.AddEntity(abstractPup);
+                        try
+                        {
+                            (abstractPup.state as MoreSlugcats.PlayerNPCState).foodInStomach = 1;
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.LogError(e.Message);
+                        }
+                        
+                        Logger.LogInfo(abstractPup.GetType() + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name);
+                        Debug.Log("DynamicPupSpawns: " + abstractPup.GetType() + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogError(e.Message);
+                    }
+                }
+            }
         }
     }
 }
