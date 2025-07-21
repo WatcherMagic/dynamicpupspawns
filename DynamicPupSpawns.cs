@@ -20,10 +20,21 @@ namespace dynamicpupspawns
     {
         private readonly int _minPupsInRegion = 1;
         private readonly int _maxPupsInRegion = 10;
+
+        private string testSaveString = "Saved Data";
+        private int testSaveInt = 89001;
+        
+        private string modSymbolStart = "<DynamicPups.WatcherMagicB>";
+        private string splitSymbolStart = "<DPS.WMB>";
+        private string splitSymbolEnd = "<DPS.WME";
+        private string modSymbolEnd = "<DynamicPups.WatcherMagicE>";
         
         private void OnEnable()
         {
             On.World.SpawnPupNPCs += SpawnPups;
+
+            On.MiscWorldSaveData.ToString += SaveToString;
+            On.MiscWorldSaveData.FromString += SaveDataFromString;
         }
 
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
@@ -220,6 +231,36 @@ namespace dynamicpupspawns
                     {
                         Logger.LogError(e.Message);
                     }
+                }
+            }
+        }
+        
+        private string SaveToString(On.MiscWorldSaveData.orig_ToString orig, MiscWorldSaveData self)
+        {   
+            string s = orig(self);
+            
+            Logger.LogInfo("Beginning saving string for MiscWorldData");
+
+            string save = modSymbolStart + splitSymbolStart + "testSaveString:" + testSaveString + splitSymbolEnd
+                          + splitSymbolStart + "testSaveInt:" + testSaveInt + splitSymbolEnd + modSymbolEnd;
+            Logger.LogInfo("String to be saved:\n" + save);
+            
+            s.Concat(save);
+            
+            return s;
+        }
+        
+        private void SaveDataFromString(On.MiscWorldSaveData.orig_FromString orig, MiscWorldSaveData self, string s)
+        {
+            orig(self, s);
+            
+            Logger.LogInfo("Looking for mod save string for MiscWorldData");
+            
+            foreach (String u in self.unrecognizedSaveStrings)
+            {
+                if (u.StartsWith(modSymbolStart))
+                {
+                    Logger.LogInfo("Found the save string!");
                 }
             }
         }
