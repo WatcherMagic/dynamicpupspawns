@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using BepInEx;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -24,10 +25,9 @@ namespace dynamicpupspawns
         private string testSaveString = "Saved Data";
         private int testSaveInt = 89001;
         
-        private string modSymbolStart = "<DynamicPups.WatcherMagicB>";
-        private string splitSymbolStart = "<DPS.WMB>";
-        private string splitSymbolEnd = "<DPS.WME";
-        private string modSymbolEnd = "<DynamicPups.WatcherMagicE>";
+        private string modRegExSymbol = "<DynamicPups.WatcherMagic>";
+        private string modStringDelimiter = "DynamicPupsWM";
+        private string splitRegExSymbol = "<DPS.WMB>";
         
         private void OnEnable()
         {
@@ -241,8 +241,8 @@ namespace dynamicpupspawns
             
             Logger.LogInfo("Beginning saving string for MiscWorldData");
 
-            string save = modSymbolStart + splitSymbolStart + "testSaveString:" + testSaveString + splitSymbolEnd
-                          + splitSymbolStart + "testSaveInt:" + testSaveInt + splitSymbolEnd + modSymbolEnd;
+            string save = modRegExSymbol + modStringDelimiter + splitRegExSymbol + "testSaveString:" + testSaveString + splitRegExSymbol
+                          + splitRegExSymbol + "testSaveInt:" + testSaveInt + splitRegExSymbol + modRegExSymbol;
             Logger.LogInfo("String to be saved:\n" + save);
             
             s.Concat(save);
@@ -255,13 +255,43 @@ namespace dynamicpupspawns
             orig(self, s);
             
             Logger.LogInfo("Looking for mod save string for MiscWorldData");
-            
-            foreach (String u in self.unrecognizedSaveStrings)
+
+            try
             {
-                if (u.StartsWith(modSymbolStart))
+                List<string[]> strArrays = new List<string[]>();
+                string[] array;
+                foreach (String u in self.unrecognizedSaveStrings)
                 {
-                    Logger.LogInfo("Found the save string!");
+                    array = Regex.Split(u, modRegExSymbol);
+                    strArrays.Add(array);
                 }
+
+                string modString = null;
+                bool found = false;
+                foreach (string[] x in strArrays)
+                {
+                    for (int y = 0; y < x.Length; y++)
+                    {
+                        if (x[y].StartsWith(modStringDelimiter))
+                        {
+                            modString = x[y];
+                            found = true;
+                            Logger.LogInfo("Found mod save string for MiscWorldSaveData!");
+                            break;
+                        }
+                    }
+
+                    if (found)
+                    {
+                        break;
+                    }
+                }
+
+                Logger.LogInfo("Mod save string retrieved:\n" + modString);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e.Message);
             }
         }
     }
