@@ -232,8 +232,8 @@ namespace dynamicpupspawns
         private string SaveDataToString(On.MiscWorldSaveData.orig_ToString orig, MiscWorldSaveData self)
         {   
             String s = orig(self);
-            String data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT + "PupID:Room" + _REGX_STR_SPLIT
-                + "PupID2:Room2" + _REGX_STR_SPLIT + "PupID3:Room3" + _REGX_STR_SPLIT;
+            String data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT + "1234:Room" + _REGX_STR_SPLIT
+                + "5678:Room2" + _REGX_STR_SPLIT + "9101:Room3" + _REGX_STR_SPLIT;
             
             s = String.Concat(s, data, "<mwA>");
             
@@ -258,28 +258,56 @@ namespace dynamicpupspawns
                     self.unrecognizedSaveStrings.RemoveAt(i);
                     break;
                 }
-                if (self.unrecognizedSaveStrings[i].StartsWith("<someMod>"))
-                {
-                    self.unrecognizedSaveStrings.RemoveAt(i);
-                }
             }
             if (modString == null)
             {
                 Logger.LogInfo("Couldn't find mod save data!");
             }
 
+            ProcessSaveData(modString);
+        }
+
+        private void ProcessSaveData(string modString)
+        {
+            Dictionary<string, string> values = ExtractSaveValues(modString);
+            ConvertSaveToObjects(values);
+        }
+
+        private Dictionary<string, string> ExtractSaveValues(string modString)
+        {
             string[] dataValues = Regex.Split(modString, _REGX_STR_SPLIT);
+            dataValues = dataValues.Skip(1).ToArray(); //pop delimiter off array beginning
             Logger.LogInfo("Data values:");
             for (int i = 0; i < dataValues.Length; i++)
             {
                 Logger.LogInfo(dataValues[i]);
             }
             
-            // Dictionary<int, AbstractRoom> savedPups = new Dictionary<int, AbstractRoom>();
-            // for (int i = 0; i < dataValues.Length; i++)
+            Dictionary<string, string> pairs = new Dictionary<string, string>();
+            string[] pairContainer;
+            for (int i = 0; i < dataValues.Length; i++)
+            {
+                pairContainer = Regex.Split(dataValues[i], ":");
+                Logger.LogInfo("Pair:");
+                for (int x = 0; x < pairContainer.Length; x++)
+                {
+                    Logger.LogInfo(pairContainer[x]);
+                }
+                
+                //pairs.Add(pairContainer[0], pairContainer[1]);
+            }
+
+            // foreach (KeyValuePair<string, string> pair in pairs)
             // {
-            //     
+            //     Logger.LogInfo("Key: " + pair.Key + ", Value: " + pair.Value);
             // }
+
+            return pairs;
+        }
+
+        private void ConvertSaveToObjects(Dictionary<string, string> values)
+        {
+            
         }
     }
 }
