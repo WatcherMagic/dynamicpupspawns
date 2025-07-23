@@ -228,14 +228,14 @@ namespace dynamicpupspawns
         }
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
-        private const string _STR_SPLIT = "<WM.DPS>";
+        private const string _REGX_STR_SPLIT = "<WM,DPS>";
         private string SaveDataToString(On.MiscWorldSaveData.orig_ToString orig, MiscWorldSaveData self)
         {   
             String s = orig(self);
-            String data = _SAVE_DATA_DELIMITER + _STR_SPLIT + "PupID:Room" + _STR_SPLIT
-                + "PupID2:Room2" + _STR_SPLIT + "PupID3:Room3" + _STR_SPLIT;
+            String data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT + "PupID:Room" + _REGX_STR_SPLIT
+                + "PupID2:Room2" + _REGX_STR_SPLIT + "PupID3:Room3" + _REGX_STR_SPLIT;
             
-            s = String.Concat(s, data, "<mwA><someMod>some other mod's data<someMod>");
+            s = String.Concat(s, data, "<mwA>");
             
             Logger.LogInfo("SaveDataToString string:\n" + s);
 
@@ -258,20 +258,28 @@ namespace dynamicpupspawns
                     self.unrecognizedSaveStrings.RemoveAt(i);
                     break;
                 }
-                
+                if (self.unrecognizedSaveStrings[i].StartsWith("<someMod>"))
+                {
+                    self.unrecognizedSaveStrings.RemoveAt(i);
+                }
             }
             if (modString == null)
             {
                 Logger.LogInfo("Couldn't find mod save data!");
             }
-            
-            Logger.LogInfo("Remaining unrecognizedSaveStrings:");
-            foreach (String u in self.unrecognizedSaveStrings)
+
+            string[] dataValues = Regex.Split(modString, _REGX_STR_SPLIT);
+            Logger.LogInfo("Data values:");
+            for (int i = 0; i < dataValues.Length; i++)
             {
-                Logger.LogInfo(u);
+                Logger.LogInfo(dataValues[i]);
             }
             
-            //do stuff with saved data
+            // Dictionary<int, AbstractRoom> savedPups = new Dictionary<int, AbstractRoom>();
+            // for (int i = 0; i < dataValues.Length; i++)
+            // {
+            //     
+            // }
         }
     }
 }
