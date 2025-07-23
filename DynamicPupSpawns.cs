@@ -18,10 +18,7 @@ namespace dynamicpupspawns
 
     [BepInPlugin("dynamicpupspawns", "Dynamic Pup Spawns", "0.1")]
     public class DynamicPupSpawns : BaseUnityPlugin
-    {
-        private readonly int _minPupsInRegion = 1;
-        private readonly int _maxPupsInRegion = 10;
-        
+    {   
         private void OnEnable()
         {
             On.World.SpawnPupNPCs += SpawnPups;
@@ -29,7 +26,9 @@ namespace dynamicpupspawns
             On.MiscWorldSaveData.ToString += SaveDataToString;
             On.MiscWorldSaveData.FromString += SaveDataFromString;
         }
-
+        
+        private readonly int _minPupsInRegion = 1;
+        private readonly int _maxPupsInRegion = 10;
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
         {
             //get rooms with unsubmerged den nodes
@@ -228,13 +227,12 @@ namespace dynamicpupspawns
             }
         }
 
-        private const string SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
-        
+        private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private string SaveDataToString(On.MiscWorldSaveData.orig_ToString orig, MiscWorldSaveData self)
         {   
             String s = orig(self);
 
-            s = String.Concat(s, SAVE_DATA_DELIMITER, "<mwA>");
+            s = String.Concat(s, _SAVE_DATA_DELIMITER, "<mwA><someMod>some other mod's data<someMod>");
             
             Logger.LogInfo("SaveDataToString string:\n" + s);
 
@@ -245,25 +243,25 @@ namespace dynamicpupspawns
         {
             orig(self, s);
             
-            Logger.LogInfo("Looking for mod save string for MiscWorldData");
+            Logger.LogInfo("Looking for mod save string for MiscWorldSaveData");
 
             string modString = null;
-            foreach (String u in self.unrecognizedSaveStrings)
+            for (int i = 0; i < self.unrecognizedSaveStrings.Count; i++)
             {
-                if (u.StartsWith(SAVE_DATA_DELIMITER))
+                if (self.unrecognizedSaveStrings[i].StartsWith(_SAVE_DATA_DELIMITER))
                 {
-                    modString = u;
+                    modString = self.unrecognizedSaveStrings[i];
+                    Logger.LogInfo("String found: " + modString);
+                    self.unrecognizedSaveStrings.RemoveAt(i);
+                    //break;
                 }
             }
-
             if (modString == null)
             {
                 Logger.LogInfo("Couldn't find mod save data!");
             }
-            else
-            {
-                Logger.LogInfo(modString);
-            }
+            
+            //do stuff with saved data
         }
     }
 }
