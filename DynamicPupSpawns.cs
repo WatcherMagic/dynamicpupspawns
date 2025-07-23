@@ -33,7 +33,7 @@ namespace dynamicpupspawns
         {
             On.World.SpawnPupNPCs += SpawnPups;
 
-            On.MiscWorldSaveData.ToString += SaveToString;
+            On.MiscWorldSaveData.ToString += SaveDataToString;
             On.MiscWorldSaveData.FromString += SaveDataFromString;
         }
 
@@ -47,7 +47,7 @@ namespace dynamicpupspawns
             
             //generate number of pups for this cycle
             int pupNum = Random.Range(_minPupsInRegion, _maxPupsInRegion + 1);
-            Logger.LogInfo(pupNum + " pups this cycle");
+            //Logger.LogInfo(pupNum + " pups this cycle");
             
             //get dict of rooms and weights in parallel arrays
             Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
@@ -146,7 +146,7 @@ namespace dynamicpupspawns
                     }
                 }
             }
-            Logger.LogInfo(message);
+            //Logger.LogInfo(message);
             
             return parallelArrays;
         }
@@ -164,7 +164,7 @@ namespace dynamicpupspawns
                 message += string.Format("{0, 7:0.##%}\n", weightsArray[i]);
             }
             message += "Total scale weight: " + scaleValue.ToString("0.##%");
-            Logger.LogInfo(message);
+            //Logger.LogInfo(message);
             
             return weightsArray;
         }
@@ -188,7 +188,7 @@ namespace dynamicpupspawns
                     break;
                 }
             }
-            Logger.LogInfo("Index selected is " + roomIndex + " (" + weightsArray[roomIndex].ToString("0.##%") + " <= " + randNum.ToString("0.##%") + " <= " + weightsArray[roomIndex + 1].ToString("0.##%") + ")");
+            //Logger.LogInfo("Index selected is " + roomIndex + " (" + weightsArray[roomIndex].ToString("0.##%") + " <= " + randNum.ToString("0.##%") + " <= " + weightsArray[roomIndex + 1].ToString("0.##%") + ")");
             
             return roomsArray[roomIndex];
         }
@@ -235,64 +235,77 @@ namespace dynamicpupspawns
             }
         }
         
-        private string SaveToString(On.MiscWorldSaveData.orig_ToString orig, MiscWorldSaveData self)
+        private string SaveDataToString(On.MiscWorldSaveData.orig_ToString orig, MiscWorldSaveData self)
         {   
-            string s = orig(self);
-            
-            Logger.LogInfo("Beginning saving string for MiscWorldData");
+            String s = orig(self);
 
-            string save = modRegExSymbol + modStringDelimiter + splitRegExSymbol + "testSaveString:" + testSaveString + splitRegExSymbol
-                          + splitRegExSymbol + "testSaveInt:" + testSaveInt + splitRegExSymbol + modRegExSymbol;
-            Logger.LogInfo("String to be saved:\n" + save);
+            s = String.Concat(s, "DynamicPupSpawnsData", "<mwA>");
             
-            s.Concat(save);
-            
+            Logger.LogInfo("SaveDataToString string:\n" + s);
+
             return s;
         }
         
         private void SaveDataFromString(On.MiscWorldSaveData.orig_FromString orig, MiscWorldSaveData self, string s)
         {
+            Logger.LogInfo("Save data before orig_FromString:\n" + s);
+            
             orig(self, s);
             
-            Logger.LogInfo("Looking for mod save string for MiscWorldData");
-
-            try
-            {
-                List<string[]> strArrays = new List<string[]>();
-                string[] array;
-                foreach (String u in self.unrecognizedSaveStrings)
-                {
-                    array = Regex.Split(u, modRegExSymbol);
-                    strArrays.Add(array);
-                }
-
-                string modString = null;
-                bool found = false;
-                foreach (string[] x in strArrays)
-                {
-                    for (int y = 0; y < x.Length; y++)
-                    {
-                        if (x[y].StartsWith(modStringDelimiter))
-                        {
-                            modString = x[y];
-                            found = true;
-                            Logger.LogInfo("Found mod save string for MiscWorldSaveData!");
-                            break;
-                        }
-                    }
-
-                    if (found)
-                    {
-                        break;
-                    }
-                }
-
-                Logger.LogInfo("Mod save string retrieved:\n" + modString);
-            }
-            catch (Exception e)
-            {
-                Logger.LogError(e.Message);
-            }
+            Logger.LogInfo("Save data after orig_FromString:\n" + s);
+            
+            // Logger.LogInfo("Looking for mod save string for MiscWorldData");
+            //
+            // try
+            // {
+            //     List<string[]> strArrays = new List<string[]>();
+            //     string[] array;
+            //     foreach (String u in self.unrecognizedSaveStrings)
+            //     {
+            //         array = Regex.Split(u, modRegExSymbol);
+            //         strArrays.Add(array);
+            //     }
+            //
+            //     string modString = null;
+            //     bool found = false;
+            //     string message = "";
+            //     int arrayNum = 1;
+            //     foreach (string[] x in strArrays)
+            //     {
+            //         message += "Array " + arrayNum + ":\n";
+            //         for (int y = 0; y < x.Length; y++)
+            //         {
+            //             message += x[y] + ",\n";
+            //             if (x[y].StartsWith(modStringDelimiter))
+            //             {
+            //                 modString = x[y];
+            //                 found = true;
+            //                 Logger.LogInfo("Found mod save string for MiscWorldSaveData!");
+            //                 break;
+            //             }
+            //         }
+            //         arrayNum++;
+            //
+            //         if (found)
+            //         {
+            //             break;
+            //         }
+            //     }
+            //     Logger.LogInfo(message);
+            //
+            //     if (modString == null)
+            //     {
+            //         Logger.LogError("Could not find mod's save string!");
+            //     }
+            //     else
+            //     {
+            //         Logger.LogInfo("Mod save string retrieved:\n" + modString);
+            //     }
+            // }
+            // catch (Exception e)
+            // {
+            //     Logger.LogError(e.Message);
+            // }
         }
     }
 }
