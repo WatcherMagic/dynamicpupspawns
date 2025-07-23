@@ -18,7 +18,9 @@ namespace dynamicpupspawns
 
     [BepInPlugin("dynamicpupspawns", "Dynamic Pup Spawns", "0.1")]
     public class DynamicPupSpawns : BaseUnityPlugin
-    {   
+    {
+        private Dictionary<EntityID, string> _persistentPups = null;
+        
         private void OnEnable()
         {
             On.World.SpawnPupNPCs += SpawnPups;
@@ -264,16 +266,10 @@ namespace dynamicpupspawns
                 Logger.LogInfo("Couldn't find mod save data!");
             }
 
-            ProcessSaveData(modString);
+            ExtractSaveValues(modString);
         }
 
-        private void ProcessSaveData(string modString)
-        {
-            Dictionary<string, string> values = ExtractSaveValues(modString);
-            ConvertSaveToObjects(values);
-        }
-
-        private Dictionary<string, string> ExtractSaveValues(string modString)
+        private void ExtractSaveValues(string modString)
         {
             string[] dataValues = Regex.Split(modString, _REGX_STR_SPLIT);
             //dataValues = dataValues.Skip(1).ToArray(); //pop delimiter off array beginning
@@ -298,17 +294,30 @@ namespace dynamicpupspawns
                 }
             }
 
+            if (_persistentPups == null)
+            {
+                _persistentPups = new Dictionary<EntityID, string>();
+            }
             foreach (KeyValuePair<string, string> pair in pairs)
             {
-                Logger.LogInfo("Key: " + pair.Key + ", Value: " + pair.Value);
+                try
+                {
+                    EntityID pupID = EntityID.FromString(pair.Key);
+                    _persistentPups.Add(pupID, pair.Value);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e.Message);
+                }
             }
 
-            return pairs;
-        }
-
-        private void ConvertSaveToObjects(Dictionary<string, string> values)
-        {
-            
+            if (_persistentPups != null)
+            {
+                foreach (KeyValuePair<EntityID, string> pair in _persistentPups)
+                {
+                    Logger.LogInfo("ID: " + pair.Key + ", Room: " + pair.Value);
+                }
+            }
         }
     }
 }
