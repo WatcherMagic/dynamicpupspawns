@@ -21,13 +21,6 @@ namespace dynamicpupspawns
     {
         private readonly int _minPupsInRegion = 1;
         private readonly int _maxPupsInRegion = 10;
-
-        private string testSaveString = "Saved Data";
-        private int testSaveInt = 89001;
-        
-        private string modRegExSymbol = "<DynamicPups.WatcherMagic>";
-        private string modStringDelimiter = "DynamicPupsWM";
-        private string splitRegExSymbol = "<DPS.WMB>";
         
         private void OnEnable()
         {
@@ -234,12 +227,14 @@ namespace dynamicpupspawns
                 }
             }
         }
+
+        private const string SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         
         private string SaveDataToString(On.MiscWorldSaveData.orig_ToString orig, MiscWorldSaveData self)
         {   
             String s = orig(self);
 
-            s = String.Concat(s, "DynamicPupSpawnsData", "<mwA>");
+            s = String.Concat(s, SAVE_DATA_DELIMITER, "<mwA>");
             
             Logger.LogInfo("SaveDataToString string:\n" + s);
 
@@ -248,64 +243,27 @@ namespace dynamicpupspawns
         
         private void SaveDataFromString(On.MiscWorldSaveData.orig_FromString orig, MiscWorldSaveData self, string s)
         {
-            Logger.LogInfo("Save data before orig_FromString:\n" + s);
-            
             orig(self, s);
             
-            Logger.LogInfo("Save data after orig_FromString:\n" + s);
-            
-            // Logger.LogInfo("Looking for mod save string for MiscWorldData");
-            //
-            // try
-            // {
-            //     List<string[]> strArrays = new List<string[]>();
-            //     string[] array;
-            //     foreach (String u in self.unrecognizedSaveStrings)
-            //     {
-            //         array = Regex.Split(u, modRegExSymbol);
-            //         strArrays.Add(array);
-            //     }
-            //
-            //     string modString = null;
-            //     bool found = false;
-            //     string message = "";
-            //     int arrayNum = 1;
-            //     foreach (string[] x in strArrays)
-            //     {
-            //         message += "Array " + arrayNum + ":\n";
-            //         for (int y = 0; y < x.Length; y++)
-            //         {
-            //             message += x[y] + ",\n";
-            //             if (x[y].StartsWith(modStringDelimiter))
-            //             {
-            //                 modString = x[y];
-            //                 found = true;
-            //                 Logger.LogInfo("Found mod save string for MiscWorldSaveData!");
-            //                 break;
-            //             }
-            //         }
-            //         arrayNum++;
-            //
-            //         if (found)
-            //         {
-            //             break;
-            //         }
-            //     }
-            //     Logger.LogInfo(message);
-            //
-            //     if (modString == null)
-            //     {
-            //         Logger.LogError("Could not find mod's save string!");
-            //     }
-            //     else
-            //     {
-            //         Logger.LogInfo("Mod save string retrieved:\n" + modString);
-            //     }
-            // }
-            // catch (Exception e)
-            // {
-            //     Logger.LogError(e.Message);
-            // }
+            Logger.LogInfo("Looking for mod save string for MiscWorldData");
+
+            string modString = null;
+            foreach (String u in self.unrecognizedSaveStrings)
+            {
+                if (u.StartsWith(SAVE_DATA_DELIMITER))
+                {
+                    modString = u;
+                }
+            }
+
+            if (modString == null)
+            {
+                Logger.LogInfo("Couldn't find mod save data!");
+            }
+            else
+            {
+                Logger.LogInfo(modString);
+            }
         }
     }
 }
