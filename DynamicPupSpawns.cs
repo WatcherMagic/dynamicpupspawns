@@ -19,7 +19,6 @@ namespace dynamicpupspawns
     [BepInPlugin("dynamicpupspawns", "Dynamic Pup Spawns", "0.1")]
     public class DynamicPupSpawns : BaseUnityPlugin
     {
-        private Dictionary<EntityID, string> _persistentPups = null;
         
         private void OnEnable()
         {
@@ -48,17 +47,20 @@ namespace dynamicpupspawns
             
             //respawn pups from save data
             pupNum = SpawnPersistentPups(self, pupNum);
-            
-            //get random room for each pup
-            for (int i = 0; i < pupNum; i++)
+
+            if (pupNum > 0)
             {
-                AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
-                if (self.game.IsStorySession) //temp
+                //get random room for each pup
+                for (int i = 0; i < pupNum; i++)
                 {
-                    PutPupInRoom(self.game, self, spawnRoom, null, self.game.GetStorySession.characterStats.name);
+                    AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
+                    if (self.game.IsStorySession) //temp
+                    {
+                        PutPupInRoom(self.game, self, spawnRoom, null, self.game.GetStorySession.characterStats.name);
+                    }
                 }
             }
-
+            
             return orig(self);
         }
 
@@ -162,11 +164,12 @@ namespace dynamicpupspawns
             return roomsArray[roomIndex];
         }
 
-        private int SpawnPersistentPups(World world, int totalPups)
+        private Dictionary<string, string> _persistentPups = null;
+        private int SpawnPersistentPups(World world, int pupNum)
         {
             if (_persistentPups != null)
             {
-                foreach (KeyValuePair<EntityID, string> pup in _persistentPups)
+                foreach (KeyValuePair<string, string> pup in _persistentPups)
                 {
                     string[] region = pup.Value.Split('_');
                     if (region.Length >= 1)
@@ -177,6 +180,9 @@ namespace dynamicpupspawns
                             if (room != null)
                             {
                                 Logger.LogInfo("Found saved room! " + room.name);
+                                
+                                PutPupInRoom(world.game, world, room, pup.Key, world.game.GetStorySession.characterStats.name);
+                                pupNum--; //persistent pups count towards the total pups spawned per cycle
                             }
                             else
                             {
@@ -195,10 +201,11 @@ namespace dynamicpupspawns
                 Logger.LogInfo("Saved pup data not found in Dictionary at time of pup placement!");
             }
 
-            return totalPups;
+            return pupNum;
         }
-        
-        private void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, Player pup, SlugcatStats.Name curSlug)
+
+        private void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, string pupID,
+            SlugcatStats.Name curSlug)
         {
             bool temp = false;
             if (ModManager.MSC && game.IsStorySession)
@@ -207,16 +214,27 @@ namespace dynamicpupspawns
                 {
                     temp = true;
                 }
-                //spawn new pup with random ID
-                if (pup == null && !temp)
+
+                if (!temp)
                 {
+                    EntityID id;
+                    if (pupID != null)
+                    {
+                        id = EntityID.FromString(pupID);
+                    }
+                    else
+                    {
+                        //spawn new pup with random ID
+                        id = game.GetNewID();
+                    }
+                    
                     //copied from AbstractRoom.RealizeRoom()
                     AbstractCreature abstractPup = new AbstractCreature(world,
                         StaticWorld.GetCreatureTemplate(MoreSlugcats.MoreSlugcatsEnums.CreatureTemplateType.SlugNPC),
                         null,
                         new WorldCoordinate(room.index, -1, -1, 0),
-                        game.GetNewID());
-
+                        id);
+                    
                     try
                     {
                         room.AddEntity(abstractPup);
@@ -302,14 +320,14 @@ namespace dynamicpupspawns
 
             if (_persistentPups == null)
             {
-                _persistentPups = new Dictionary<EntityID, string>();
+                _persistentPups = new Dictionary<string, string>();
             }
             foreach (KeyValuePair<string, string> pair in pairs)
             {
                 try
                 {
-                    EntityID pupID = EntityID.FromString(pair.Key);
-                    _persistentPups.Add(pupID, pair.Value);
+                    //EntityID pupID = EntityID.FromString(pair.Key);
+                    _persistentPups.Add(pair.Key, pair.Value);
                 }
                 catch (Exception e)
                 {
