@@ -41,11 +41,44 @@ namespace dynamicpupspawns
             
             //generate number of pups for this cycle
             int pupNum = Random.Range(_minPupsInRegion, _maxPupsInRegion + 1);
-            //Logger.LogInfo(pupNum + " pups this cycle");
             
             //get dict of rooms and weights in parallel arrays
             Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
             float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
+            
+            //respawn pups from save data
+            if (_persistentPups != null)
+            {
+                foreach (KeyValuePair<EntityID, string> pup in _persistentPups)
+                {
+                    string[] region = pup.Value.Split('_');
+                    if (region.Length >= 1)
+                    {
+                        Logger.LogInfo("Current region: " + self.region.name);
+                        Logger.LogInfo("Region from room name: " + region[0]);
+                        if (self.region.name.ToLower() == region[0].ToLower())
+                        {
+                            AbstractRoom room = self.GetAbstractRoom(pup.Value);
+                            if (room != null)
+                            {
+                                Logger.LogInfo("Found saved room! " + room.name);
+                            }
+                            else
+                            {
+                                Logger.LogInfo("Room " + room.name + " pulled from save data not recognized!");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogInfo("Region acronym could not be pulled from room name " + pup.Value + "!");
+                    }
+                }                
+            }
+            else
+            {
+                Logger.LogInfo("Saved pup data not found in Dictionary at time of pup placement!");
+            }
             
             //get random room for each pup
             for (int i = 0; i < pupNum; i++)
@@ -170,7 +203,6 @@ namespace dynamicpupspawns
             
             int roomIndex;
             float randNum = Random.Range(0f, totalWeight);
-            Logger.LogInfo("Room selection: random number is " + randNum.ToString("0.##%"));
             for (roomIndex = 0; roomIndex < weightsArray.Length; roomIndex++)
             {
                 if (roomIndex == weightsArray.Length - 1)
@@ -182,7 +214,6 @@ namespace dynamicpupspawns
                     break;
                 }
             }
-            //Logger.LogInfo("Index selected is " + roomIndex + " (" + weightsArray[roomIndex].ToString("0.##%") + " <= " + randNum.ToString("0.##%") + " <= " + weightsArray[roomIndex + 1].ToString("0.##%") + ")");
             
             return roomsArray[roomIndex];
         }
@@ -218,8 +249,8 @@ namespace dynamicpupspawns
                             Logger.LogError(e.Message);
                         }
                         
-                        Logger.LogInfo(abstractPup.GetType() + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name);
-                        Debug.Log("DynamicPupSpawns: " + abstractPup.GetType() + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name);
+                        Logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name);
+                        Debug.Log("DynamicPupSpawns: " + abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name);
                     }
                     catch (Exception e)
                     {
