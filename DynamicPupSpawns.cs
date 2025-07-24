@@ -39,46 +39,15 @@ namespace dynamicpupspawns
             //determine room spawn weight based on number of dens in room
             Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
             
-            //generate number of pups for this cycle
-            int pupNum = Random.Range(_minPupsInRegion, _maxPupsInRegion + 1);
-            
             //get dict of rooms and weights in parallel arrays
             Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
             float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
             
+            //generate number of pups for this cycle
+            int pupNum = Random.Range(_minPupsInRegion, _maxPupsInRegion + 1);
+            
             //respawn pups from save data
-            if (_persistentPups != null)
-            {
-                foreach (KeyValuePair<EntityID, string> pup in _persistentPups)
-                {
-                    string[] region = pup.Value.Split('_');
-                    if (region.Length >= 1)
-                    {
-                        Logger.LogInfo("Current region: " + self.region.name);
-                        Logger.LogInfo("Region from room name: " + region[0]);
-                        if (self.region.name.ToLower() == region[0].ToLower())
-                        {
-                            AbstractRoom room = self.GetAbstractRoom(pup.Value);
-                            if (room != null)
-                            {
-                                Logger.LogInfo("Found saved room! " + room.name);
-                            }
-                            else
-                            {
-                                Logger.LogInfo("Room " + room.name + " pulled from save data not recognized!");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Logger.LogInfo("Region acronym could not be pulled from room name " + pup.Value + "!");
-                    }
-                }                
-            }
-            else
-            {
-                Logger.LogInfo("Saved pup data not found in Dictionary at time of pup placement!");
-            }
+            pupNum = SpawnPersistentPups(self, pupNum);
             
             //get random room for each pup
             for (int i = 0; i < pupNum; i++)
@@ -155,43 +124,18 @@ namespace dynamicpupspawns
             //dict to be returned
             Dictionary<AbstractRoom[], float[]> parallelArrays = new Dictionary<AbstractRoom[], float[]> { { rooms, weights } };
             
-            //Debug parallel arrays
-            string message = "parallelArrays dict to be returned:\n";
-            foreach (KeyValuePair<AbstractRoom[], float[]> pair in parallelArrays)
-            {
-                message += string.Format("{0, -9}|{1, 7}\n------------------\n", "ROOM", "WEIGHT");
-                for (int i = 0; i < pair.Key.Length; i++)
-                {
-                    if (i < pair.Value.Length)
-                    {
-                        message += string.Format("{0, -9}|{1, 7:0.##%}\n", pair.Key[i].name, pair.Value[i]);
-                    }
-                    else
-                    {
-                        message += "The arrays are not the same length! Aborting Debug Statement";
-                        break;
-                    }
-                }
-            }
-            //Logger.LogInfo(message);
-            
             return parallelArrays;
         }
         
         private float[] AssignSortedRoomScaleValues(float[] weightsArray)
         {
             //change indexes of weightsArray to increment to total weight in ascending order
-            string message = string.Format("Modifying weightsArray to reflect scale of total weight:\n{0, -7}|{1, 7}\n---------------\n", "OLD", "NEW");
             float scaleValue = 0f;
             for (int i = 0; i < weightsArray.Length; i++)
             {
-                message += string.Format("{0, -7:0.##%}|", weightsArray[i]);
                 scaleValue += weightsArray[i];
                 weightsArray[i] = scaleValue;
-                message += string.Format("{0, 7:0.##%}\n", weightsArray[i]);
             }
-            message += "Total scale weight: " + scaleValue.ToString("0.##%");
-            //Logger.LogInfo(message);
             
             return weightsArray;
         }
@@ -216,6 +160,42 @@ namespace dynamicpupspawns
             }
             
             return roomsArray[roomIndex];
+        }
+
+        private int SpawnPersistentPups(World world, int totalPups)
+        {
+            if (_persistentPups != null)
+            {
+                foreach (KeyValuePair<EntityID, string> pup in _persistentPups)
+                {
+                    string[] region = pup.Value.Split('_');
+                    if (region.Length >= 1)
+                    {
+                        if (world.region.name.ToLower() == region[0].ToLower())
+                        {
+                            AbstractRoom room = world.GetAbstractRoom(pup.Value);
+                            if (room != null)
+                            {
+                                Logger.LogInfo("Found saved room! " + room.name);
+                            }
+                            else
+                            {
+                                Logger.LogInfo("Room " + room.name + " pulled from save data not recognized!");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogError("Region acronym could not be pulled from room name " + pup.Value + "!");
+                    }
+                }                
+            }
+            else
+            {
+                Logger.LogInfo("Saved pup data not found in Dictionary at time of pup placement!");
+            }
+
+            return totalPups;
         }
         
         private void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, Player pup, SlugcatStats.Name curSlug)
@@ -265,8 +245,8 @@ namespace dynamicpupspawns
         private string SaveDataToString(On.MiscWorldSaveData.orig_ToString orig, MiscWorldSaveData self)
         {   
             String s = orig(self);
-            String data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT + "ID.1.1234:SU_A37" + _REGX_STR_SPLIT
-                + "ID.1.5678:SU_A37" + _REGX_STR_SPLIT + "ID.1.9101:SU_A37" + _REGX_STR_SPLIT;
+            String data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT + "ID.1.1234:SU_A22" + _REGX_STR_SPLIT
+                + "ID.1.5678:SU_A22" + _REGX_STR_SPLIT + "ID.1.9101:SU_A22" + _REGX_STR_SPLIT;
             
             s = String.Concat(s, data, "<mwA>");
             
@@ -278,8 +258,8 @@ namespace dynamicpupspawns
         private void SaveDataFromString(On.MiscWorldSaveData.orig_FromString orig, MiscWorldSaveData self, string s)
         {
             orig(self, s);
-            
-            Logger.LogInfo("Looking for mod save string for MiscWorldSaveData");
+
+            string message = "Looking for mod save string from MiscWorldSaveData... ";
 
             string modString = null;
             for (int i = 0; i < self.unrecognizedSaveStrings.Count; i++)
@@ -287,15 +267,16 @@ namespace dynamicpupspawns
                 if (self.unrecognizedSaveStrings[i].StartsWith(_SAVE_DATA_DELIMITER))
                 {
                     modString = self.unrecognizedSaveStrings[i];
-                    Logger.LogInfo("String found: " + modString);
+                    message += "String found!";
                     self.unrecognizedSaveStrings.RemoveAt(i);
                     break;
                 }
             }
             if (modString == null)
             {
-                Logger.LogInfo("Couldn't find mod save data!");
+                message += "Couldn't find mod save data!";
             }
+            Logger.LogInfo(message);
 
             ExtractSaveValues(modString);
         }
@@ -303,12 +284,6 @@ namespace dynamicpupspawns
         private void ExtractSaveValues(string modString)
         {
             string[] dataValues = Regex.Split(modString, _REGX_STR_SPLIT);
-            //dataValues = dataValues.Skip(1).ToArray(); //pop delimiter off array beginning
-            // Logger.LogInfo("Data values:");
-            // for (int i = 0; i < dataValues.Length; i++)
-            // {
-            //     Logger.LogInfo(dataValues[i]);
-            // }
             
             Dictionary<string, string> pairs = new Dictionary<string, string>();
             string[] pairContainer;
@@ -321,7 +296,7 @@ namespace dynamicpupspawns
                 }
                 else
                 {
-                    Logger.LogError("Returned invalid data pair in ExtractSaveValues()!");
+                    Logger.LogError("Returned invalid data pair while extracting from save string!");
                 }
             }
 
@@ -339,14 +314,6 @@ namespace dynamicpupspawns
                 catch (Exception e)
                 {
                     Debug.LogError(e.Message);
-                }
-            }
-
-            if (_persistentPups != null)
-            {
-                foreach (KeyValuePair<EntityID, string> pair in _persistentPups)
-                {
-                    Logger.LogInfo("ID: " + pair.Key + ", Room: " + pair.Value);
                 }
             }
         }
