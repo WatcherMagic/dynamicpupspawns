@@ -24,10 +24,10 @@ namespace dynamicpupspawns
         {
             On.World.SpawnPupNPCs += SpawnPups;
 
-            On.MiscWorldSaveData.ToString += SaveDataToString;
-            On.MiscWorldSaveData.FromString += SaveDataFromString;
+            On.SaveState.SaveToString += SaveDataToString;
+            On.SaveState.LoadGame += SaveDataFromString;
         }
-        
+
         private readonly int _minPupsInRegion = 1;
         private readonly int _maxPupsInRegion = 10;
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
@@ -54,7 +54,7 @@ namespace dynamicpupspawns
                 for (int i = 0; i < pupNum; i++)
                 {
                     AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
-                    if (self.game.IsStorySession) //temp
+                    if (self.game.IsStorySession)
                     {
                         PutPupInRoom(self.game, self, spawnRoom, null, self.game.GetStorySession.characterStats.name);
                     }
@@ -260,24 +260,24 @@ namespace dynamicpupspawns
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
-        private string SaveDataToString(On.MiscWorldSaveData.orig_ToString orig, MiscWorldSaveData self)
-        {   
-            String s = orig(self);
-            String data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT + "ID.1.1234:SU_A22" + _REGX_STR_SPLIT
-                + "ID.1.5678:SU_A22" + _REGX_STR_SPLIT + "ID.1.9101:SU_A22" + _REGX_STR_SPLIT;
+        private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
+        {
+            string s = orig(self);
+
+            string data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT + "ID.1.1234:SU_A37" + _REGX_STR_SPLIT;
             
-            s = String.Concat(s, data, "<mwA>");
+            s = String.Concat(s, data, "<svA>");
             
             Logger.LogInfo("SaveDataToString string:\n" + s);
-
+            
             return s;
         }
         
-        private void SaveDataFromString(On.MiscWorldSaveData.orig_FromString orig, MiscWorldSaveData self, string s)
+        private void SaveDataFromString(On.SaveState.orig_LoadGame orig, SaveState self, string str, RainWorldGame game)
         {
-            orig(self, s);
-
-            string message = "Looking for mod save string from MiscWorldSaveData... ";
+            orig(self, str, game);
+            
+            string message = "Looking for mod save string from SaveState... ";
 
             string modString = null;
             for (int i = 0; i < self.unrecognizedSaveStrings.Count; i++)
@@ -293,10 +293,13 @@ namespace dynamicpupspawns
             if (modString == null)
             {
                 message += "Couldn't find mod save data!";
+                Logger.LogInfo(message);
             }
-            Logger.LogInfo(message);
-
-            ExtractSaveValues(modString);
+            else
+            {
+                Logger.LogInfo(message);
+                ExtractSaveValues(modString);
+            }
         }
 
         private void ExtractSaveValues(string modString)
