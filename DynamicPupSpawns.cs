@@ -276,20 +276,28 @@ namespace dynamicpupspawns
             {
                 //make sure not to save pups in shelters (or at least shelter player is in)
                 
-                // for (int i = 0; i < _world.abstractRooms.Length; i++)
-                // {
-                //     foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
-                //     {
-                //         if (abstractCreature != null
-                //             && abstractCreature.realizedCreature.GetType() == typeof(Player)
-                //             && (abstractCreature.realizedCreature as Player).isNPC)
-                //         {
-                //             data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
-                //             message += "Pup ID: " + abstractCreature.ID + "\n";
-                //             message += "Room: " + _world.abstractRooms[i].name + "\n";
-                //         }
-                //     }
-                // }
+                for (int i = 0; i < _world.abstractRooms.Length; i++)
+                {
+                    message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
+
+                    foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
+                    {
+                        message += "Found creature! " + abstractCreature.creatureTemplate.type + "\n";
+                        //     if (abstractCreature.realizedCreature.GetType() == typeof(Player)
+                        //         && !(abstractCreature.realizedCreature as Player).isNPC)
+                        //     {
+                        //         message += "Found Player " + abstractCreature.ID;
+                        //     }
+                        //     
+                        //     if (abstractCreature.realizedCreature.GetType() == typeof(Player)
+                        //         && (abstractCreature.realizedCreature as Player).isNPC)
+                        //     {
+                        //         //data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
+                        //         message += "Pup ID: " + abstractCreature.ID + "\n";
+                        //         message += "Room: " + _world.abstractRooms[i].name + "\n";
+                        //     }
+                    }
+                }
                 message += "Final save string: " + data;
                 Logger.LogInfo(message);
             }
