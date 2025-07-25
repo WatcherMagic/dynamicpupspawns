@@ -19,6 +19,7 @@ namespace dynamicpupspawns
     [BepInPlugin("dynamicpupspawns", "Dynamic Pup Spawns", "0.1")]
     public class DynamicPupSpawns : BaseUnityPlugin
     {
+        private World _world = null;
         
         private void OnEnable()
         {
@@ -32,6 +33,8 @@ namespace dynamicpupspawns
         private readonly int _maxPupsInRegion = 10;
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
         {
+            _world = self;
+            
             //get rooms with unsubmerged den nodes
             Dictionary <AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
             
@@ -217,10 +220,12 @@ namespace dynamicpupspawns
 
                 if (!temp)
                 {
+                    bool persistent = false;
                     EntityID id;
                     if (pupID != null)
                     {
                         id = EntityID.FromString(pupID);
+                        persistent = true;
                     }
                     else
                     {
@@ -247,8 +252,8 @@ namespace dynamicpupspawns
                             Logger.LogError(e.Message);
                         }
                         
-                        Logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name);
-                        Debug.Log("DynamicPupSpawns: " + abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name);
+                        Logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
+                        Debug.Log("DynamicPupSpawns: " + abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
                     }
                     catch (Exception e)
                     {
@@ -264,7 +269,34 @@ namespace dynamicpupspawns
         {
             string s = orig(self);
 
-            string data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT + "ID.1.1234:SU_A37" + _REGX_STR_SPLIT;
+            string data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT;
+            
+            string message = "Adding pups to save data:\n";
+            if (_world != null)
+            {
+                //make sure not to save pups in shelters (or at least shelter player is in)
+                
+                // for (int i = 0; i < _world.abstractRooms.Length; i++)
+                // {
+                //     foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
+                //     {
+                //         if (abstractCreature != null
+                //             && abstractCreature.realizedCreature.GetType() == typeof(Player)
+                //             && (abstractCreature.realizedCreature as Player).isNPC)
+                //         {
+                //             data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
+                //             message += "Pup ID: " + abstractCreature.ID + "\n";
+                //             message += "Room: " + _world.abstractRooms[i].name + "\n";
+                //         }
+                //     }
+                // }
+                message += "Final save string: " + data;
+                Logger.LogInfo(message);
+            }
+            else
+            {
+                Logger.LogError("_world was null, cannot save abstract pups!");
+            }
             
             s = String.Concat(s, data, "<svA>");
             
