@@ -32,7 +32,7 @@ namespace dynamicpupspawns
         }
 
         private readonly int _minPupsInRegion = 1;
-        private readonly int _maxPupsInRegion = 10;
+        private readonly int _maxPupsInRegion = 5;
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
         {
             _world = self;
@@ -49,6 +49,8 @@ namespace dynamicpupspawns
             
             //generate number of pups for this cycle
             int pupNum = Random.Range(_minPupsInRegion, _maxPupsInRegion + 1);
+            Logger.LogInfo(pupNum + " generated pups this cycle.");
+            Debug.Log("DynamicPupSpawns: " + pupNum + " generated pups this cycle.");
             
             //respawn pups from save data
             pupNum = SpawnPersistentPups(self, pupNum);
@@ -267,6 +269,7 @@ namespace dynamicpupspawns
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
+        private const string _PUP_DATA_DIVIDER = ":";
         private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
         {
             string s = orig(self);
@@ -295,7 +298,7 @@ namespace dynamicpupspawns
                             {
                                 if (abstractCreature.creatureTemplate.type.ToString() == pupType)
                                 {
-                                    data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
+                                    data += abstractCreature.ID + _PUP_DATA_DIVIDER + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
                                 }
                             }
                         }
@@ -379,13 +382,15 @@ namespace dynamicpupspawns
 
         private void ExtractSaveValues(string modString)
         {
+            //TODO: Refactor to not use redundant dictionary
+            
             string[] dataValues = Regex.Split(modString, _REGX_STR_SPLIT);
             
             Dictionary<string, string> pairs = new Dictionary<string, string>();
             string[] pairContainer;
             for (int i = 1; i < dataValues.Length; i++)
             {
-                pairContainer = Regex.Split(dataValues[i], ":");
+                pairContainer = Regex.Split(dataValues[i], _PUP_DATA_DIVIDER);
                 if (pairContainer.Length >= 2)
                 {
                     pairs.Add(pairContainer[0], pairContainer[1]);
@@ -399,6 +404,10 @@ namespace dynamicpupspawns
             if (_persistentPups == null)
             {
                 _persistentPups = new Dictionary<string, string>();
+            }
+            else
+            {
+                _persistentPups.Clear();
             }
             foreach (KeyValuePair<string, string> pair in pairs)
             {
