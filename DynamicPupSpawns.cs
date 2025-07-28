@@ -273,7 +273,7 @@ namespace dynamicpupspawns
 
             string data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT;
             
-            string message = "Adding pups to save data:\n";
+            string message = "Adding pups to save data...\n";
             if (_world != null)
             {
                 //make sure not to save pups in shelter player is ins
@@ -281,26 +281,22 @@ namespace dynamicpupspawns
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
                 {
                     message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
-                    if (_world.abstractRooms[i].shelter)
+                    if (!_world.abstractRooms[i].shelter)
                     {
-                        message += "Is a shelter.\n";
-                        // need to determine if game saves living creatures in shelters slugcat is not sleeping in
-                        // if so, will skip all shelters to prevent duplicates
-                    }
-
-                    foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
-                    {
-                        //List<string> roomExceptions = new List<string>();
-                        //message += "Found creature! " + abstractCreature.creatureTemplate.type + "\n";
-                        
-                        /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
-                         only detects players, not SlugNPCs. Additionally, Bups and likely others
-                         are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
-                        foreach (string pupType in _recognizedPupTypes)
+                        foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
                         {
-                            if (abstractCreature.creatureTemplate.type.ToString() == pupType)
+                            //List<string> roomExceptions = new List<string>();
+                            //message += "Found creature! " + abstractCreature.creatureTemplate.type + "\n";
+                        
+                            /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
+                             only detects players, not SlugNPCs. Additionally, Bups and likely others
+                             are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
+                            foreach (string pupType in _recognizedPupTypes)
                             {
-                                data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
+                                if (abstractCreature.creatureTemplate.type.ToString() == pupType)
+                                {
+                                    data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
+                                }
                             }
                         }
                     }
