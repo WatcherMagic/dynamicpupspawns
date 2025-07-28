@@ -20,6 +20,8 @@ namespace dynamicpupspawns
     public class DynamicPupSpawns : BaseUnityPlugin
     {
         private World _world = null;
+
+        private string[] _recognizedPupTypes = { "SlugNPC", "Bup" };
         
         private void OnEnable()
         {
@@ -75,7 +77,7 @@ namespace dynamicpupspawns
             int densInRoom = 0;
             foreach (AbstractRoom room in world.abstractRooms)
             {
-                if (!room.offScreenDen)
+                if (!room.offScreenDen /*&& !room.gate*/)
                 {
                     foreach (AbstractRoomNode node in room.nodes)
                     {
@@ -279,23 +281,82 @@ namespace dynamicpupspawns
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
                 {
                     message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
+                    if (_world.abstractRooms[i].shelter)
+                    {
+                        message += "A shelter.\n";
+                        // need to determine if game saves living creatures in shelters slugcat is not sleeping in
+                        // if so, will skip all shelters to prevent duplicates
+                    }
 
                     foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
                     {
+                        //List<string> roomExceptions = new List<string>();
                         message += "Found creature! " + abstractCreature.creatureTemplate.type + "\n";
+                        
+                        /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
+                         only detects players, not SlugNPCs. Additionally, Bups and likely others
+                         are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
+                        foreach (string pupType in _recognizedPupTypes)
+                        {
+                            if (abstractCreature.creatureTemplate.type.ToString() == pupType)
+                            {
+                                string id = abstractCreature.ID.ToString();
+                                if (!id.EndsWith("."))
+                                {
+                                    int substrIndex = id.LastIndexOf('.') + 1;
+                                    id = id.Substring(substrIndex, id.Length - substrIndex);
+                                    bool isDigits = true;
+                                    foreach (char c in id)
+                                    {
+                                        if (!char.IsDigit(c))
+                                        {
+                                            isDigits = false;
+                                            break;
+                                        }
+                                    }
+
+                                    if (isDigits)
+                                    {
+                                        int idNum = int.Parse(id);
+                                        message += idNum + "\n";
+                                    }
+                                    else
+                                    {
+                                        message += "Failed to retrieve int from ID substring!\n";
+                                    }   
+                                }
+                                else
+                                {
+                                    message += "ID substring ended in '.'!\n";
+                                }
+                            }
+                        }
+                        // if (abstractCreature.realizedCreature == null
+                        //     && abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat)
+                        // {
+                        //     message += "Found unrealized creature! " + abstractCreature.creatureTemplate.type;
+                        // }
+                        // if (/*abstractCreature.realizedCreature != null
+                        //     && abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
+                        //     &&*/ _world.abstractRooms[i].isAncientShelter)
+                        // {
+                        //     message += "ancient shelter: " + _world.abstractRooms[i].name;
+                        //     //except shelter rooms with realized players from save data
+                        // }
+                        
                         //     if (abstractCreature.realizedCreature.GetType() == typeof(Player)
                         //         && !(abstractCreature.realizedCreature as Player).isNPC)
                         //     {
                         //         message += "Found Player " + abstractCreature.ID;
                         //     }
                         //     
-                        //     if (abstractCreature.realizedCreature.GetType() == typeof(Player)
-                        //         && (abstractCreature.realizedCreature as Player).isNPC)
-                        //     {
-                        //         //data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
-                        //         message += "Pup ID: " + abstractCreature.ID + "\n";
-                        //         message += "Room: " + _world.abstractRooms[i].name + "\n";
-                        //     }
+                        // if (abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
+                        //     && (abstractCreature.realizedCreature as Player).isNPC)
+                        // {
+                        //     //data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
+                        //     message += "Pup ID: " + abstractCreature.ID + "\n";
+                        //     message += "Room: " + _world.abstractRooms[i].name + "\n";
+                        // }
                     }
                 }
                 message += "Final save string: " + data;
