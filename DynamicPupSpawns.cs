@@ -276,14 +276,14 @@ namespace dynamicpupspawns
             string message = "Adding pups to save data:\n";
             if (_world != null)
             {
-                //make sure not to save pups in shelters (or at least shelter player is in)
+                //make sure not to save pups in shelter player is ins
                 
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
                 {
                     message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
                     if (_world.abstractRooms[i].shelter)
                     {
-                        message += "A shelter.\n";
+                        message += "Is a shelter.\n";
                         // need to determine if game saves living creatures in shelters slugcat is not sleeping in
                         // if so, will skip all shelters to prevent duplicates
                     }
@@ -291,7 +291,7 @@ namespace dynamicpupspawns
                     foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
                     {
                         //List<string> roomExceptions = new List<string>();
-                        message += "Found creature! " + abstractCreature.creatureTemplate.type + "\n";
+                        //message += "Found creature! " + abstractCreature.creatureTemplate.type + "\n";
                         
                         /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
                          only detects players, not SlugNPCs. Additionally, Bups and likely others
@@ -300,7 +300,7 @@ namespace dynamicpupspawns
                         {
                             if (abstractCreature.creatureTemplate.type.ToString() == pupType)
                             {
-                                
+                                data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
                             }
                         }
                     }
@@ -314,8 +314,6 @@ namespace dynamicpupspawns
             }
             
             s = String.Concat(s, data, "<svA>");
-            
-            Logger.LogInfo("SaveDataToString string:\n" + s);
             
             return s;
         }
