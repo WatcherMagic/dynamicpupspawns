@@ -28,7 +28,7 @@ namespace dynamicpupspawns
             On.World.SpawnPupNPCs += SpawnPups;
 
             On.SaveState.SaveToString += SaveDataToString;
-            On.SaveState.LoadGame += SaveDataFromString;
+            On.SaveState.LoadGame += GetSaveDataFromString;
         }
 
         private readonly int _minPupsInRegion = 1;
@@ -300,63 +300,9 @@ namespace dynamicpupspawns
                         {
                             if (abstractCreature.creatureTemplate.type.ToString() == pupType)
                             {
-                                string id = abstractCreature.ID.ToString();
-                                if (!id.EndsWith("."))
-                                {
-                                    int substrIndex = id.LastIndexOf('.') + 1;
-                                    id = id.Substring(substrIndex, id.Length - substrIndex);
-                                    bool isDigits = true;
-                                    foreach (char c in id)
-                                    {
-                                        if (!char.IsDigit(c))
-                                        {
-                                            isDigits = false;
-                                            break;
-                                        }
-                                    }
-
-                                    if (isDigits)
-                                    {
-                                        int idNum = int.Parse(id);
-                                        message += idNum + "\n";
-                                    }
-                                    else
-                                    {
-                                        message += "Failed to retrieve int from ID substring!\n";
-                                    }   
-                                }
-                                else
-                                {
-                                    message += "ID substring ended in '.'!\n";
-                                }
+                                
                             }
                         }
-                        // if (abstractCreature.realizedCreature == null
-                        //     && abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat)
-                        // {
-                        //     message += "Found unrealized creature! " + abstractCreature.creatureTemplate.type;
-                        // }
-                        // if (/*abstractCreature.realizedCreature != null
-                        //     && abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
-                        //     &&*/ _world.abstractRooms[i].isAncientShelter)
-                        // {
-                        //     message += "ancient shelter: " + _world.abstractRooms[i].name;
-                        //     //except shelter rooms with realized players from save data
-                        // }
-                        
-                        //     if (abstractCreature.realizedCreature.GetType() == typeof(Player)
-                        //         && !(abstractCreature.realizedCreature as Player).isNPC)
-                        //     {
-                        //         message += "Found Player " + abstractCreature.ID;
-                        //     }
-                        //     
-                        // if (abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
-                        //     && (abstractCreature.realizedCreature as Player).isNPC)
-                        // {
-                        //     //data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
-                        //     message += "Pup ID: " + abstractCreature.ID + "\n";
-                        //     message += "Room: " + _world.abstractRooms[i].name + "\n";
-                        // }
                     }
                 }
                 message += "Final save string: " + data;
@@ -374,7 +320,41 @@ namespace dynamicpupspawns
             return s;
         }
         
-        private void SaveDataFromString(On.SaveState.orig_LoadGame orig, SaveState self, string str, RainWorldGame game)
+        //currently holdover
+        private void SubstringEntityID(AbstractCreature abstractCreature)
+        {
+            string id = abstractCreature.ID.ToString();
+            if (!id.EndsWith("."))
+            {
+                int substrIndex = id.LastIndexOf('.') + 1;
+                id = id.Substring(substrIndex, id.Length - substrIndex);
+                bool isDigits = true;
+                foreach (char c in id)
+                {
+                    if (!char.IsDigit(c))
+                    {
+                        isDigits = false;
+                        break;
+                    }
+                }
+
+                if (isDigits)
+                {
+                    int idNum = int.Parse(id);
+                    //message += idNum + "\n";
+                }
+                else
+                {
+                    //message += "Failed to retrieve int from ID substring!\n";
+                }   
+            }
+            else
+            {
+                //message += "ID substring ended in '.'!\n";
+            }
+        }
+        
+        private void GetSaveDataFromString(On.SaveState.orig_LoadGame orig, SaveState self, string str, RainWorldGame game)
         {
             orig(self, str, game);
             
