@@ -21,7 +21,7 @@ namespace dynamicpupspawns
     {
         private World _world = null;
 
-        private string[] _recognizedPupTypes = { "SlugNPC", "Bup" };
+        private string[] _recognizedPupTypes = { "SlugNPC"/*, "Bup"*/ };
         
         private void OnEnable()
         {
