@@ -361,14 +361,15 @@ namespace dynamicpupspawns
             
             string message = "Looking for mod save string from SaveState... ";
 
-            string modString = null;
+            string[] modString = null;
             for (int i = 0; i < self.unrecognizedSaveStrings.Count; i++)
             {
                 if (self.unrecognizedSaveStrings[i].StartsWith(_SAVE_DATA_DELIMITER))
                 {
-                    modString = self.unrecognizedSaveStrings[i];
+                    string modStr = self.unrecognizedSaveStrings[i];
                     message += "String found!";
                     self.unrecognizedSaveStrings.RemoveAt(i);
+                    modString = Regex.Split(modStr, _SAVE_DATA_DELIMITER);
                     break;
                 }
             }
@@ -380,7 +381,7 @@ namespace dynamicpupspawns
             else
             {
                 Logger.LogInfo(message);
-                ExtractSaveValues(modString);
+                ExtractSaveValues(modString[0]);
             }
         }
 
