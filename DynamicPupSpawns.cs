@@ -386,25 +386,8 @@ namespace dynamicpupspawns
 
         private void ExtractSaveValues(string modString)
         {
-            //TODO: Refactor to not use redundant dictionary
-            
             string[] dataValues = Regex.Split(modString, _REGX_STR_SPLIT);
             
-            Dictionary<string, string> pairs = new Dictionary<string, string>();
-            string[] pairContainer;
-            for (int i = 1; i < dataValues.Length; i++)
-            {
-                pairContainer = Regex.Split(dataValues[i], _PUP_DATA_DIVIDER);
-                if (pairContainer.Length >= 2)
-                {
-                    pairs.Add(pairContainer[0], pairContainer[1]);
-                }
-                else
-                {
-                    Logger.LogError("Returned invalid data pair while extracting from save string!");
-                }
-            }
-
             if (_persistentPups == null)
             {
                 _persistentPups = new Dictionary<string, string>();
@@ -413,16 +396,18 @@ namespace dynamicpupspawns
             {
                 _persistentPups.Clear();
             }
-            foreach (KeyValuePair<string, string> pair in pairs)
+            
+            string[] pairContainer;
+            for (int i = 1; i < dataValues.Length; i++)
             {
-                try
+                pairContainer = Regex.Split(dataValues[i], _PUP_DATA_DIVIDER);
+                if (pairContainer.Length == 2)
                 {
-                    //EntityID pupID = EntityID.FromString(pair.Key);
-                    _persistentPups.Add(pair.Key, pair.Value);
+                    _persistentPups.Add(pairContainer[0], pairContainer[1]);
                 }
-                catch (Exception e)
+                else
                 {
-                    Debug.LogError(e.Message);
+                    Logger.LogError("Returned invalid data pair while extracting from save string!");
                 }
             }
         }
