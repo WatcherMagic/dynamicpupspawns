@@ -19,9 +19,14 @@ namespace dynamicpupspawns
     [BepInPlugin("dynamicpupspawns", "Dynamic Pup Spawns", "0.1")]
     public class DynamicPupSpawns : BaseUnityPlugin
     {
+        
         private World _world = null;
-
-        private string[] _recognizedPupTypes = { "SlugNPC"/*, "Bup"*/ };
+        private Dictionary<string, string> _persistentPups = null;
+        
+        //For creation and retrieval of save data
+        private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
+        private const string _REGX_STR_SPLIT = "<WM,DPS>";
+        private const string _PUP_DATA_DIVIDER = ":";
         
         private void OnEnable()
         {
@@ -30,12 +35,13 @@ namespace dynamicpupspawns
             On.SaveState.SaveToString += SaveDataToString;
             On.SaveState.LoadGame += GetSaveDataFromString;
         }
-
-        private readonly int _minPupsInRegion = 1;
-        private readonly int _maxPupsInRegion = 5;
+        
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
         {
             _world = self;
+            
+            int minPupsInRegion = 1; 
+            int maxPupsInRegion = 5;
             
             //get rooms with unsubmerged den nodes
             Dictionary <AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
@@ -48,7 +54,7 @@ namespace dynamicpupspawns
             float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
             
             //generate number of pups for this cycle
-            int pupNum = Random.Range(_minPupsInRegion, _maxPupsInRegion + 1);
+            int pupNum = Random.Range(minPupsInRegion, maxPupsInRegion + 1);
             Logger.LogInfo(pupNum + " generated pups this cycle.");
             Debug.Log("DynamicPupSpawns: " + pupNum + " generated pups this cycle.");
             
@@ -171,7 +177,6 @@ namespace dynamicpupspawns
             return roomsArray[roomIndex];
         }
 
-        private Dictionary<string, string> _persistentPups = null;
         private int SpawnPersistentPups(World world, int pupNum)
         {
             if (_persistentPups != null)
@@ -266,10 +271,7 @@ namespace dynamicpupspawns
                 }
             }
         }
-
-        private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
-        private const string _REGX_STR_SPLIT = "<WM,DPS>";
-        private const string _PUP_DATA_DIVIDER = ":";
+        
         private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
         {
             string s = orig(self);
@@ -280,6 +282,8 @@ namespace dynamicpupspawns
             if (_world != null)
             {
                 //make sure not to save pups in shelter player is ins
+
+                string[] recognizedPupTypes = { "SlugNPC"/*, "Bup"*/ };
                 
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
                 {
@@ -294,7 +298,7 @@ namespace dynamicpupspawns
                             /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
                              only detects players, not SlugNPCs. Additionally, Bups and likely others
                              are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
-                            foreach (string pupType in _recognizedPupTypes)
+                            foreach (string pupType in recognizedPupTypes)
                             {
                                 if (abstractCreature.creatureTemplate.type.ToString() == pupType)
                                 {
