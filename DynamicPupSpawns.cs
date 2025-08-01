@@ -217,7 +217,7 @@ namespace dynamicpupspawns
                             AbstractRoom room = world.GetAbstractRoom(pup.Value);
                             if (room != null)
                             {
-                                Logger.LogInfo("Found saved room! " + room.name);
+                                //Logger.LogInfo("Found saved room! " + room.name);
                                 
                                 PutPupInRoom(world.game, world, room, pup.Key, world.game.GetStorySession.characterStats.name);
                                 pupNum--; //persistent pups count towards the total pups spawned per cycle
@@ -413,38 +413,49 @@ namespace dynamicpupspawns
         private void ExtractSaveValues(string modString)
         {
             string[] dataValues = Regex.Split(modString, _REGX_STR_SPLIT);
+            string message = "";
             
-            Dictionary<string, string> pairs = new Dictionary<string, string>();
-            string[] pairContainer;
-            for (int i = 1; i < dataValues.Length; i++)
-            {
-                pairContainer = Regex.Split(dataValues[i], ":");
-                if (pairContainer.Length >= 2)
-                {
-                    pairs.Add(pairContainer[0], pairContainer[1]);
-                }
-                else
-                {
-                    Logger.LogError("Returned invalid data pair while extracting from save string!");
-                }
-            }
-
             if (_persistentPups == null)
             {
                 _persistentPups = new Dictionary<string, string>();
             }
-            foreach (KeyValuePair<string, string> pair in pairs)
+            else
             {
-                try
+                message += "_persistentPups was not null on value extraction from save string.\n";
+                foreach (KeyValuePair<string, string> pair in _persistentPups)
                 {
-                    //EntityID pupID = EntityID.FromString(pair.Key);
-                    _persistentPups.Add(pair.Key, pair.Value);
+                    message +=  pair.Key + " : " + pair.Value + "\n";
                 }
-                catch (Exception e)
+                message += "Clearing _persistentPups!";
+                Logger.LogInfo(message);
+                
+                _persistentPups.Clear();
+            }
+            
+            string[] pairContainer;
+            message = "Adding pups from save data to _persistentPups...\n";
+            for (int i = 0; i < dataValues.Length; i++)
+            {
+                pairContainer = Regex.Split(dataValues[i], ":");
+                if (pairContainer.Length >= 2)
                 {
-                    Debug.LogError(e.Message);
+                    try
+                    {
+                        _persistentPups.Add(pairContainer[0], pairContainer[1]);
+                        message += "Added " + pairContainer[0] + " : " + pairContainer[1] + "\n";
+                    }
+                    catch (Exception e)
+                    {
+                        message += "ERROR: " + e.Message + "\n";
+                        Debug.LogError(e.Message);
+                    }
+                }
+                else
+                {
+                    message += "Returned invalid data pair while extracting from save string!\n";
                 }
             }
+            Logger.LogInfo(message);
         }
     }
 }
