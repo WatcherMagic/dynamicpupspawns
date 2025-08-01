@@ -480,7 +480,7 @@ namespace dynamicpupspawns
                 && !self.dead)
             {
                 string deathMessage =
-                    self.abstractCreature.ID + " died in " + self.room.abstractRoom.name + "! Cause: ";
+                    self.abstractCreature.creatureTemplate.type + " " + self.abstractCreature.ID + " died in " + self.room.abstractRoom.name + "! Cause: ";
                 if (self.killTag != null)
                 {
                     if (self.killTag.realizedCreature != null)
@@ -492,25 +492,21 @@ namespace dynamicpupspawns
                         deathMessage += "Unknown Entity";
                     }
                 }
-                else if (ModManager.MSC && self.Hypothermia > 0)
+                else if (ModManager.MSC && self.Hypothermia >= 2f)
                 {
-                    deathMessage += "\nDebug: Hypothermia was " + self.Hypothermia + " at time of death.";
+                    deathMessage += "Hypothermia";
                 }
-                else if (self.Submersion > 0)
+                else if (self.Submersion >= 1f)
                 {
-                    deathMessage += "\nDebug: Submersion was " + self.Submersion + " at time of death.";
+                    deathMessage += "Drowning";
                 }
                 else if (ModManager.Watcher && self.injectedPoison > 0)
                 {
-                    deathMessage += "\nDebug: Poison was " + self.InjectPoison + "at time of death.";
+                    deathMessage += "Poison";
                 }
                 else if (self.abstractCreature.stuckObjects.Count > 0)
                 {
                     deathMessage += self.abstractCreature.stuckObjects.LastOrDefault();
-                }
-                else if (self.GrabbedByDaddyCorruption)
-                {
-                    deathMessage += "Rot";
                 }
                 else
                 {
