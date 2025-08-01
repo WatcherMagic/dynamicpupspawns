@@ -32,8 +32,10 @@ namespace dynamicpupspawns
 
             On.SaveState.SaveToString += SaveDataToString;
             On.SaveState.LoadGame += GetSaveDataFromString;
+
+            On.Creature.Die += LogPupDeath;
         }
-        
+
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
         {
             _world = self;
@@ -468,6 +470,58 @@ namespace dynamicpupspawns
                 }
             }
             Logger.LogInfo(message);
+        }
+        
+        
+        private void LogPupDeath(On.Creature.orig_Die orig, Creature self)
+        {
+            if (self.GetType() == typeof(Player)
+                && (self as Player).isNPC
+                && !self.dead)
+            {
+                string deathMessage =
+                    self.abstractCreature.ID + " died in " + self.room.abstractRoom.name + "! Cause: ";
+                if (self.killTag != null)
+                {
+                    if (self.killTag.realizedCreature != null)
+                    {
+                        deathMessage += self.killTag.realizedCreature.abstractCreature.creatureTemplate.type.ToString();
+                    }
+                    else
+                    {
+                        deathMessage += "Unknown Entity";
+                    }
+                }
+                else if (ModManager.MSC && self.Hypothermia > 0)
+                {
+                    deathMessage += "\nDebug: Hypothermia was " + self.Hypothermia + " at time of death.";
+                }
+                else if (self.Submersion > 0)
+                {
+                    deathMessage += "\nDebug: Submersion was " + self.Submersion + " at time of death.";
+                }
+                else if (ModManager.Watcher && self.injectedPoison > 0)
+                {
+                    deathMessage += "\nDebug: Poison was " + self.InjectPoison + "at time of death.";
+                }
+                else if (self.abstractCreature.stuckObjects.Count > 0)
+                {
+                    deathMessage += self.abstractCreature.stuckObjects.LastOrDefault();
+                }
+                else if (self.GrabbedByDaddyCorruption)
+                {
+                    deathMessage += "Rot";
+                }
+                else
+                {
+                    deathMessage += "Unknown";
+                }
+                
+                Logger.LogInfo(deathMessage);
+                Debug.Log(deathMessage);
+            }
+            
+            orig(self);
         }
     }
 }
