@@ -21,8 +21,6 @@ namespace dynamicpupspawns
     {
         private World _world = null;
         private Dictionary<string, string> _persistentPups = null;
-
-        private string[] _recognizedPupTypes = { "SlugNPC"/*, "Bup"*/ };
         
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
@@ -305,8 +303,10 @@ namespace dynamicpupspawns
         private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
         {
             string s = orig(self);
+        
+            string[] recognizedPupTypes = { "SlugNPC"/*, "Bup"*/ };
 
-            string data = _SAVE_DATA_DELIMITER + _REGX_STR_SPLIT;
+            string data = _SAVE_DATA_DELIMITER;
             
             string message = "Adding pups to save data...\n";
             if (_world != null)
@@ -315,7 +315,7 @@ namespace dynamicpupspawns
                 
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
                 {
-                    message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
+                    //message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
                     if (!_world.abstractRooms[i].shelter)
                     {
                         foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
@@ -326,7 +326,7 @@ namespace dynamicpupspawns
                             /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
                              only detects players, not SlugNPCs. Additionally, Bups and likely others
                              are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
-                            foreach (string pupType in _recognizedPupTypes)
+                            foreach (string pupType in recognizedPupTypes)
                             {
                                 if (abstractCreature.creatureTemplate.type.ToString() == pupType)
                                 {
@@ -336,6 +336,8 @@ namespace dynamicpupspawns
                         }
                     }
                 }
+                //remove trailing split sequence to prevent unrecognized data pair error at end in ExtractSaveValues()
+                data = data.Remove(data.Length - _REGX_STR_SPLIT.Length, _REGX_STR_SPLIT.Length);
                 message += "Final save string: " + data;
                 Logger.LogInfo(message);
             }
@@ -397,6 +399,7 @@ namespace dynamicpupspawns
                     modString = self.unrecognizedSaveStrings[i];
                     message += "String found!";
                     self.unrecognizedSaveStrings.RemoveAt(i);
+                    modString = modString.Substring(_SAVE_DATA_DELIMITER.Length);
                     break;
                 }
             }
@@ -408,6 +411,7 @@ namespace dynamicpupspawns
             else
             {
                 Logger.LogInfo(message);
+                Logger.LogInfo(modString);
                 ExtractSaveValues(modString);
             }
         }
@@ -416,6 +420,11 @@ namespace dynamicpupspawns
         {
             string[] dataValues = Regex.Split(modString, _REGX_STR_SPLIT);
             string message = "";
+
+            // foreach (string s in dataValues)
+            // {
+            //     Logger.LogInfo("Data values: " + s);
+            // }
             
             if (_persistentPups == null)
             {
