@@ -20,8 +20,13 @@ namespace dynamicpupspawns
     public class DynamicPupSpawns : BaseUnityPlugin
     {
         private World _world = null;
+        private Dictionary<string, string> _persistentPups = null;
 
         private string[] _recognizedPupTypes = { "SlugNPC"/*, "Bup"*/ };
+        
+        private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
+        private const string _REGX_STR_SPLIT = "<WM,DPS>";
+        private const string _PUP_DATA_DIVIDER = ":";
         
         private void OnEnable()
         {
@@ -201,8 +206,7 @@ namespace dynamicpupspawns
             
             return roomsArray[roomIndex];
         }
-
-        private Dictionary<string, string> _persistentPups = null;
+        
         private int SpawnPersistentPups(World world, int pupNum)
         {
             if (_persistentPups != null)
@@ -297,9 +301,7 @@ namespace dynamicpupspawns
                 }
             }
         }
-
-        private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
-        private const string _REGX_STR_SPLIT = "<WM,DPS>";
+        
         private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
         {
             string s = orig(self);
@@ -328,7 +330,7 @@ namespace dynamicpupspawns
                             {
                                 if (abstractCreature.creatureTemplate.type.ToString() == pupType)
                                 {
-                                    data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
+                                    data += abstractCreature.ID + _PUP_DATA_DIVIDER + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
                                 }
                             }
                         }
