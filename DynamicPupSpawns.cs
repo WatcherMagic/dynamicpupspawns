@@ -40,8 +40,8 @@ namespace dynamicpupspawns
         {
             _world = self;
             
-            int minPupsInRegion = 1; 
-            int maxPupsInRegion = 5;
+            int minPupsInRegion = 0; 
+            int maxPupsInRegion = 7;
             
             //get rooms with unsubmerged den nodes
             Dictionary <AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
@@ -54,7 +54,8 @@ namespace dynamicpupspawns
             float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
             
             //generate number of pups for this cycle
-            int pupNum = Random.Range(minPupsInRegion, maxPupsInRegion + 1);
+            int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion);
+            //int pupNum = Random.Range(minPupsInRegion, maxPupsInRegion + 1);
             Logger.LogInfo(pupNum + " generated pups this cycle.");
             Debug.Log("DynamicPupSpawns: " + pupNum + " generated pups this cycle.");
             
@@ -75,6 +76,34 @@ namespace dynamicpupspawns
             }
             
             return orig(self);
+        }
+
+        private int RandomPupGaussian(float min, float max)
+        {
+            //thanks lancelot18
+
+            float u, v, S;
+
+            do
+            {
+                u = 2.0f * Random.value - 1.0f;
+                v = 2.0f * Random.value - 1.0f;
+                S = u * u + v * v;
+            }
+            while (S >= 1.0f);
+
+            // Standard Normal Distribution
+            float std = u * Mathf.Sqrt(-2.0f * Mathf.Log(S) / S);
+
+            // clamped following the "three-sigma rule"
+            float mean = min + (max - min) * 0.3f;
+            Logger.LogInfo("Gausian mean: " + mean.ToString("00.##"));
+            float sigma = (max - mean) / 3.0f;
+            float result = Mathf.Clamp(std * sigma + mean, min, max);
+            Logger.LogInfo("Gausian random: " + result.ToString("00.##"));
+            Logger.LogInfo("Gausian random int: " + (int)result);
+            
+            return (int)result;
         }
 
         private Dictionary<AbstractRoom, int> GetRoomsWithViableDens(World world)
@@ -287,13 +316,13 @@ namespace dynamicpupspawns
                 
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
                 {
-                    message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
+                    //message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
                     if (!_world.abstractRooms[i].shelter)
                     {
                         foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
                         {
                             //List<string> roomExceptions = new List<string>();
-                            //message += "Found creature! " + abstractCreature.creatureTemplate.type + "\n";
+                            message += "Found creature! " + abstractCreature.creatureTemplate.type + " " + abstractCreature.ID + "\n";
                         
                             /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
                              only detects players, not SlugNPCs. Additionally, Bups and likely others
