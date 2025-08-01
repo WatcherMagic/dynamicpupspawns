@@ -52,8 +52,8 @@ namespace dynamicpupspawns
             float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
             
             //generate number of pups for this cycle
-            int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion);
-            //int pupNum = Random.Range(_minPupsInRegion, _maxPupsInRegion + 1);
+            // + 1 to max to account for rounding down w/ cast to int
+            int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
             
             //respawn pups from save data
             pupNum = SpawnPersistentPups(self, pupNum);
