@@ -38,8 +38,8 @@ namespace dynamicpupspawns
         {
             _world = self;
             
-            int minPupsInRegion = 1;
-            int maxPupsInRegion = 10;
+            int minPupsInRegion = 0;
+            int maxPupsInRegion = 5;
             
             //get rooms with unsubmerged den nodes
             Dictionary <AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
