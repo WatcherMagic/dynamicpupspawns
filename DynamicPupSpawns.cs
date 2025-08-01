@@ -19,14 +19,9 @@ namespace dynamicpupspawns
     [BepInPlugin("dynamicpupspawns", "Dynamic Pup Spawns", "0.1")]
     public class DynamicPupSpawns : BaseUnityPlugin
     {
-        
         private World _world = null;
-        private Dictionary<string, string> _persistentPups = null;
-        
-        //For creation and retrieval of save data
-        private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
-        private const string _REGX_STR_SPLIT = "<WM,DPS>";
-        private const string _PUP_DATA_DIVIDER = ":";
+
+        private string[] _recognizedPupTypes = { "SlugNPC"/*, "Bup"*/ };
         
         private void OnEnable()
         {
@@ -40,8 +35,8 @@ namespace dynamicpupspawns
         {
             _world = self;
             
-            int minPupsInRegion = 0; 
-            int maxPupsInRegion = 7;
+            int minPupsInRegion = 1;
+            int maxPupsInRegion = 10;
             
             //get rooms with unsubmerged den nodes
             Dictionary <AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
@@ -55,9 +50,7 @@ namespace dynamicpupspawns
             
             //generate number of pups for this cycle
             int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion);
-            //int pupNum = Random.Range(minPupsInRegion, maxPupsInRegion + 1);
-            Logger.LogInfo(pupNum + " generated pups this cycle.");
-            Debug.Log("DynamicPupSpawns: " + pupNum + " generated pups this cycle.");
+            //int pupNum = Random.Range(_minPupsInRegion, _maxPupsInRegion + 1);
             
             //respawn pups from save data
             pupNum = SpawnPersistentPups(self, pupNum);
@@ -98,14 +91,17 @@ namespace dynamicpupspawns
             // clamped following the "three-sigma rule"
             float mean = min + (max - min) * 0.3f;
             Logger.LogInfo("Gausian mean: " + mean.ToString("00.##"));
+            Debug.Log("DynamicPupSpawns: Gaussian mean: " + mean);
             float sigma = (max - mean) / 3.0f;
             float result = Mathf.Clamp(std * sigma + mean, min, max);
             Logger.LogInfo("Gausian random: " + result.ToString("00.##"));
+            Debug.Log("DynamicPupSpawns: Gausian random: " + result.ToString("00.##"));
             Logger.LogInfo("Gausian random int: " + (int)result);
+            Debug.Log("DynamicPupSpawns: Gausian random int: " + (int)result);
             
             return (int)result;
         }
-
+        
         private Dictionary<AbstractRoom, int> GetRoomsWithViableDens(World world)
         {
             //get all rooms in region with den nodes that are not submerged
@@ -206,6 +202,7 @@ namespace dynamicpupspawns
             return roomsArray[roomIndex];
         }
 
+        private Dictionary<string, string> _persistentPups = null;
         private int SpawnPersistentPups(World world, int pupNum)
         {
             if (_persistentPups != null)
@@ -300,7 +297,9 @@ namespace dynamicpupspawns
                 }
             }
         }
-        
+
+        private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
+        private const string _REGX_STR_SPLIT = "<WM,DPS>";
         private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
         {
             string s = orig(self);
@@ -311,27 +310,25 @@ namespace dynamicpupspawns
             if (_world != null)
             {
                 //make sure not to save pups in shelter player is ins
-
-                string[] recognizedPupTypes = { "SlugNPC"/*, "Bup"*/ };
                 
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
                 {
-                    //message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
+                    message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
                     if (!_world.abstractRooms[i].shelter)
                     {
                         foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
                         {
                             //List<string> roomExceptions = new List<string>();
-                            message += "Found creature! " + abstractCreature.creatureTemplate.type + " " + abstractCreature.ID + "\n";
+                            //message += "Found creature! " + abstractCreature.creatureTemplate.type + "\n";
                         
                             /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
                              only detects players, not SlugNPCs. Additionally, Bups and likely others
                              are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
-                            foreach (string pupType in recognizedPupTypes)
+                            foreach (string pupType in _recognizedPupTypes)
                             {
                                 if (abstractCreature.creatureTemplate.type.ToString() == pupType)
                                 {
-                                    data += abstractCreature.ID + _PUP_DATA_DIVIDER + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
+                                    data += abstractCreature.ID + ":" + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
                                 }
                             }
                         }
@@ -390,15 +387,14 @@ namespace dynamicpupspawns
             
             string message = "Looking for mod save string from SaveState... ";
 
-            string[] modString = null;
+            string modString = null;
             for (int i = 0; i < self.unrecognizedSaveStrings.Count; i++)
             {
                 if (self.unrecognizedSaveStrings[i].StartsWith(_SAVE_DATA_DELIMITER))
                 {
-                    string modStr = self.unrecognizedSaveStrings[i];
+                    modString = self.unrecognizedSaveStrings[i];
                     message += "String found!";
                     self.unrecognizedSaveStrings.RemoveAt(i);
-                    modString = Regex.Split(modStr, _SAVE_DATA_DELIMITER);
                     break;
                 }
             }
@@ -410,7 +406,7 @@ namespace dynamicpupspawns
             else
             {
                 Logger.LogInfo(message);
-                ExtractSaveValues(modString[0]);
+                ExtractSaveValues(modString);
             }
         }
 
@@ -418,26 +414,35 @@ namespace dynamicpupspawns
         {
             string[] dataValues = Regex.Split(modString, _REGX_STR_SPLIT);
             
-            if (_persistentPups == null)
-            {
-                _persistentPups = new Dictionary<string, string>();
-            }
-            else
-            {
-                _persistentPups.Clear();
-            }
-            
+            Dictionary<string, string> pairs = new Dictionary<string, string>();
             string[] pairContainer;
             for (int i = 1; i < dataValues.Length; i++)
             {
-                pairContainer = Regex.Split(dataValues[i], _PUP_DATA_DIVIDER);
-                if (pairContainer.Length == 2)
+                pairContainer = Regex.Split(dataValues[i], ":");
+                if (pairContainer.Length >= 2)
                 {
-                    _persistentPups.Add(pairContainer[0], pairContainer[1]);
+                    pairs.Add(pairContainer[0], pairContainer[1]);
                 }
                 else
                 {
                     Logger.LogError("Returned invalid data pair while extracting from save string!");
+                }
+            }
+
+            if (_persistentPups == null)
+            {
+                _persistentPups = new Dictionary<string, string>();
+            }
+            foreach (KeyValuePair<string, string> pair in pairs)
+            {
+                try
+                {
+                    //EntityID pupID = EntityID.FromString(pair.Key);
+                    _persistentPups.Add(pair.Key, pair.Value);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(e.Message);
                 }
             }
         }
