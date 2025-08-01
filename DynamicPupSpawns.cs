@@ -54,6 +54,7 @@ namespace dynamicpupspawns
             //generate number of pups for this cycle
             // + 1 to max to account for rounding down w/ cast to int
             int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
+            Debug.Log("DynamicPupSpawns: " + pupNum + " pups this cycle");
             
             //respawn pups from save data
             pupNum = SpawnPersistentPups(self, pupNum);
@@ -93,14 +94,14 @@ namespace dynamicpupspawns
 
             // clamped following the "three-sigma rule"
             float mean = min + (max - min) * 0.3f;
-            Logger.LogInfo("Gausian mean: " + mean.ToString("00.##"));
-            Debug.Log("DynamicPupSpawns: Gaussian mean: " + mean);
+            //Logger.LogInfo("Gausian mean: " + mean.ToString("00.##"));
+            //Debug.Log("DynamicPupSpawns: Gaussian mean: " + mean);
             float sigma = (max - mean) / 3.0f;
             float result = Mathf.Clamp(std * sigma + mean, min, max);
-            Logger.LogInfo("Gausian random: " + result.ToString("00.##"));
-            Debug.Log("DynamicPupSpawns: Gausian random: " + result.ToString("00.##"));
-            Logger.LogInfo("Gausian random int: " + (int)result);
-            Debug.Log("DynamicPupSpawns: Gausian random int: " + (int)result);
+            //Logger.LogInfo("Gausian random: " + result.ToString("00.##"));
+            //Debug.Log("DynamicPupSpawns: Gausian random: " + result.ToString("00.##"));
+            //Logger.LogInfo("Gausian random int: " + (int)result);
+            //Debug.Log("DynamicPupSpawns: Gausian random int: " + (int)result);
             
             return (int)result;
         }
