@@ -5,37 +5,15 @@ namespace dynamicpupspawns;
 public class CustomCampaignSettings
 {
     public string CampaignID { get; }
-    public bool SpawnsDynamicPups { get; set; }
-    private int _minPups = -1;
-    public int MinPups
-    {
-        get => _minPups;
-    }
-    private int _maxPups = -1;
-    public int MaxPups
-    {
-        get => _maxPups;
-    }
+    private PupSpawnSettings _pupSpawnSettings;
+    public PupSpawnSettings PupSpawnSettings { get => _pupSpawnSettings; }
     
     private List<CustomRegionSettings> _campaignRegionSettings = new List<CustomRegionSettings>();
 
-    public CustomCampaignSettings(string id)
+    public CustomCampaignSettings(string id, PupSpawnSettings pupSpawnSettings)
     {
         CampaignID = id;
-    }
-
-    public bool SetMinAndMaxPups(int min, int max)
-    {
-        if (min > max)
-        {
-            return false;
-        }
-        else
-        {
-            _minPups = min;
-            _maxPups = max;
-            return true;
-        }
+        _pupSpawnSettings = pupSpawnSettings;
     }
 
     public void AddCampaignRegionSettings(CustomRegionSettings regionSettings)
@@ -61,9 +39,9 @@ public class CustomCampaignSettings
         string s = "CustomCampaignSettings Object:\n";
         
         s += "Campaign ID*: " + CampaignID + "\n";
-        s += "Spawns Dynamic Pups: " +  SpawnsDynamicPups + "\n";
-        s += "MinPups: " + MinPups + "\n";
-        s += "MaxPups: " + MaxPups + "\n";
+        s += "Spawns Dynamic Pups: " +  PupSpawnSettings.SpawnsDynamicPups + "\n";
+        s += "MinPups: " + PupSpawnSettings.MinPups + "\n";
+        s += "MaxPups: " + PupSpawnSettings.MaxPups + "\n";
         s += "Campaign Region Settings:\n";
         foreach (CustomRegionSettings regionSettings in _campaignRegionSettings)
         {

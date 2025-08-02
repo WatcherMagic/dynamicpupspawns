@@ -569,11 +569,10 @@ namespace dynamicpupspawns
             }
             
             CustomSettingsWrapper testSettings = new CustomSettingsWrapper("test");
-            CustomCampaignSettings testCampaign = new CustomCampaignSettings("testcampaign");
-            testCampaign.SpawnsDynamicPups = true;
-            testCampaign.SetMinAndMaxPups(1, 2);
-            CustomRegionSettings testRegion = new CustomRegionSettings("TR", true);
-            testRegion.SetMinAndMaxPups(3, 4);
+            PupSpawnSettings pupSpawn1  = new PupSpawnSettings(true, 1, 2);
+            CustomCampaignSettings testCampaign = new CustomCampaignSettings("testcampaign", pupSpawn1);
+            PupSpawnSettings pupSpawn2 = new PupSpawnSettings(true, 3, 4);
+            CustomRegionSettings testRegion = new CustomRegionSettings("TR", pupSpawn2);
             testRegion.AddOverriddenRoom("TR_Room1", false);
             testRegion.AddOverriddenRoom("TR_Room2", true);
             testCampaign.AddCampaignRegionSettings(testRegion);
