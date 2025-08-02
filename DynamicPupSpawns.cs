@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using BepInEx;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using System.IO;
 
 namespace dynamicpupspawns
 {
@@ -16,9 +17,11 @@ namespace dynamicpupspawns
     //soft dependencies:
     //"priorities": ["mod_id_1", "mod_id_2", "etc"]
 
-    [BepInPlugin("dynamicpupspawns", "Dynamic Pup Spawns", "0.1")]
+    [BepInPlugin(MOD_ID, "Dynamic Pup Spawns", "0.1")]
     public class DynamicPupSpawns : BaseUnityPlugin
     {
+        private const string MOD_ID = "dynamicpupspawns";
+        
         private World _world = null;
         private Dictionary<string, string> _persistentPups = null;
         
@@ -26,14 +29,17 @@ namespace dynamicpupspawns
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
         private const string _PUP_DATA_DIVIDER = ":";
         
+        
         private void OnEnable()
-        {
+        {   
             On.World.SpawnPupNPCs += SpawnPups;
 
             On.SaveState.SaveToString += SaveDataToString;
             On.SaveState.LoadGame += GetSaveDataFromString;
 
             On.Creature.Die += LogPupDeath;
+            
+            On.ModManager.WrapPostModsInit += ProcessCustomData;
         }
 
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
@@ -77,7 +83,7 @@ namespace dynamicpupspawns
             return orig(self);
         }
 
-        private int RandomPupGaussian(float min, float max)
+        public int RandomPupGaussian(float min, float max)
         {
             //thanks lancelot18
 
@@ -96,14 +102,8 @@ namespace dynamicpupspawns
 
             // clamped following the "three-sigma rule"
             float mean = min + (max - min) * 0.3f;
-            //Logger.LogInfo("Gausian mean: " + mean.ToString("00.##"));
-            //Debug.Log("DynamicPupSpawns: Gaussian mean: " + mean);
             float sigma = (max - mean) / 3.0f;
             float result = Mathf.Clamp(std * sigma + mean, min, max);
-            //Logger.LogInfo("Gausian random: " + result.ToString("00.##"));
-            //Debug.Log("DynamicPupSpawns: Gausian random: " + result.ToString("00.##"));
-            //Logger.LogInfo("Gausian random int: " + (int)result);
-            //Debug.Log("DynamicPupSpawns: Gausian random int: " + (int)result);
             
             return (int)result;
         }
@@ -247,7 +247,7 @@ namespace dynamicpupspawns
             return pupNum;
         }
 
-        private void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, string pupID,
+        public void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, string pupID,
             SlugcatStats.Name curSlug)
         {
             bool temp = false;
@@ -518,6 +518,64 @@ namespace dynamicpupspawns
             }
             
             orig(self);
+        }
+        
+        private void ProcessCustomData(On.ModManager.orig_WrapPostModsInit orig)
+        {
+            orig();
+            
+            foreach (ModManager.Mod mod in ModManager.ActiveMods)
+            {
+                bool depends = false;
+                for (int i = 0; i < mod.requirements.Length; i++)
+                {
+                    if (mod.requirements[i] == MOD_ID)
+                    {
+                        depends = true;
+                        Logger.LogInfo("Found dependent!: " + mod.name);
+                        GetSettings(mod);
+                        break;
+                    }
+                }
+
+                if (!depends)
+                {
+                    for (int i = 0; i < mod.priorities.Length; i++)
+                    {
+                        if (mod.priorities[i] == MOD_ID)
+                        {
+                            Logger.LogInfo("Found priority!: " + mod.name);
+                            GetSettings(mod);
+                        }
+                    }
+                }
+            }
+        }
+
+        public string GetSettings(ModManager.Mod mod)
+        {
+            Logger.LogInfo("Getting settings!");
+            string filePath = mod.path + "\\dynamicpups\\settings.txt";
+            Logger.LogInfo(filePath);
+
+            string content = null;
+            try
+            {
+                content = File.ReadAllText(filePath);
+                Logger.LogInfo(content);
+            }
+            catch (FileNotFoundException e)
+            {
+                Logger.LogError("Couldn't find the custom settings file for " + mod.name + "!");
+                Debug.LogException(e);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e.Message);
+                Debug.LogException(e);
+            }
+
+            return content;
         }
     }
 }
