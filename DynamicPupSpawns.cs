@@ -21,49 +21,50 @@ namespace dynamicpupspawns
     public class DynamicPupSpawns : BaseUnityPlugin
     {
         private const string MOD_ID = "dynamicpupspawns";
-        
+
         private World _world = null;
         private Dictionary<string, string> _persistentPups = null;
-        
+
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
         private const string _PUP_DATA_DIVIDER = ":";
-        
-        
+
+        private List<CustomSettingsWrapper> _settings;
+
         private void OnEnable()
-        {   
+        {
             On.World.SpawnPupNPCs += SpawnPups;
 
             On.SaveState.SaveToString += SaveDataToString;
             On.SaveState.LoadGame += GetSaveDataFromString;
 
             On.Creature.Die += LogPupDeath;
-            
+
             On.ModManager.WrapPostModsInit += ProcessCustomData;
         }
 
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
         {
             _world = self;
-            
+
             int minPupsInRegion = 0;
             int maxPupsInRegion = 5;
-            
+
             //get rooms with unsubmerged den nodes
-            Dictionary <AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
-            
+            Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
+
             //determine room spawn weight based on number of dens in room
             Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
-            
+
             //get dict of rooms and weights in parallel arrays
             Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
             float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
-            
+
             //generate number of pups for this cycle
             // + 1 to max to account for rounding down w/ cast to int
             int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
             Debug.Log("DynamicPupSpawns: " + pupNum + " pups this cycle");
-            
+
             //respawn pups from save data
             pupNum = SpawnPersistentPups(self, pupNum);
 
@@ -79,7 +80,7 @@ namespace dynamicpupspawns
                     }
                 }
             }
-            
+
             return orig(self);
         }
 
@@ -94,8 +95,7 @@ namespace dynamicpupspawns
                 u = 2.0f * Random.value - 1.0f;
                 v = 2.0f * Random.value - 1.0f;
                 S = u * u + v * v;
-            }
-            while (S >= 1.0f);
+            } while (S >= 1.0f);
 
             // Standard Normal Distribution
             float std = u * Mathf.Sqrt(-2.0f * Mathf.Log(S) / S);
@@ -104,15 +104,15 @@ namespace dynamicpupspawns
             float mean = min + (max - min) * 0.3f;
             float sigma = (max - mean) / 3.0f;
             float result = Mathf.Clamp(std * sigma + mean, min, max);
-            
+
             return (int)result;
         }
-        
+
         private Dictionary<AbstractRoom, int> GetRoomsWithViableDens(World world)
         {
             //get all rooms in region with den nodes that are not submerged
             Dictionary<AbstractRoom, int> roomsWithDens = new Dictionary<AbstractRoom, int>();
-            
+
             int densInRoom = 0;
             foreach (AbstractRoom room in world.abstractRooms)
             {
@@ -125,36 +125,40 @@ namespace dynamicpupspawns
                             densInRoom++;
                         }
                     }
+
                     if (densInRoom != 0)
                     {
                         roomsWithDens.Add(room, densInRoom);
                     }
+
                     densInRoom = 0;
                 }
             }
-            
+
             return roomsWithDens;
         }
 
         private Dictionary<AbstractRoom, float> CalculateRoomSpawnWeight(Dictionary<AbstractRoom, int> roomsAndDens)
         {
             //determine chance of pups spawning vs other rooms
-             Dictionary<AbstractRoom, float> spawnWeights = new Dictionary<AbstractRoom, float>();
-            
-             int totalDens = 0;
-             foreach (KeyValuePair<AbstractRoom, int> pair in roomsAndDens)
-             {
-                 totalDens += pair.Value;
-             }
-            
-             foreach (KeyValuePair<AbstractRoom, int> pair in roomsAndDens)
-             {
-                 spawnWeights.Add(pair.Key, pair.Value / (float)totalDens);                    
-             }
+            Dictionary<AbstractRoom, float> spawnWeights = new Dictionary<AbstractRoom, float>();
+
+            int totalDens = 0;
+            foreach (KeyValuePair<AbstractRoom, int> pair in roomsAndDens)
+            {
+                totalDens += pair.Value;
+            }
+
+            foreach (KeyValuePair<AbstractRoom, int> pair in roomsAndDens)
+            {
+                spawnWeights.Add(pair.Key, pair.Value / (float)totalDens);
+            }
+
             return spawnWeights;
         }
 
-        private Dictionary<AbstractRoom[], float[]> CreateParallelRoomWeightArrays(Dictionary<AbstractRoom, float> roomWeights)
+        private Dictionary<AbstractRoom[], float[]> CreateParallelRoomWeightArrays(
+            Dictionary<AbstractRoom, float> roomWeights)
         {
             //move weights and rooms into parallel arrays
             float[] weights = new float[roomWeights.Count];
@@ -168,11 +172,12 @@ namespace dynamicpupspawns
             }
 
             //dict to be returned
-            Dictionary<AbstractRoom[], float[]> parallelArrays = new Dictionary<AbstractRoom[], float[]> { { rooms, weights } };
-            
+            Dictionary<AbstractRoom[], float[]> parallelArrays = new Dictionary<AbstractRoom[], float[]>
+                { { rooms, weights } };
+
             return parallelArrays;
         }
-        
+
         private float[] AssignSortedRoomScaleValues(float[] weightsArray)
         {
             //change indexes of weightsArray to increment to total weight in ascending order
@@ -182,15 +187,15 @@ namespace dynamicpupspawns
                 scaleValue += weightsArray[i];
                 weightsArray[i] = scaleValue;
             }
-            
+
             return weightsArray;
         }
-        
+
         private AbstractRoom PickRandomRoomByWeight(AbstractRoom[] roomsArray, float[] weightsArray)
         {
             //pick room that corresponds to the randomly selected number on the weight scale
             float totalWeight = weightsArray[weightsArray.Length - 1];
-            
+
             int roomIndex;
             float randNum = Random.Range(0f, totalWeight);
             for (roomIndex = 0; roomIndex < weightsArray.Length; roomIndex++)
@@ -199,15 +204,16 @@ namespace dynamicpupspawns
                 {
                     break;
                 }
+
                 if (weightsArray[roomIndex] <= randNum && randNum <= weightsArray[roomIndex + 1])
                 {
                     break;
                 }
             }
-            
+
             return roomsArray[roomIndex];
         }
-        
+
         private int SpawnPersistentPups(World world, int pupNum)
         {
             if (_persistentPups != null)
@@ -223,8 +229,9 @@ namespace dynamicpupspawns
                             if (room != null)
                             {
                                 //Logger.LogInfo("Found saved room! " + room.name);
-                                
-                                PutPupInRoom(world.game, world, room, pup.Key, world.game.GetStorySession.characterStats.name);
+
+                                PutPupInRoom(world.game, world, room, pup.Key,
+                                    world.game.GetStorySession.characterStats.name);
                                 pupNum--; //persistent pups count towards the total pups spawned per cycle
                             }
                             else
@@ -237,7 +244,7 @@ namespace dynamicpupspawns
                     {
                         Logger.LogError("Region acronym could not be pulled from room name " + pup.Value + "!");
                     }
-                }                
+                }
             }
             else
             {
@@ -272,14 +279,14 @@ namespace dynamicpupspawns
                         //spawn new pup with random ID
                         id = game.GetNewID();
                     }
-                    
+
                     //copied from AbstractRoom.RealizeRoom()
                     AbstractCreature abstractPup = new AbstractCreature(world,
                         StaticWorld.GetCreatureTemplate(MoreSlugcats.MoreSlugcatsEnums.CreatureTemplateType.SlugNPC),
                         null,
                         new WorldCoordinate(room.index, -1, -1, 0),
                         id);
-                    
+
                     try
                     {
                         room.AddEntity(abstractPup);
@@ -291,9 +298,11 @@ namespace dynamicpupspawns
                         {
                             Logger.LogError(e.Message);
                         }
-                        
-                        Logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
-                        Debug.Log("DynamicPupSpawns: " + abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " + abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
+
+                        Logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " +
+                                       abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
+                        Debug.Log("DynamicPupSpawns: " + abstractPup.creatureTemplate.type + " " + abstractPup.ID +
+                                  " spawned in " + abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
                     }
                     catch (Exception e)
                     {
@@ -302,20 +311,20 @@ namespace dynamicpupspawns
                 }
             }
         }
-        
+
         private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
         {
             string s = orig(self);
-        
-            string[] recognizedPupTypes = { "SlugNPC"/*, "Bup"*/ };
+
+            string[] recognizedPupTypes = { "SlugNPC" /*, "Bup"*/ };
 
             string data = _SAVE_DATA_DELIMITER;
-            
+
             string message = "Adding pups to save data...\n";
             if (_world != null)
             {
                 //make sure not to save pups in shelter player is ins
-                
+
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
                 {
                     //message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
@@ -325,7 +334,7 @@ namespace dynamicpupspawns
                         {
                             //List<string> roomExceptions = new List<string>();
                             //message += "Found creature! " + abstractCreature.creatureTemplate.type + "\n";
-                        
+
                             /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
                              only detects players, not SlugNPCs. Additionally, Bups and likely others
                              are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
@@ -333,12 +342,14 @@ namespace dynamicpupspawns
                             {
                                 if (abstractCreature.creatureTemplate.type.ToString() == pupType)
                                 {
-                                    data += abstractCreature.ID + _PUP_DATA_DIVIDER + _world.abstractRooms[i].name + _REGX_STR_SPLIT;
+                                    data += abstractCreature.ID + _PUP_DATA_DIVIDER + _world.abstractRooms[i].name +
+                                            _REGX_STR_SPLIT;
                                 }
                             }
                         }
                     }
                 }
+
                 //remove trailing split sequence to prevent unrecognized data pair error at end in ExtractSaveValues()
                 data = data.Remove(data.Length - _REGX_STR_SPLIT.Length, _REGX_STR_SPLIT.Length);
                 message += "Final save string: " + data;
@@ -348,12 +359,12 @@ namespace dynamicpupspawns
             {
                 Logger.LogError("_world was null, cannot save abstract pups!");
             }
-            
+
             s = String.Concat(s, data, "<svA>");
-            
+
             return s;
         }
-        
+
         //currently holdover
         private void SubstringEntityID(AbstractCreature abstractCreature)
         {
@@ -380,18 +391,19 @@ namespace dynamicpupspawns
                 else
                 {
                     //message += "Failed to retrieve int from ID substring!\n";
-                }   
+                }
             }
             else
             {
                 //message += "ID substring ended in '.'!\n";
             }
         }
-        
-        private void GetSaveDataFromString(On.SaveState.orig_LoadGame orig, SaveState self, string str, RainWorldGame game)
+
+        private void GetSaveDataFromString(On.SaveState.orig_LoadGame orig, SaveState self, string str,
+            RainWorldGame game)
         {
             orig(self, str, game);
-            
+
             string message = "Looking for mod save string from SaveState... ";
 
             string modString = null;
@@ -406,6 +418,7 @@ namespace dynamicpupspawns
                     break;
                 }
             }
+
             if (modString == null)
             {
                 message += "Couldn't find mod save data!";
@@ -428,7 +441,7 @@ namespace dynamicpupspawns
             // {
             //     Logger.LogInfo("Data values: " + s);
             // }
-            
+
             if (_persistentPups == null)
             {
                 _persistentPups = new Dictionary<string, string>();
@@ -438,14 +451,15 @@ namespace dynamicpupspawns
                 message += "_persistentPups was not null on value extraction from save string.\n";
                 foreach (KeyValuePair<string, string> pair in _persistentPups)
                 {
-                    message +=  pair.Key + " : " + pair.Value + "\n";
+                    message += pair.Key + " : " + pair.Value + "\n";
                 }
+
                 message += "Clearing _persistentPups!";
                 Logger.LogInfo(message);
-                
+
                 _persistentPups.Clear();
             }
-            
+
             string[] pairContainer;
             message = "Adding pups from save data to _persistentPups...\n";
             for (int i = 0; i < dataValues.Length; i++)
@@ -469,10 +483,11 @@ namespace dynamicpupspawns
                     message += "Returned invalid data pair while extracting from save string!\n";
                 }
             }
+
             Logger.LogInfo(message);
         }
-        
-        
+
+
         private void LogPupDeath(On.Creature.orig_Die orig, Creature self)
         {
             if (self.GetType() == typeof(Player)
@@ -480,7 +495,8 @@ namespace dynamicpupspawns
                 && !self.dead)
             {
                 string deathMessage =
-                    self.abstractCreature.creatureTemplate.type + " " + self.abstractCreature.ID + " died in " + self.room.abstractRoom.name + "! Cause: ";
+                    self.abstractCreature.creatureTemplate.type + " " + self.abstractCreature.ID + " died in " +
+                    self.room.abstractRoom.name + "! Cause: ";
                 if (self.killTag != null)
                 {
                     if (self.killTag.realizedCreature != null)
@@ -512,28 +528,29 @@ namespace dynamicpupspawns
                 {
                     deathMessage += "Unknown";
                 }
-                
+
                 Logger.LogInfo(deathMessage);
                 Debug.Log(deathMessage);
             }
-            
+
             orig(self);
         }
-        
+
         private void ProcessCustomData(On.ModManager.orig_WrapPostModsInit orig)
         {
             orig();
-            
+
             foreach (ModManager.Mod mod in ModManager.ActiveMods)
             {
                 bool depends = false;
+                string filePath = mod.path + "\\dynamicpups\\settings.txt";
                 for (int i = 0; i < mod.requirements.Length; i++)
                 {
                     if (mod.requirements[i] == MOD_ID)
                     {
                         depends = true;
                         Logger.LogInfo("Found dependent!: " + mod.name);
-                        GetSettings(mod);
+                        ProcessSettings(filePath, mod.id);
                         break;
                     }
                 }
@@ -545,28 +562,58 @@ namespace dynamicpupspawns
                         if (mod.priorities[i] == MOD_ID)
                         {
                             Logger.LogInfo("Found priority!: " + mod.name);
-                            GetSettings(mod);
+                            ProcessSettings(filePath, mod.id);
+                            break;
                         }
                     }
                 }
             }
+
+            string message = "Finished processing custom settings for dependents!:\n";
+            foreach (CustomSettingsWrapper wrapper in _settings)
+            {
+                message += wrapper.ToString();
+            }
+            Logger.LogInfo(message);
         }
 
-        public string GetSettings(ModManager.Mod mod)
+        private void ProcessSettings(string filePath, string modID)
         {
-            Logger.LogInfo("Getting settings!");
-            string filePath = mod.path + "\\dynamicpups\\settings.txt";
-            Logger.LogInfo(filePath);
+            Logger.LogInfo("Parsing settings for " + modID + ":");
 
-            string content = null;
+            if (_settings == null)
+            {
+                Logger.LogInfo("Creating new global settings list\n");
+                _settings = new List<CustomSettingsWrapper>();
+            }
+
+            CustomSettingsWrapper modSettings = new CustomSettingsWrapper(modID);
+
+            string line;
             try
             {
-                content = File.ReadAllText(filePath);
-                Logger.LogInfo(content);
+                StreamReader reader = new StreamReader(filePath);
+                while (reader.Peek() >= 0)
+                {
+                    line = reader.ReadLine();
+                    if (line == "CAMPAIGN")
+                    {
+                        Tuple<CustomCampaignSettings, StreamReader> result = ParseCampaignSettings(reader);
+                        modSettings.AddCampaignSettings(result.Item1);
+                        reader = result.Item2;
+                    }
+
+                    if (line == "REGIONS")
+                    {
+                        Tuple<CustomRegionSettings, StreamReader> result = ParseRegionSettings(reader);
+                        modSettings.AddRegionSettings(result.Item1);
+                        reader = result.Item2;
+                    }
+                }
             }
             catch (FileNotFoundException e)
             {
-                Logger.LogError("Couldn't find the custom settings file for " + mod.name + "!");
+                Logger.LogError("Couldn't find the custom settings file for " + modID + "!");
                 Debug.LogException(e);
             }
             catch (Exception e)
@@ -574,8 +621,212 @@ namespace dynamicpupspawns
                 Logger.LogError(e.Message);
                 Debug.LogException(e);
             }
+            
+            Logger.LogInfo("Finished parsing for " + modID + "!");
+            _settings.Add(modSettings);
+        }
+        
+        private Tuple<CustomCampaignSettings, StreamReader> ParseCampaignSettings(StreamReader reader)
+        {
+            string message = "Parsing Campaign Settings... ";
+            
+            bool parsingRegions = false;
+            List<string> regionSettingsContainer = new List<string>();
 
-            return content;
+            CustomCampaignSettings campaign = null;
+            
+            string line;
+            while (reader.Peek() >= 0)
+            {
+                line = reader.ReadLine();
+                if (line == "END_CAMPAIGN")
+                {
+                    break;
+                }
+
+                if (campaign == null && line.StartsWith("ID"))
+                {
+                    campaign = new CustomCampaignSettings(ParseString(line));
+                }
+                else if (campaign == null)
+                {
+                    message += "Did not find Campaign ID after declaration, aborting!";
+                    Logger.LogInfo(message);
+                    return new Tuple<CustomCampaignSettings, StreamReader>(null, reader);
+                }
+
+                if (line.StartsWith("PUPS_SPAWN"))
+                {
+                    campaign.SpawnsDynamicPups = ParseBool(line);
+                    continue;
+                }
+                if (line.StartsWith("MIN"))
+                {
+                    campaign.MinPups = ParseInt(line);
+                    continue;
+                }
+                if (line.StartsWith("MAX"))
+                {
+                    campaign.MaxPups = ParseInt(line);
+                    continue;
+                }
+
+                if (line == "END_REGIONS")
+                {
+                    parsingRegions = false;
+                }
+                if (line == "REGIONS" || parsingRegions)
+                {
+                    parsingRegions = true;
+                    Tuple<CustomRegionSettings, StreamReader> result = ParseRegionSettings(reader);
+                    campaign.AddCampaignRegionSettings(result.Item1);
+                    reader = result.Item2;
+                }
+            }
+
+            message += "WARNING: Reached end of settings file!";
+            Logger.LogInfo(message);
+            return new Tuple<CustomCampaignSettings, StreamReader>(campaign, reader);
+        }
+
+        private Tuple<CustomRegionSettings, StreamReader> ParseRegionSettings(StreamReader reader)
+        {
+            string message = "Parsing region settings... ";
+            
+            CustomRegionSettings region = null;
+            string acronym = null;
+            
+            string line;
+            while (reader.Peek() >= 0)
+            {
+                line = reader.ReadLine();
+                if (line == "END_REGION")
+                {
+                    message += "created CustomRegionSettings object for " + region.RegionAcronym + "!";
+                    Logger.LogInfo(message);
+                    return new Tuple<CustomRegionSettings, StreamReader>(region, reader);
+                }
+
+                if (acronym == null && line.StartsWith("AC"))
+                {
+                    acronym = ParseString(line);
+                }
+                else if (region == null && acronym != null && line.StartsWith("PUPS_SPAWN"))
+                {
+                    region = new CustomRegionSettings(acronym, ParseBool(line));
+                }
+                else if (region == null)
+                {
+                    message += "Did not find either Region acronym, spawn bool or both after declaration, aborting!";
+                    Logger.LogInfo(message);
+                    return new Tuple<CustomRegionSettings, StreamReader>(null, reader);
+                }
+                
+                if (line.StartsWith("MIN"))
+                {
+                    region.MinPups = ParseInt(line);
+                }
+                if (line.StartsWith("MAX"))
+                {
+                    region.MaxPups = ParseInt(line);
+                }
+
+                if (line.StartsWith("ROOM_OVERRIDES_FORBIDDEN"))
+                {
+                    string forbiddenRooms = ParseString(line);
+                    string[] forbidden = Regex.Split(forbiddenRooms, ",");
+                    foreach (string s in forbidden)
+                    {
+                        region.AddOverriddenRoom(s, false);
+                    }
+                }
+                if (line.StartsWith("ROOM_OVERRIDES_ALLOWED"))
+                {
+                    string allowedRooms = ParseString(line);
+                    string[] allowed = Regex.Split(allowedRooms, ",");
+                    foreach (string s in allowed)
+                    {
+                        region.AddOverriddenRoom(s, false);
+                    }
+                }
+                if (line == "END_REGION")
+                {
+                    return new Tuple<CustomRegionSettings, StreamReader>(region, reader);
+                }
+            }
+
+            message += "WARNING: Reached end of settings file!";
+            Logger.LogInfo(message);
+            return new Tuple<CustomRegionSettings, StreamReader>(region, reader);
+        }
+
+        private int ParseInt(string setting)
+        {
+            string message = "Parsing int... ";
+            
+            int n = -1;
+            string[] num = Regex.Split(setting, ":");
+            if (num.Length == 2)
+            {
+                try
+                {
+                    n = Int32.Parse(num[1]);
+                    message += "Succeeded!";
+                }
+                catch (Exception e)
+                {
+                    message += "Int32.Parse Error! See exceptions log.";
+                    Debug.LogError(e.Message);
+                }
+            }
+            else
+            {
+                message += "Failed to parse number value!\n";
+            }
+            Logger.LogInfo(message);
+
+            return n;
+        }
+
+        private bool ParseBool(string setting)
+        {
+            string message = "Parsing bool... ";
+            
+            bool val = false;
+            string[] boo = Regex.Split(setting, ":");
+            if (boo.Length == 2)
+            {
+                if (boo[1] == "TRUE")
+                {
+                    val = true;
+                }
+                else if (boo[1] != "FALSE")
+                {
+                    message += "Failed to parse value for bool, will return False!\n";
+                }
+            }
+            Logger.LogInfo(message);
+
+            return val;
+        }
+
+        private string ParseString(string setting)
+        {
+            string message = "Parsing string... ";
+            
+            string val = null;
+            string[] str = Regex.Split(setting, ":");
+            if (str.Length == 2)
+            {
+                val = str[1];
+            }
+            else
+            {
+                message += "Failed to read string or no value is present!";
+            }
+            Logger.LogInfo(message);
+            
+            return val;
         }
     }
 }
