@@ -60,7 +60,7 @@ public class CustomCampaignSettings
     {
         string s = "CustomCampaignSettings Object:\n";
         
-        s += "Acronym: " + CampaignID + "\n";
+        s += "Campaign ID*: " + CampaignID + "\n";
         s += "Spawns Dynamic Pups: " +  SpawnsDynamicPups + "\n";
         s += "MinPups: " + MinPups + "\n";
         s += "MaxPups: " + MaxPups + "\n";

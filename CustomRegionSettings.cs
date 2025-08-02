@@ -48,8 +48,8 @@ public class CustomRegionSettings
     {
         string s = "CustomRegionSettings Object:\n";
         
-        s += "Acronym: " + RegionAcronym + "\n";
-        s += "Spawns Dynamic Pups: " +  SpawnsDynamicPups + "\n";
+        s += "Acronym*: " + RegionAcronym + "\n";
+        s += "Spawns Dynamic Pups*: " +  SpawnsDynamicPups + "\n";
         s += "MinPups: " + MinPups + "\n";
         s += "MaxPups: " + MaxPups + "\n";
         s += "Room Spawning Overrides:\n";

@@ -1,0 +1,13 @@
+NullReferenceException: Object reference not set to an instance of an object
+dynamicpupspawns.DynamicPupSpawns.ParseRegionSettings (System.IO.StreamReader reader) (at <b9657f21404b47e690652595ca118aca>:0)
+dynamicpupspawns.DynamicPupSpawns.ParseCampaignSettings (System.IO.StreamReader reader) (at <b9657f21404b47e690652595ca118aca>:0)
+dynamicpupspawns.DynamicPupSpawns.ProcessSettings (System.String filePath, System.String modID) (at <b9657f21404b47e690652595ca118aca>:0)
+UnityEngine.Debug:LogException(Exception)
+dynamicpupspawns.DynamicPupSpawns:ProcessSettings(String, String)
+dynamicpupspawns.DynamicPupSpawns:ProcessCustomData(orig_WrapPostModsInit)
+MonoMod.Utils.DynamicMethodDefinition:Hook<ModManager::WrapPostModsInit>?-218293888()
+ModManager:WrapModInitHooks()
+Menu.InitializationScreen:Update()
+MainLoopProcess:RawUpdate(Single)
+ProcessManager:Update(Single)
+RainWorld:Update()
