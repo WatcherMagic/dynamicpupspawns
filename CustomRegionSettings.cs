@@ -6,8 +6,16 @@ public class CustomRegionSettings
 {
     public string RegionAcronym { get; }
     public bool SpawnsDynamicPups { get; }
-    public int MinPups { get; set; }
-    public int MaxPups { get; set; }
+    private int _minPups = -1;
+    public int MinPups
+    {
+        get => _minPups;
+    }
+    private int _maxPups = -1;
+    public int MaxPups
+    {
+        get => _maxPups;
+    }
     private Dictionary<string, bool> _overriddenRooms = new Dictionary<string, bool>();
     public bool HasOverriddenRooms => _overriddenRooms.Count > 0;
 
@@ -15,10 +23,22 @@ public class CustomRegionSettings
     {
         RegionAcronym = acronym;
         SpawnsDynamicPups = spawns;
-        MinPups = -1;
-        MaxPups = -1;
     }
 
+    public bool SetMinAndMaxPups(int min, int max)
+    {
+        if (min > max)
+        {
+            return false;
+        }
+        else
+        {
+            _minPups = min;
+            _maxPups = max;
+            return true;
+        }
+    }
+    
     public void AddOverriddenRoom(string name, bool spawns)
     {
         _overriddenRooms.Add(name, spawns);

@@ -6,14 +6,36 @@ public class CustomCampaignSettings
 {
     public string CampaignID { get; }
     public bool SpawnsDynamicPups { get; set; }
-    public int MinPups { get; set; }
-    public int MaxPups { get; set; }
+    private int _minPups = -1;
+    public int MinPups
+    {
+        get => _minPups;
+    }
+    private int _maxPups = -1;
+    public int MaxPups
+    {
+        get => _maxPups;
+    }
     
     private List<CustomRegionSettings> _campaignRegionSettings = new List<CustomRegionSettings>();
 
     public CustomCampaignSettings(string id)
     {
         CampaignID = id;
+    }
+
+    public bool SetMinAndMaxPups(int min, int max)
+    {
+        if (min > max)
+        {
+            return false;
+        }
+        else
+        {
+            _minPups = min;
+            _maxPups = max;
+            return true;
+        }
     }
 
     public void AddCampaignRegionSettings(CustomRegionSettings regionSettings)

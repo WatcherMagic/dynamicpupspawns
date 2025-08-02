@@ -532,6 +532,12 @@ namespace dynamicpupspawns
         private void ProcessCustomData(On.ModManager.orig_WrapPostModsInit orig)
         {
             orig();
+            
+            if (_settings == null)
+            {
+                Logger.LogInfo("Creating new global settings list\n");
+                _settings = new List<CustomSettingsWrapper>();
+            }
 
             foreach (ModManager.Mod mod in ModManager.ActiveMods)
             {
@@ -561,6 +567,19 @@ namespace dynamicpupspawns
                     }
                 }
             }
+            
+            CustomSettingsWrapper testSettings = new CustomSettingsWrapper("test");
+            CustomCampaignSettings testCampaign = new CustomCampaignSettings("testcampaign");
+            testCampaign.SpawnsDynamicPups = true;
+            testCampaign.SetMinAndMaxPups(1, 2);
+            CustomRegionSettings testRegion = new CustomRegionSettings("TR", true);
+            testRegion.SetMinAndMaxPups(3, 4);
+            testRegion.AddOverriddenRoom("TR_Room1", false);
+            testRegion.AddOverriddenRoom("TR_Room2", true);
+            testCampaign.AddCampaignRegionSettings(testRegion);
+            testSettings.AddCampaignSettings(testCampaign);
+            testSettings.AddRegionSettings(testRegion);
+            _settings.Add(testSettings);
 
             string message = "Finished processing custom settings for dependents!:\n";
             foreach (CustomSettingsWrapper wrapper in _settings)
@@ -573,12 +592,6 @@ namespace dynamicpupspawns
         private void ProcessSettings(string filePath, string modID)
         {
             Logger.LogInfo("Parsing settings for " + modID + ":");
-
-            if (_settings == null)
-            {
-                Logger.LogInfo("Creating new global settings list\n");
-                _settings = new List<CustomSettingsWrapper>();
-            }
 
             CustomSettingsWrapper modSettings = new CustomSettingsWrapper(modID);
 
@@ -655,12 +668,12 @@ namespace dynamicpupspawns
                 }
                 if (line.StartsWith("MIN"))
                 {
-                    campaign.MinPups = ParseInt(line);
+                    //campaign.MinPups = ParseInt(line);
                     continue;
                 }
                 if (line.StartsWith("MAX"))
                 {
-                    campaign.MaxPups = ParseInt(line);
+                    //campaign.MaxPups = ParseInt(line);
                     continue;
                 }
 
@@ -717,11 +730,11 @@ namespace dynamicpupspawns
                 
                 if (line.StartsWith("MIN"))
                 {
-                    region.MinPups = ParseInt(line);
+                    //region.MinPups = ParseInt(line);
                 }
                 if (line.StartsWith("MAX"))
                 {
-                    region.MaxPups = ParseInt(line);
+                    //region.MaxPups = ParseInt(line);
                 }
 
                 if (line.StartsWith("ROOM_OVERRIDES_FORBIDDEN"))
