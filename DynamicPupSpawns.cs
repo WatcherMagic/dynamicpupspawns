@@ -9,21 +9,14 @@ using System.IO;
 
 namespace dynamicpupspawns
 {
-    //BEFORE LOADING MOD, ADD TO modinfo.json FOR EACH DEPENDENCY:
 
-    //hard dependencies:
-    //"requirements": ["mod_id_1", "mod_id_2", "etc"],
-
-    //soft dependencies:
-    //"priorities": ["mod_id_1", "mod_id_2", "etc"]
-
-    [BepInPlugin(MOD_ID, "Dynamic Pup Spawns", "0.1")]
+    [BepInPlugin(_MOD_ID, "Dynamic Pup Spawns", "0.1")]
     public class DynamicPupSpawns : BaseUnityPlugin
     {
-        private const string MOD_ID = "dynamicpupspawns";
+        private const string _MOD_ID = "dynamicpupspawns";
 
-        private World _world = null;
-        private Dictionary<string, string> _persistentPups = null;
+        private World _world;
+        private Dictionary<string, string> _persistentPups;
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
@@ -88,17 +81,17 @@ namespace dynamicpupspawns
         {
             //thanks lancelot18
 
-            float u, v, S;
+            float u, v, s;
 
             do
             {
                 u = 2.0f * Random.value - 1.0f;
                 v = 2.0f * Random.value - 1.0f;
-                S = u * u + v * v;
-            } while (S >= 1.0f);
+                s = u * u + v * v;
+            } while (s >= 1.0f);
 
             // Standard Normal Distribution
-            float std = u * Mathf.Sqrt(-2.0f * Mathf.Log(S) / S);
+            float std = u * Mathf.Sqrt(-2.0f * Mathf.Log(s) / s);
 
             // clamped following the "three-sigma rule"
             float mean = min + (max - min) * 0.3f;
@@ -546,7 +539,7 @@ namespace dynamicpupspawns
                 string filePath = mod.path + "\\dynamicpups\\settings.txt";
                 for (int i = 0; i < mod.requirements.Length; i++)
                 {
-                    if (mod.requirements[i] == MOD_ID)
+                    if (mod.requirements[i] == _MOD_ID)
                     {
                         depends = true;
                         Logger.LogInfo("Found dependent!: " + mod.name);
@@ -559,7 +552,7 @@ namespace dynamicpupspawns
                 {
                     for (int i = 0; i < mod.priorities.Length; i++)
                     {
-                        if (mod.priorities[i] == MOD_ID)
+                        if (mod.priorities[i] == _MOD_ID)
                         {
                             Logger.LogInfo("Found priority!: " + mod.name);
                             ProcessSettings(filePath, mod.id);
