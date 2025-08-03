@@ -549,7 +549,7 @@ namespace dynamicpupspawns
                     {
                         depends = true;
                         Logger.LogInfo("Found dependent!: " + mod.name);
-                        //ProcessSettings(filePath, mod.id);
+                        ProcessSettings(filePath, mod.id);
                         break;
                     }
                 }
@@ -561,24 +561,24 @@ namespace dynamicpupspawns
                         if (mod.priorities[i] == _MOD_ID)
                         {
                             Logger.LogInfo("Found priority!: " + mod.name);
-                            //ProcessSettings(filePath, mod.id);
+                            ProcessSettings(filePath, mod.id);
                             break;
                         }
                     }
                 }
             }
             
-            CustomSettingsWrapper testSettings = new CustomSettingsWrapper("test");
-            PupSpawnSettings pupSpawn1  = new PupSpawnSettings(true, 1, 2);
-            CustomCampaignSettings testCampaign = new CustomCampaignSettings("testcampaign", pupSpawn1);
-            PupSpawnSettings pupSpawn2 = new PupSpawnSettings(true, 3, 4);
-            CustomRegionSettings testRegion = new CustomRegionSettings("TR", pupSpawn2);
-            testRegion.AddOverriddenRoom("TR_Room1", false);
-            testRegion.AddOverriddenRoom("TR_Room2", true);
-            testCampaign.AddCampaignRegionSettings(testRegion);
-            testSettings.AddCampaignSettings(testCampaign);
-            testSettings.AddRegionSettings(testRegion);
-            _settings.Add(testSettings);
+            // CustomSettingsWrapper testSettings = new CustomSettingsWrapper("test");
+            // PupSpawnSettings pupSpawn1  = new PupSpawnSettings(true, 1, 2);
+            // CustomCampaignSettings testCampaign = new CustomCampaignSettings("testcampaign", pupSpawn1);
+            // PupSpawnSettings pupSpawn2 = new PupSpawnSettings(true, 3, 4);
+            // CustomRegionSettings testRegion = new CustomRegionSettings("TR", pupSpawn2);
+            // testRegion.AddOverriddenRoom("TR_Room1", false);
+            // testRegion.AddOverriddenRoom("TR_Room2", true);
+            // testCampaign.AddCampaignRegionSettings(testRegion);
+            // testSettings.AddCampaignSettings(testCampaign);
+            // testSettings.AddRegionSettings(testRegion);
+            // _settings.Add(testSettings);
 
             string message = "Finished processing custom settings for dependents!:\n";
             foreach (CustomSettingsWrapper wrapper in _settings)
@@ -594,26 +594,50 @@ namespace dynamicpupspawns
 
             CustomSettingsWrapper modSettings = new CustomSettingsWrapper(modID);
 
-            string line;
             try
             {
-                StreamReader reader = new StreamReader(filePath);
+                string settings = File.ReadAllText(filePath);
+                settings = Regex.Replace(settings, @"\s+", "");
+                Logger.LogInfo("Settings: " + settings);
+                StringReader reader = new StringReader(settings);
+                
+                List<string> symbols = new List<string>();
+
+                string symbol = "";
                 while (reader.Peek() >= 0)
                 {
-                    line = reader.ReadLine();
-                    // if (line == "CAMPAIGN")
-                    // {
-                    //     Tuple<CustomCampaignSettings, StreamReader> result = ParseCampaignSettings(reader);
-                    //     modSettings.AddCampaignSettings(result.Item1);
-                    //     reader = result.Item2;
-                    // }
-                    //
-                    // if (line == "REGIONS")
-                    // {
-                    //     Tuple<CustomRegionSettings, StreamReader> result = ParseRegionSettings(reader);
-                    //     modSettings.AddRegionSettings(result.Item1);
-                    //     reader = result.Item2;
-                    // }
+                    char c = (char)reader.Peek();
+                    if (c != ';')
+                    {
+                        if (c == '{')
+                        {
+                            Logger.LogInfo("Found bracket!");
+                            while (reader.Peek() >= 0)
+                            {
+                                c = (char)reader.Peek();
+                                if (c != '}')
+                                {
+                                    symbol += (char)reader.Read();
+                                }
+                                else
+                                {
+                                    symbol += (char)reader.Read();
+                                    Logger.LogInfo("Found closing bracket; symbol extracted: " + symbol);
+                                    break;
+                                }
+                            }
+
+                            continue;
+                        }
+                        symbol += (char)reader.Read();
+                    }
+                    else
+                    {
+                        reader.Read();
+                        Logger.LogInfo("Extracted symbol: " + symbol);
+                        symbols.Add(symbol);
+                        symbol = "";
+                    }
                 }
             }
             catch (FileNotFoundException e)
@@ -626,7 +650,7 @@ namespace dynamicpupspawns
                 Logger.LogError(e.Message);
                 Debug.LogException(e);
             }
-            
+
             Logger.LogInfo("Finished parsing for " + modID + "!");
             _settings.Add(modSettings);
         }
