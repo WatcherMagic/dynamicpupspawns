@@ -316,28 +316,32 @@ namespace dynamicpupspawns
             string message = "Adding pups to save data...\n";
             if (_world != null)
             {
-                //make sure not to save pups in shelter player is ins
-
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
                 {
-                    //message += "Iterating over " + _world.abstractRooms[i].name + ":\n";
-                    if (!_world.abstractRooms[i].shelter)
+                    foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
                     {
-                        foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
+                        //check for player's shelter
+                        if (_world.abstractRooms[i].shelter
+                            && abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
+                            && abstractCreature.ID.number < 1000)
                         {
-                            //List<string> roomExceptions = new List<string>();
-                            //message += "Found creature! " + abstractCreature.creatureTemplate.type + "\n";
-
-                            /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
-                             only detects players, not SlugNPCs. Additionally, Bups and likely others
-                             are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
-                            foreach (string pupType in recognizedPupTypes)
+                            message += "Found shelter " + _world.abstractRooms[i].name + " for Slugcat " + abstractCreature.ID.number + "; skipping\n";
+                            continue;
+                        }
+                        
+                        //this autofilled: investigate usefulness
+                        //if (abstractCreature.state is MoreSlugcats.PlayerNPCState)
+                        
+                        /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
+                         only detects players, not SlugNPCs. Additionally, Bups and likely others
+                         are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
+                        foreach (string pupType in recognizedPupTypes)
+                        {
+                            if (abstractCreature.creatureTemplate.type.ToString() == pupType
+                                && !abstractCreature.state.dead)
                             {
-                                if (abstractCreature.creatureTemplate.type.ToString() == pupType)
-                                {
-                                    data += abstractCreature.ID + _PUP_DATA_DIVIDER + _world.abstractRooms[i].name +
-                                            _REGX_STR_SPLIT;
-                                }
+                                data += abstractCreature.ID + _PUP_DATA_DIVIDER + _world.abstractRooms[i].name +
+                                        _REGX_STR_SPLIT;
                             }
                         }
                     }
@@ -356,40 +360,6 @@ namespace dynamicpupspawns
             s = String.Concat(s, data, "<svA>");
 
             return s;
-        }
-
-        //currently holdover
-        private void SubstringEntityID(AbstractCreature abstractCreature)
-        {
-            string id = abstractCreature.ID.ToString();
-            if (!id.EndsWith("."))
-            {
-                int substrIndex = id.LastIndexOf('.') + 1;
-                id = id.Substring(substrIndex, id.Length - substrIndex);
-                bool isDigits = true;
-                foreach (char c in id)
-                {
-                    if (!char.IsDigit(c))
-                    {
-                        isDigits = false;
-                        break;
-                    }
-                }
-
-                if (isDigits)
-                {
-                    int idNum = int.Parse(id);
-                    //message += idNum + "\n";
-                }
-                else
-                {
-                    //message += "Failed to retrieve int from ID substring!\n";
-                }
-            }
-            else
-            {
-                //message += "ID substring ended in '.'!\n";
-            }
         }
 
         private void GetSaveDataFromString(On.SaveState.orig_LoadGame orig, SaveState self, string str,
@@ -567,18 +537,6 @@ namespace dynamicpupspawns
                     }
                 }
             }
-            
-            // CustomSettingsWrapper testSettings = new CustomSettingsWrapper("test");
-            // PupSpawnSettings pupSpawn1  = new PupSpawnSettings(true, 1, 2);
-            // CustomCampaignSettings testCampaign = new CustomCampaignSettings("testcampaign", pupSpawn1);
-            // PupSpawnSettings pupSpawn2 = new PupSpawnSettings(true, 3, 4);
-            // CustomRegionSettings testRegion = new CustomRegionSettings("TR", pupSpawn2);
-            // testRegion.AddOverriddenRoom("TR_Room1", false);
-            // testRegion.AddOverriddenRoom("TR_Room2", true);
-            // testCampaign.AddCampaignRegionSettings(testRegion);
-            // testSettings.AddCampaignSettings(testCampaign);
-            // testSettings.AddRegionSettings(testRegion);
-            // _settings.Add(testSettings);
 
             string message = "Finished processing custom settings for dependents!:\n";
             foreach (CustomSettingsWrapper wrapper in _settings)
@@ -596,7 +554,56 @@ namespace dynamicpupspawns
 
             try
             {
-                string settings = File.ReadAllText(filePath);
+                //dummy data
+                string settings = "CAMPAIGNS;\n" +
+                                  "id: dummyData;\n" +
+                                  "pupsDynamicSpawn: true;\n" +
+                                  "min: 4;" +
+                                  "max: 5;" +
+                                  "region_overrides: {\n" +
+                                  "\tname: dummyRegion1;\n" +
+                                  "\tpupsDynamicSpawn: false;\n" +
+                                  "\troom_overrides: [\n" +
+                                  "\t\tname: Room1;\n" +
+                                  "\t\tspecificPupNum: true;\n" +
+                                  "\t\tmin: 0;" +
+                                  "\t\tmax: 10;\n" +
+                                  "\t\tROOMRGX;\n" +
+                                  "\t\tname: ForbiddenRoom;\n" +
+                                  "\t\trefuseSpawn: true;];\n" +
+                                  "\tCAMREGRGX;\n" +
+                                  "\tname: dummyRegion2;\n" +
+                                  "\toverridesNegateDynamicRoomSelection: false;\n" +
+                                  "\troom_overrides: [\n" +
+                                  "\t\tname: ExtraSpawnRoom;\n" +
+                                  "\t\tweight: 0.3;\n];};" +
+                                  "CAMPAIGNRGX;\n" +
+                                  "id: secondCampaign;\n" +
+                                  "pupsDynamicSpawn: false;\n" +
+                                  "region_overrides: {\n" +
+                                  "\tname: dummyRegion2;\n" +
+                                  "\tpupsDynamicSpawn: false;};\n" +
+                                  "END_CAMPAIGNS;\n" +
+                                  "REGIONS\n" +
+                                  "name: dummyRegion1;\n" +
+                                  "pupsDynamicSpawn: true;\n" +
+                                  "min: 10;\n" +
+                                  "max: 20;\n" +
+                                  "REGRGX;\n" +
+                                  "name: dummyRegion2;\n" +
+                                  "pupsDynamicSpawn: false;\n" +
+                                  "min: 1;\n" +
+                                  "max: 50;\n" +
+                                  "name: dummyRegion3;\n" +
+                                  "pupsDynamicSpawn: true;\n" +
+                                  "overridesNegateDynamicRoomSelection: true;\n" +
+                                  "room_overrides: [\n" +
+                                  "\tname: specificSpawn1;\n" +
+                                  "\t" +
+                                  "\tspecificPupNum: 5\n" +
+                                  "\tspecificAddsToRNG: true\n";
+                
+                //string settings = File.ReadAllText(filePath);
                 settings = Regex.Replace(settings, @"\s+", "");
                 Logger.LogInfo("Settings: " + settings);
                 StringReader reader = new StringReader(settings);
@@ -611,7 +618,6 @@ namespace dynamicpupspawns
                     {
                         if (c == '{')
                         {
-                            Logger.LogInfo("Found bracket!");
                             while (reader.Peek() >= 0)
                             {
                                 c = (char)reader.Peek();
@@ -622,7 +628,6 @@ namespace dynamicpupspawns
                                 else
                                 {
                                     symbol += (char)reader.Read();
-                                    Logger.LogInfo("Found closing bracket; symbol extracted: " + symbol);
                                     break;
                                 }
                             }
@@ -634,11 +639,17 @@ namespace dynamicpupspawns
                     else
                     {
                         reader.Read();
-                        Logger.LogInfo("Extracted symbol: " + symbol);
                         symbols.Add(symbol);
                         symbol = "";
                     }
                 }
+
+                string message = "Extracted symbols:\n";
+                foreach (string s in symbols)
+                {
+                    message += s + "\n";
+                }
+                Logger.LogInfo(message);
             }
             catch (FileNotFoundException e)
             {
