@@ -6,6 +6,7 @@ using BepInEx;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using System.IO;
+using MoreSlugcats;
 
 namespace dynamicpupspawns
 {
@@ -23,6 +24,7 @@ namespace dynamicpupspawns
         private const string _PUP_DATA_DIVIDER = ":";
 
         private List<CustomSettingsWrapper> _settings;
+        private CustomCampaignSettings _survivorSettings;
 
         private void OnEnable()
         {
@@ -40,7 +42,7 @@ namespace dynamicpupspawns
         {
             _world = self;
 
-            int minPupsInRegion = 0;
+            int minPupsInRegion = 1;
             int maxPupsInRegion = 5;
 
             //get rooms with unsubmerged den nodes
@@ -335,15 +337,16 @@ namespace dynamicpupspawns
                         /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
                          only detects players, not SlugNPCs. Additionally, Bups and likely others
                          are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
-                        foreach (string pupType in recognizedPupTypes)
-                        {
-                            if (abstractCreature.creatureTemplate.type.ToString() == pupType
+                        //foreach (string pupType in recognizedPupTypes)
+                        //{
+                            if (abstractCreature.creatureTemplate.type == MoreSlugcatsEnums.CreatureTemplateType.SlugNPC
                                 && !abstractCreature.state.dead)
                             {
                                 data += abstractCreature.ID + _PUP_DATA_DIVIDER + _world.abstractRooms[i].name +
                                         _REGX_STR_SPLIT;
+                                //if tamed, save tamed status here
                             }
-                        }
+                        //}
                     }
                 }
 
@@ -553,57 +556,8 @@ namespace dynamicpupspawns
             CustomSettingsWrapper modSettings = new CustomSettingsWrapper(modID);
 
             try
-            {
-                //dummy data
-                string settings = "CAMPAIGNS;\n" +
-                                  "id: dummyData;\n" +
-                                  "pupsDynamicSpawn: true;\n" +
-                                  "min: 4;" +
-                                  "max: 5;" +
-                                  "region_overrides: {\n" +
-                                  "\tname: dummyRegion1;\n" +
-                                  "\tpupsDynamicSpawn: false;\n" +
-                                  "\troom_overrides: [\n" +
-                                  "\t\tname: Room1;\n" +
-                                  "\t\tspecificPupNum: true;\n" +
-                                  "\t\tmin: 0;" +
-                                  "\t\tmax: 10;\n" +
-                                  "\t\tROOMRGX;\n" +
-                                  "\t\tname: ForbiddenRoom;\n" +
-                                  "\t\trefuseSpawn: true;];\n" +
-                                  "\tCAMREGRGX;\n" +
-                                  "\tname: dummyRegion2;\n" +
-                                  "\toverridesNegateDynamicRoomSelection: false;\n" +
-                                  "\troom_overrides: [\n" +
-                                  "\t\tname: ExtraSpawnRoom;\n" +
-                                  "\t\tweight: 0.3;\n];};" +
-                                  "CAMPAIGNRGX;\n" +
-                                  "id: secondCampaign;\n" +
-                                  "pupsDynamicSpawn: false;\n" +
-                                  "region_overrides: {\n" +
-                                  "\tname: dummyRegion2;\n" +
-                                  "\tpupsDynamicSpawn: false;};\n" +
-                                  "END_CAMPAIGNS;\n" +
-                                  "REGIONS\n" +
-                                  "name: dummyRegion1;\n" +
-                                  "pupsDynamicSpawn: true;\n" +
-                                  "min: 10;\n" +
-                                  "max: 20;\n" +
-                                  "REGRGX;\n" +
-                                  "name: dummyRegion2;\n" +
-                                  "pupsDynamicSpawn: false;\n" +
-                                  "min: 1;\n" +
-                                  "max: 50;\n" +
-                                  "name: dummyRegion3;\n" +
-                                  "pupsDynamicSpawn: true;\n" +
-                                  "overridesNegateDynamicRoomSelection: true;\n" +
-                                  "room_overrides: [\n" +
-                                  "\tname: specificSpawn1;\n" +
-                                  "\t" +
-                                  "\tspecificPupNum: 5\n" +
-                                  "\tspecificAddsToRNG: true\n";
-                
-                //string settings = File.ReadAllText(filePath);
+            {   
+                string settings = File.ReadAllText("DummySettings.txt");
                 settings = Regex.Replace(settings, @"\s+", "");
                 Logger.LogInfo("Settings: " + settings);
                 StringReader reader = new StringReader(settings);
