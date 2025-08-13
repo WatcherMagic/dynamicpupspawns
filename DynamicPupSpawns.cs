@@ -24,8 +24,6 @@ namespace dynamicpupspawns
         private const string _PUP_DATA_DIVIDER = ":";
 
         private List<CustomSettingsWrapper> _settings;
-        private CustomCampaignSettings _survivorSettings;
-
         private void OnEnable()
         {
             On.World.SpawnPupNPCs += SpawnPups;
@@ -44,6 +42,7 @@ namespace dynamicpupspawns
 
             int minPupsInRegion = 1;
             int maxPupsInRegion = 5;
+            float deadWeight = 0.7f;
 
             //get rooms with unsubmerged den nodes
             Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
@@ -55,6 +54,7 @@ namespace dynamicpupspawns
             Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
             float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
 
+            
             //generate number of pups for this cycle
             // + 1 to max to account for rounding down w/ cast to int
             int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
@@ -103,6 +103,15 @@ namespace dynamicpupspawns
             return (int)result;
         }
 
+        private bool DoPupsSpawn(float deadWeight)
+        {
+            if (Random.value > deadWeight)
+            {
+                return true;
+            }
+            return false;
+        }
+        
         private Dictionary<AbstractRoom, int> GetRoomsWithViableDens(World world)
         {
             //get all rooms in region with den nodes that are not submerged
