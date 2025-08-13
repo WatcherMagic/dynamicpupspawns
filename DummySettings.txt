@@ -1,0 +1,82 @@
+CAMPAIGNS;
+id: testCampaign1;
+pupsDynamicSpawn: true;
+min: 0;
+max: 10;
+deadWeight: 0.5;
+region_overrides: {
+    name: xyz;
+    pupsDynamicSpawn: false;
+    REGIONRGX;
+    name: za;
+    pupsDynamicSpawn: true;
+    min: 2;
+    max: 3;
+    };
+CAMPAIGNRGX
+id: testCampaign2;
+pupsDynamicSpawn: false;
+region:overrides: {
+    name: ab;
+    pupsDynamicSpawn: true;
+    min: 10;
+    max: 15;
+    room_overrides: [
+        name: NoSpawnRoom;
+        refuseSpawn: false;
+        specificPupNum: false;
+        ROOMRGX;
+        name: NewNoSpawnRoom;
+        refuseSpawn: true;
+    ];
+    REGIONRGX
+    name: cd;
+    pupsDynamicSpawn: true;
+    };
+END_CAMPAIGNS;
+REGIONS;
+name: xyz;
+pupsDynamicSpawn: true;
+min: 5;
+max: 7;
+REGIONRGX;
+name: ab;
+pupsDynamicSpawn: true;
+min: 1;
+max: 2;
+roomOverridesNegateDynamicSpawn: false;
+room_overrides: [
+    name: NoSpawnRoom;
+    refuseSpawn: true;
+    ROOMRGX;
+    name: AlwaysSpawnRoom;
+    refuseSpawn: false;
+    specificPupNum: true;
+    specificAddsToRNG: false;
+    specificOverridesAdditional: false;
+    min: 5;
+    max: 6;
+    ];
+REGIONRGX;
+name: cd;
+pupsDynamicSpawn: true;
+min: 20;
+max: 50;
+roomOverridesNegateDynamicSpawn: true;
+room:overrides: [
+    name: SpawnRoom;
+    refuseSpawn: false;
+    specificPupNum: false;
+    ROOMRGX;
+    name: SpawnRoom2;
+    refuseSpawn: false;
+    specificPupNum: true;
+    specificAddsToRNG: true;
+    specificOverridesAdditional: true;
+    min: 1;
+    max: 1;
+    ];
+REGIONRGX;
+name: za;
+pupsDynamicSpawn: false;
+END_REGIONS
