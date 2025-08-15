@@ -42,7 +42,7 @@ namespace dynamicpupspawns
 
             int minPupsInRegion = 1;
             int maxPupsInRegion = 5;
-            float deadWeight = 0.7f;
+            float spawnChance = 0.3f;
 
             //get rooms with unsubmerged den nodes
             Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
@@ -103,9 +103,9 @@ namespace dynamicpupspawns
             return (int)result;
         }
 
-        private bool DoPupsSpawn(float deadWeight)
+        private bool DoPupsSpawn(float spawnChance)
         {
-            if (Random.value > deadWeight)
+            if (Random.value < spawnChance)
             {
                 return true;
             }
@@ -232,8 +232,6 @@ namespace dynamicpupspawns
                             AbstractRoom room = world.GetAbstractRoom(pup.Value);
                             if (room != null)
                             {
-                                //Logger.LogInfo("Found saved room! " + room.name);
-
                                 PutPupInRoom(world.game, world, room, pup.Key,
                                     world.game.GetStorySession.characterStats.name);
                                 pupNum--; //persistent pups count towards the total pups spawned per cycle
@@ -286,7 +284,7 @@ namespace dynamicpupspawns
 
                     //copied from AbstractRoom.RealizeRoom()
                     AbstractCreature abstractPup = new AbstractCreature(world,
-                        StaticWorld.GetCreatureTemplate(MoreSlugcats.MoreSlugcatsEnums.CreatureTemplateType.SlugNPC),
+                        StaticWorld.GetCreatureTemplate(MoreSlugcatsEnums.CreatureTemplateType.SlugNPC),
                         null,
                         new WorldCoordinate(room.index, -1, -1, 0),
                         id);
@@ -294,9 +292,13 @@ namespace dynamicpupspawns
                     try
                     {
                         room.AddEntity(abstractPup);
+                        if (room.realizedRoom != null)
+                        {
+                            abstractPup.RealizeInRoom();
+                        }
                         try
                         {
-                            (abstractPup.state as MoreSlugcats.PlayerNPCState).foodInStomach = 1;
+                            (abstractPup.state as PlayerNPCState).foodInStomach = 1;
                         }
                         catch (Exception e)
                         {
@@ -319,8 +321,6 @@ namespace dynamicpupspawns
         private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
         {
             string s = orig(self);
-
-            string[] recognizedPupTypes = { "SlugNPC" /*, "Bup"*/ };
 
             string data = _SAVE_DATA_DELIMITER;
 
