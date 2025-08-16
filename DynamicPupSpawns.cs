@@ -22,10 +22,10 @@ namespace dynamicpupspawns
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
         private const string DATA_DIVIDER = ":";
-        private const string CAMPAIGN_SETTINGS_DELIM = "campaign";
+        private const string CAMPAIGN_SETTINGS_DELIM = "campaigns";
         private const string CAMPAIGN_SETTINGS_STOP = "end_campaigns";
-        private const string REGION_SETTINGS_DELIM = "region";
-        private const string REGION_SETTINGS_END = "end_regions";
+        private const string REGION_SETTINGS_DELIM = "regions";
+        private const string REGION_SETTINGS_STOP = "end_regions";
         private const string PUP_SETTINGS_DELIM = "pupsettings";
         private const string PUP_SETTINGS_STOP = "end_pupsettings";
 
@@ -575,7 +575,6 @@ namespace dynamicpupspawns
             {   
                 string settings = File.ReadAllText(filePath);
                 settings = Regex.Replace(settings, @"\s+", "");
-                Logger.LogInfo("Settings: " + settings);
                 StringReader reader = new StringReader(settings);
                 
                 string symbol = "";
@@ -651,11 +650,32 @@ namespace dynamicpupspawns
             
             while (node != null)
             {
+                message += "current node: " + node.Value + "\n";
                 if (node.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
                 {
+                    message += "Entered campaign settings delim if statement\n";
+                    LinkedList<string> cSettings = new LinkedList<string>();
+                    while (node != null && node.Value.ToLower() != CAMPAIGN_SETTINGS_STOP)
+                    {
+                        node = node.Next;
+                        cSettings.AddLast(node.Value);
+                        message += "In nested while loop; current node: " + node.Value + "\n";
+                    }
+
+                    message += "cSettings list:\n";
+                    foreach (string s in cSettings)
+                    {
+                        message += s + "\n";
+                    }
                 }
                 else if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
                 {
+                    message += "Entered region settings delim if statement\n";
+                    while (node != null && node.Value.ToLower() != REGION_SETTINGS_STOP)
+                    {
+                        node = node.Next;
+                        message += "In nested while loop; current node: " + node.Value + "\n";
+                    }
                 }
                 node = node.Next;
             }
