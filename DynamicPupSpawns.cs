@@ -653,13 +653,14 @@ namespace dynamicpupspawns
                 message += "current node: " + node.Value + "\n";
                 if (node.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
                 {
+                    node = node.Next;
                     message += "Entered campaign settings delim if statement\n";
                     LinkedList<string> cSettings = new LinkedList<string>();
-                    while (node != null && node.Value.ToLower() != CAMPAIGN_SETTINGS_STOP)
+                    while (node.Value.ToLower() != CAMPAIGN_SETTINGS_STOP)
                     {
-                        node = node.Next;
                         cSettings.AddLast(node.Value);
                         message += "In nested while loop; current node: " + node.Value + "\n";
+                        node = node.Next;
                     }
 
                     message += "cSettings list:\n";
