@@ -21,7 +21,13 @@ namespace dynamicpupspawns
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
-        private const string _PUP_DATA_DIVIDER = ":";
+        private const string DATA_DIVIDER = ":";
+        private const string CAMPAIGN_SETTINGS_DELIM = "campaign";
+        private const string CAMPAIGN_SETTINGS_STOP = "end_campaigns";
+        private const string REGION_SETTINGS_DELIM = "region";
+        private const string REGION_SETTINGS_END = "end_regions";
+        private const string PUP_SETTINGS_DELIM = "pupsettings";
+        private const string PUP_SETTINGS_STOP = "end_pupsettings";
 
         private List<CustomSettingsWrapper> _settings;
         private void OnEnable()
@@ -351,7 +357,7 @@ namespace dynamicpupspawns
                             if (abstractCreature.creatureTemplate.type == MoreSlugcatsEnums.CreatureTemplateType.SlugNPC
                                 && !abstractCreature.state.dead)
                             {
-                                data += abstractCreature.ID + _PUP_DATA_DIVIDER + _world.abstractRooms[i].name +
+                                data += abstractCreature.ID + DATA_DIVIDER + _world.abstractRooms[i].name +
                                         _REGX_STR_SPLIT;
                                 //if tamed, save tamed status here
                             }
@@ -563,16 +569,15 @@ namespace dynamicpupspawns
             Logger.LogInfo("Parsing settings for " + modID + ":");
 
             CustomSettingsWrapper modSettings = new CustomSettingsWrapper(modID);
-
+            LinkedList<string> symbols = new LinkedList<string>();
+            
             try
             {   
-                string settings = File.ReadAllText("DummySettings.txt");
+                string settings = File.ReadAllText(filePath);
                 settings = Regex.Replace(settings, @"\s+", "");
                 Logger.LogInfo("Settings: " + settings);
                 StringReader reader = new StringReader(settings);
                 
-                List<string> symbols = new List<string>();
-
                 string symbol = "";
                 while (reader.Peek() >= 0)
                 {
@@ -602,7 +607,7 @@ namespace dynamicpupspawns
                     else
                     {
                         reader.Read();
-                        symbols.Add(symbol);
+                        symbols.AddLast(symbol);
                         symbol = "";
                     }
                 }
@@ -624,142 +629,120 @@ namespace dynamicpupspawns
                 Logger.LogError(e.Message);
                 Debug.LogException(e);
             }
-
-            Logger.LogInfo("Finished parsing for " + modID + "!");
-            _settings.Add(modSettings);
-        }
-        
-        private Tuple<CustomCampaignSettings, StreamReader> ParseCampaignSettings(StreamReader reader)
-        {
-            string message = "Parsing Campaign Settings... ";
             
-            // bool parsingRegions = false;
-            // List<string> regionSettingsContainer = new List<string>();
-
-            CustomCampaignSettings campaign = null;
+            bool success = ParseSymbols(symbols, modSettings);
             
-            string line;
-            while (reader.Peek() >= 0)
+            if (success)
             {
-                line = reader.ReadLine();
-                // if (line == "END_CAMPAIGN")
-                // {
-                //     break;
-                // }
-                //
-                // if (campaign == null && line.StartsWith("ID"))
-                // {
-                //     campaign = new CustomCampaignSettings(ParseString(line));
-                // }
-                // else if (campaign == null)
-                // {
-                //     message += "Did not find Campaign ID after declaration, aborting!";
-                //     Logger.LogInfo(message);
-                //     return new Tuple<CustomCampaignSettings, StreamReader>(null, reader);
-                // }
-                //
-                // if (line.StartsWith("PUPS_SPAWN"))
-                // {
-                //     campaign.SpawnsDynamicPups = ParseBool(line);
-                //     continue;
-                // }
-                // if (line.StartsWith("MIN"))
-                // {
-                //     //campaign.MinPups = ParseInt(line);
-                //     continue;
-                // }
-                // if (line.StartsWith("MAX"))
-                // {
-                //     //campaign.MaxPups = ParseInt(line);
-                //     continue;
-                // }
-                //
-                // if (line == "END_REGIONS")
-                // {
-                //     parsingRegions = false;
-                // }
-                // if (line == "REGIONS" || parsingRegions)
-                // {
-                //     parsingRegions = true;
-                //     Tuple<CustomRegionSettings, StreamReader> result = ParseRegionSettings(reader);
-                //     campaign.AddCampaignRegionSettings(result.Item1);
-                //     reader = result.Item2;
-                // }
+                _settings.Add(modSettings);
+                Logger.LogInfo("Finished parsing for " + modID + "!");
+            }
+            else
+            {
+                Logger.LogWarning("Couldn't parse symbols for " + modID + "!");
+                Debug.LogWarning("Couldn't parse symbols for " + modID + "!");
+            }
+        }
+
+        private bool ParseSymbols(LinkedList<string> symbols, CustomSettingsWrapper settings)
+        {
+            string message = "Parsing symbols...\n";
+            bool parsingCampaign = false;
+            bool parsingPup = false;
+            LinkedListNode<string> node = symbols.First;
+            
+            while (node != null)
+            {
+                if (node.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
+                {
+                    parsingCampaign = true;
+                    message += "Parsing campaign settings!\n";
+                    node = node.Next;
+                    continue;
+                }
+                if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
+                {
+                    parsingCampaign = false;
+                    message += "Parsing region settings!\n";
+                    node = node.Next;
+                    continue;
+                }
+                if (node.Value.ToLower() == PUP_SETTINGS_DELIM)
+                {
+                    parsingPup = true;
+                    node = node.Next;
+                    continue;
+                }
+                
+                if (parsingCampaign)
+                {
+                    if (parsingPup)
+                    {
+                        if (node.Value.ToLower() == PUP_SETTINGS_STOP)
+                        {
+                            message += "Reached the end of pup settings in campaign!\n";
+                            parsingPup = false;
+                            node = node.Next;
+                            continue;
+                        }
+                        
+                        message += "Parsing pup settings in campaign!\n";
+                    }
+                    else if (node.Value.ToLower() == CAMPAIGN_SETTINGS_STOP)
+                    {
+                        message += "Reached the end of the campaign's settings!\n";
+                    }
+                    else
+                    {
+                        message += "Parsing settings in campaign!\n";
+                    }
+                }
+                else
+                {
+                    if (parsingPup)
+                    {
+                        if (node.Value.ToLower() == PUP_SETTINGS_STOP)
+                        {
+                            message += "Reached the end of pup settings in region!\n";
+                            parsingPup = false;
+                            node = node.Next;
+                            continue;
+                        }
+                        
+                        message += "Parsing pup settings in region!\n";
+                    }
+                    else if (node.Value.ToLower() == CAMPAIGN_SETTINGS_STOP)
+                    {
+                        message += "Reached the end of the region's settings!\n";
+                    }
+                    else
+                    {
+                        message += "Parsing settings in region!\n";
+                    }
+                }
+                node = node.Next;
             }
 
-            //message += "WARNING: Reached end of settings file!";
-            //Logger.LogInfo(message);
-            return new Tuple<CustomCampaignSettings, StreamReader>(campaign, reader);
+            Logger.LogInfo(message);
+            return true;
+        }
+        
+        private CustomCampaignSettings ParseCampaignSettings(string symbol, CustomCampaignSettings campaign)
+        {
+            string message = "Parsing " + symbol + "... ";
+
+            
+            Logger.LogInfo(message + "\n");
+            return campaign;
         }
 
         private Tuple<CustomRegionSettings, StreamReader> ParseRegionSettings(StreamReader reader)
         {
-            string message = "Parsing region settings... ";
+            //string message = "Parsing region settings... ";
             
             CustomRegionSettings region = null;
             //string acronym = null;
             
-            string line;
-            while (reader.Peek() >= 0)
-            {
-                line = reader.ReadLine();
-                // if (line == "END_REGION")
-                // {
-                //     message += "created CustomRegionSettings object for " + region.RegionAcronym + "!";
-                //     Logger.LogInfo(message);
-                //     return new Tuple<CustomRegionSettings, StreamReader>(region, reader);
-                // }
-                //
-                // if (acronym == null && line.StartsWith("AC"))
-                // {
-                //     acronym = ParseString(line);
-                // }
-                // else if (region == null && acronym != null && line.StartsWith("PUPS_SPAWN"))
-                // {
-                //     region = new CustomRegionSettings(acronym, ParseBool(line));
-                // }
-                // else if (region == null)
-                // {
-                //     message += "Did not find either Region acronym, spawn bool or both after declaration, aborting!";
-                //     Logger.LogInfo(message);
-                //     return new Tuple<CustomRegionSettings, StreamReader>(null, reader);
-                // }
-                //
-                // if (line.StartsWith("MIN"))
-                // {
-                //     //region.MinPups = ParseInt(line);
-                // }
-                // if (line.StartsWith("MAX"))
-                // {
-                //     //region.MaxPups = ParseInt(line);
-                // }
-                //
-                // if (line.StartsWith("ROOM_OVERRIDES_FORBIDDEN"))
-                // {
-                //     string forbiddenRooms = ParseString(line);
-                //     string[] forbidden = Regex.Split(forbiddenRooms, ",");
-                //     foreach (string s in forbidden)
-                //     {
-                //         region.AddOverriddenRoom(s, false);
-                //     }
-                // }
-                // if (line.StartsWith("ROOM_OVERRIDES_ALLOWED"))
-                // {
-                //     string allowedRooms = ParseString(line);
-                //     string[] allowed = Regex.Split(allowedRooms, ",");
-                //     foreach (string s in allowed)
-                //     {
-                //         region.AddOverriddenRoom(s, false);
-                //     }
-                // }
-                // if (line == "END_REGION")
-                // {
-                //     return new Tuple<CustomRegionSettings, StreamReader>(region, reader);
-                // }
-            }
-
-            //message += "WARNING: Reached end of settings file!";
-            //Logger.LogInfo(message);
             return new Tuple<CustomRegionSettings, StreamReader>(region, reader);
         }
 

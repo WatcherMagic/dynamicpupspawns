@@ -1,6 +1,6 @@
 namespace dynamicpupspawns;
 
-public struct PupSpawnSettings
+public class PupSpawnSettings
 {
     public bool SpawnsDynamicPups { get; set; }
 
@@ -29,7 +29,7 @@ public struct PupSpawnSettings
     {
         get => _maxPups;
     }
-
+    
     public PupSpawnSettings(bool spawns)
     {
         SpawnsDynamicPups = spawns;
