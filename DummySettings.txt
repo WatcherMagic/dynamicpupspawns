@@ -3,7 +3,7 @@ id: testCampaign1;
 pupsDynamicSpawn: true;
 min: 0;
 max: 10;
-deadWeight: 0.5;
+spawnChance: 0.5;
 region_overrides: {
     name: xyz;
     pupsDynamicSpawn: false;

@@ -79,7 +79,7 @@ namespace dynamicpupspawns
             return orig(self);
         }
 
-        public int RandomPupGaussian(float min, float max)
+        private int RandomPupGaussian(float min, float max)
         {
             //thanks lancelot18
 
