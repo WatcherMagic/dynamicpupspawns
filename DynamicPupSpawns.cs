@@ -653,10 +653,10 @@ namespace dynamicpupspawns
                 message += "current node: " + node.Value + "\n";
                 if (node.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
                 {
-                    node = node.Next;
                     message += "Entered campaign settings delim if statement\n";
+                    node = node.Next;
                     LinkedList<string> cSettings = new LinkedList<string>();
-                    while (node.Value.ToLower() != CAMPAIGN_SETTINGS_STOP)
+                    while (node != null && node.Value.ToLower() != CAMPAIGN_SETTINGS_STOP)
                     {
                         cSettings.AddLast(node.Value);
                         message += "In nested while loop; current node: " + node.Value + "\n";
@@ -672,10 +672,19 @@ namespace dynamicpupspawns
                 else if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
                 {
                     message += "Entered region settings delim if statement\n";
+                    node = node.Next;
+                    LinkedList<string> rSettings = new LinkedList<string>();
                     while (node != null && node.Value.ToLower() != REGION_SETTINGS_STOP)
                     {
-                        node = node.Next;
+                        rSettings.AddLast(node.Value);
                         message += "In nested while loop; current node: " + node.Value + "\n";
+                        node = node.Next;
+                    }
+
+                    message += "rSettings list:\n";
+                    foreach (string s in rSettings)
+                    {
+                        message += s + "\n";
                     }
                 }
                 node = node.Next;
