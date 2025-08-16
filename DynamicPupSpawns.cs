@@ -656,14 +656,12 @@ namespace dynamicpupspawns
                 if (node.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
                 {
                     parsingCampaign = true;
-                    message += "Parsing campaign settings!\n";
                     node = node.Next;
                     continue;
                 }
                 if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
                 {
                     parsingCampaign = false;
-                    message += "Parsing region settings!\n";
                     node = node.Next;
                     continue;
                 }

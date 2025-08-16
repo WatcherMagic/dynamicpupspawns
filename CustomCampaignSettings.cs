@@ -10,13 +10,6 @@ public class CustomCampaignSettings
     
     private List<CustomRegionSettings> _campaignRegionSettings = new List<CustomRegionSettings>();
     
-    public CustomCampaignSettings() { }
-    
-    public CustomCampaignSettings(string id)
-    {
-        CampaignID = id;
-    }
-    
     public CustomCampaignSettings(string id, PupSpawnSettings pupSpawnSettings)
     {
         CampaignID = id;
