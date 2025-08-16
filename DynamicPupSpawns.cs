@@ -647,76 +647,15 @@ namespace dynamicpupspawns
         private bool ParseSymbols(LinkedList<string> symbols, CustomSettingsWrapper settings)
         {
             string message = "Parsing symbols...\n";
-            bool parsingCampaign = false;
-            bool parsingPup = false;
             LinkedListNode<string> node = symbols.First;
             
             while (node != null)
             {
                 if (node.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
                 {
-                    parsingCampaign = true;
-                    node = node.Next;
-                    continue;
                 }
-                if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
+                else if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
                 {
-                    parsingCampaign = false;
-                    node = node.Next;
-                    continue;
-                }
-                if (node.Value.ToLower() == PUP_SETTINGS_DELIM)
-                {
-                    parsingPup = true;
-                    node = node.Next;
-                    continue;
-                }
-                
-                if (parsingCampaign)
-                {
-                    if (parsingPup)
-                    {
-                        if (node.Value.ToLower() == PUP_SETTINGS_STOP)
-                        {
-                            message += "Reached the end of pup settings in campaign!\n";
-                            parsingPup = false;
-                            node = node.Next;
-                            continue;
-                        }
-                        
-                        message += "Parsing pup settings in campaign!\n";
-                    }
-                    else if (node.Value.ToLower() == CAMPAIGN_SETTINGS_STOP)
-                    {
-                        message += "Reached the end of the campaign's settings!\n";
-                    }
-                    else
-                    {
-                        message += "Parsing settings in campaign!\n";
-                    }
-                }
-                else
-                {
-                    if (parsingPup)
-                    {
-                        if (node.Value.ToLower() == PUP_SETTINGS_STOP)
-                        {
-                            message += "Reached the end of pup settings in region!\n";
-                            parsingPup = false;
-                            node = node.Next;
-                            continue;
-                        }
-                        
-                        message += "Parsing pup settings in region!\n";
-                    }
-                    else if (node.Value.ToLower() == CAMPAIGN_SETTINGS_STOP)
-                    {
-                        message += "Reached the end of the region's settings!\n";
-                    }
-                    else
-                    {
-                        message += "Parsing settings in region!\n";
-                    }
                 }
                 node = node.Next;
             }
