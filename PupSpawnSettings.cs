@@ -2,9 +2,9 @@ namespace dynamicpupspawns;
 
 public class PupSpawnSettings
 {
-    public bool SpawnsDynamicPups { get; set; }
+    public bool SpawnsDynamicPups { get; }
 
-    public float SpawnChance { get; set; }
+    public float SpawnChance { get; }
 
     private bool _setMinMaxSucceeded = true;
     public bool SetMinMaxSucceeded
@@ -12,31 +12,25 @@ public class PupSpawnSettings
         get => _setMinMaxSucceeded;
     }
     
-    private int _minPups = -1;
+    private int _minPups;
     public int MinPups
     {
         get => _minPups;
     }
-    private int _maxPups = -1;
+    private int _maxPups;
     public int MaxPups
     {
         get => _maxPups;
     }
+    
     public PupSpawnSettings(bool spawns, int min, int max, float chance)
     {
         SpawnsDynamicPups = spawns;
         SetMinAndMaxPups(min, max);
-        if (chance > 1f)
-        {
-            SpawnChance = 1f;
-        }
-        else
-        {
-            SpawnChance = chance;
-        }
+        SpawnChance = chance > 1f ? 1f : chance;
     }
     
-    public void SetMinAndMaxPups(int min, int max)
+    private void SetMinAndMaxPups(int min, int max)
     {
         if (min > max)
         {

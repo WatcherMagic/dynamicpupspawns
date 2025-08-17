@@ -610,13 +610,6 @@ namespace dynamicpupspawns
                         symbol = "";
                     }
                 }
-
-                string message = "Extracted symbols:\n";
-                foreach (string s in symbols)
-                {
-                    message += s + "\n";
-                }
-                Logger.LogInfo(message);
             }
             catch (FileNotFoundException e)
             {
@@ -629,157 +622,206 @@ namespace dynamicpupspawns
                 Debug.LogException(e);
             }
             
-            bool success = ParseSymbols(symbols, modSettings);
-            
-            if (success)
-            {
-                _settings.Add(modSettings);
-                Logger.LogInfo("Finished parsing for " + modID + "!");
-            }
-            else
-            {
-                Logger.LogWarning("Couldn't parse symbols for " + modID + "!");
-                Debug.LogWarning("Couldn't parse symbols for " + modID + "!");
-            }
+            modSettings = ParseSymbols(symbols, modSettings);
+            _settings.Add(modSettings);
+            Logger.LogInfo("Finished parsing for " + modID + "!");
         }
 
-        private bool ParseSymbols(LinkedList<string> symbols, CustomSettingsWrapper settings)
+        private CustomSettingsWrapper ParseSymbols(LinkedList<string> symbols, CustomSettingsWrapper settings)
         {
-            string message = "Parsing symbols...\n";
+            Logger.LogInfo("Parsing symbols...");
             LinkedListNode<string> node = symbols.First;
             
             while (node != null)
             {
-                message += "current node: " + node.Value + "\n";
                 if (node.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
                 {
-                    message += "Entered campaign settings delim if statement\n";
                     node = node.Next;
                     LinkedList<string> cSettings = new LinkedList<string>();
                     while (node != null && node.Value.ToLower() != CAMPAIGN_SETTINGS_STOP)
                     {
                         cSettings.AddLast(node.Value);
-                        message += "In nested while loop; current node: " + node.Value + "\n";
                         node = node.Next;
                     }
 
-                    message += "cSettings list:\n";
-                    foreach (string s in cSettings)
+                    CustomCampaignSettings set = ParseCampaignSettings(cSettings);
+                    if (set != null)
                     {
-                        message += s + "\n";
+                        Logger.LogInfo("Succeeded for campaign " + set.CampaignID + "!\n");
+                        settings.AddCampaignSettings(set);
                     }
                 }
                 else if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
                 {
-                    message += "Entered region settings delim if statement\n";
                     node = node.Next;
                     LinkedList<string> rSettings = new LinkedList<string>();
                     while (node != null && node.Value.ToLower() != REGION_SETTINGS_STOP)
                     {
                         rSettings.AddLast(node.Value);
-                        message += "In nested while loop; current node: " + node.Value + "\n";
                         node = node.Next;
                     }
 
-                    message += "rSettings list:\n";
-                    foreach (string s in rSettings)
+                    CustomRegionSettings set = ParseRegionSettings(rSettings);
+                    if (set != null)
                     {
-                        message += s + "\n";
+                        Logger.LogInfo("Succeeded for region " + set.RegionAcronym + "!\n");
+                        settings.AddRegionSettings(set);
                     }
                 }
                 node = node.Next;
             }
 
-            Logger.LogInfo(message);
-            return true;
+            return settings;
         }
         
-        private CustomCampaignSettings ParseCampaignSettings(string symbol, CustomCampaignSettings campaign)
+        private CustomCampaignSettings ParseCampaignSettings(LinkedList<string> symbols)
         {
-            string message = "Parsing " + symbol + "... ";
+            Logger.LogInfo("Parsing campaign settings...");
+            LinkedListNode<string> node = symbols.First;
 
+            string id = null;
+            PupSpawnSettings pupSettings = null;
+
+            while (node != null)
+            {
+                if (node.Value.StartsWith("id"))
+                {
+                    object o = ParseValue(node.Value);
+                    if (o != null)
+                    {
+                        id = (string)o;
+                    }
+                }
+                else if (node.Value.ToLower() == PUP_SETTINGS_DELIM)
+                {
+                    node = node.Next;
+                    List<string> pSettings = new List<string>();
+                    while (node != null && node.Value.ToLower() != PUP_SETTINGS_STOP)
+                    {
+                        pSettings.Add(node.Value);
+                        node = node.Next;
+                    }
+                    pupSettings = ParsePupSpawnSettings(pSettings);
+                }
+
+                node = node.Next;
+            }
             
-            Logger.LogInfo(message + "\n");
-            return campaign;
+            if (id == null || pupSettings == null)
+            {
+                Logger.LogError("ERROR: Couldn't extract id or pup spawn settings from campaign settings!");
+                return null;
+            }
+
+            return new CustomCampaignSettings(id, pupSettings);
         }
 
-        private Tuple<CustomRegionSettings, StreamReader> ParseRegionSettings(StreamReader reader)
+        private CustomRegionSettings ParseRegionSettings(LinkedList<string> symbols)
         {
-            //string message = "Parsing region settings... ";
+            Logger.LogInfo("Parsing region settings... ");
+
+            LinkedListNode<string> node = symbols.First;
+
+            string name = null;
+            PupSpawnSettings pupSettings = null;
+
+            while (node != null)
+            {
+                if (node.Value.StartsWith("name"))
+                {
+                    object o = ParseValue(node.Value);
+                    if (o != null)
+                    {
+                        name = (string)o;
+                    }
+                }
+                else if (node.Value.ToLower() == PUP_SETTINGS_DELIM)
+                {
+                    node = node.Next;
+                    List<string> pSettings = new List<string>();
+                    while (node != null && node.Value.ToLower() != PUP_SETTINGS_STOP)
+                    {
+                        pSettings.Add(node.Value);
+                        node = node.Next;
+                    }
+                    pupSettings = ParsePupSpawnSettings(pSettings);
+                }
+
+                node = node.Next;
+            }
             
-            CustomRegionSettings region = null;
-            //string acronym = null;
-            
-            return new Tuple<CustomRegionSettings, StreamReader>(region, reader);
+            if (name == null || pupSettings == null)
+            {
+                Logger.LogInfo("ERROR: Couldn't extract id or pup spawn settings from campaign settings!");
+                return null;
+            }
+            return new CustomRegionSettings(name, pupSettings);
         }
 
-        private int ParseInt(string setting)
+        private PupSpawnSettings ParsePupSpawnSettings(List<string> pSettings)
         {
-            string message = "Parsing int... ";
-            
-            int n = -1;
-            string[] num = Regex.Split(setting, ":");
-            if (num.Length == 2)
-            {
-                try
-                {
-                    n = Int32.Parse(num[1]);
-                    message += "Succeeded!";
-                }
-                catch (Exception e)
-                {
-                    message += "Int32.Parse Error! See exceptions log.";
-                    Debug.LogError(e.Message);
-                }
-            }
-            else
-            {
-                message += "Failed to parse number value!\n";
-            }
-            Logger.LogInfo(message);
+            bool spawns = false;
+            float chance = -1f;
+            int min = -1;
+            int max = -1;
 
-            return n;
+            foreach (string s in pSettings)
+            {
+                object o = ParseValue(s);
+                if (o != null)
+                {
+                    if (s.StartsWith("pupsDynamicSpawn"))
+                    {
+                        spawns = (bool)o;
+                    }
+                    else if (s.StartsWith("spawnChance"))
+                    {
+                        chance = (float)o;
+                    }
+                    else if (s.StartsWith("min"))
+                    {
+                        float f = (float)o;
+                        min = (int)f;
+                    }
+                    else if (s.StartsWith("max"))
+                    {
+                        float f = (float)o;
+                        max = (int)f;
+                    }
+                    else
+                    {
+                        Logger.LogWarning("Unrecognized value in Pup Spawns settings!");
+                    }
+                }
+            }
+            
+            return new PupSpawnSettings(spawns, min, max, chance);
         }
-
-        private bool ParseBool(string setting)
+        
+        private object ParseValue(string setting)
         {
-            string message = "Parsing bool... ";
-            
-            bool val = false;
-            string[] boo = Regex.Split(setting, ":");
-            if (boo.Length == 2)
+            string[] value = Regex.Split(setting, ":");
+            if (value.Length == 2)
             {
-                if (boo[1] == "TRUE")
+                float parsedNum;
+                if (float.TryParse(value[1], out parsedNum))
                 {
-                    val = true;
+                    return parsedNum;
                 }
-                else if (boo[1] != "FALSE")
+
+                if (value[1].ToLower().StartsWith("f"))
                 {
-                    message += "Failed to parse value for bool, will return False!\n";
+                    return false;
                 }
-            }
-            Logger.LogInfo(message);
+                if (value[1].ToLower().StartsWith("t"))
+                {
+                    return true;
+                }
 
-            return val;
-        }
-
-        private string ParseString(string setting)
-        {
-            string message = "Parsing string... ";
-            
-            string val = null;
-            string[] str = Regex.Split(setting, ":");
-            if (str.Length == 2)
-            {
-                val = str[1];
+                return value[1];
             }
-            else
-            {
-                message += "Failed to read string or no value is present!";
-            }
-            Logger.LogInfo(message);
             
-            return val;
+            return null;
         }
     }
 }
