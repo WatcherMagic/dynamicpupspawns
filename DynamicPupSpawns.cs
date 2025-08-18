@@ -676,6 +676,7 @@ namespace dynamicpupspawns
         {
             Logger.LogInfo("Parsing symbols...");
             LinkedListNode<string> node = symbols.First;
+            string message = "";
             
             while (node != null)
             {
@@ -692,7 +693,7 @@ namespace dynamicpupspawns
                     CustomCampaignSettings set = ParseCampaignSettings(cSettings);
                     if (set != null)
                     {
-                        Logger.LogInfo("Succeeded for campaign " + set.CampaignID + "!\n");
+                        message += "Succeeded parsing symbols for campaign " + set.CampaignID + "!\n";
                         settings.AddCampaignSettings(set);
                     }
                 }
@@ -709,19 +710,19 @@ namespace dynamicpupspawns
                     CustomRegionSettings set = ParseRegionSettings(rSettings);
                     if (set != null)
                     {
-                        Logger.LogInfo("Succeeded for region " + set.RegionAcronym + "!\n");
+                        message += "Succeeded parsing symbols for region " + set.RegionAcronym + "!\n";
                         settings.AddRegionSettings(set);
                     }
                 }
                 node = node.Next;
             }
 
+            Logger.LogInfo(message);
             return settings;
         }
         
         private CustomCampaignSettings ParseCampaignSettings(LinkedList<string> symbols)
         {
-            Logger.LogInfo("Parsing campaign settings...");
             LinkedListNode<string> node = symbols.First;
 
             string id = null;
@@ -729,7 +730,7 @@ namespace dynamicpupspawns
 
             while (node != null)
             {
-                if (node.Value.StartsWith("id"))
+                if (node.Value.ToLower().StartsWith("id"))
                 {
                     object o = ParseValue(node.Value);
                     if (o != null)
@@ -754,7 +755,8 @@ namespace dynamicpupspawns
             
             if (id == null || pupSettings == null)
             {
-                Logger.LogError("ERROR: Couldn't extract id or pup spawn settings from campaign settings!");
+                string idUnknown = "unknown";
+                Logger.LogError("ERROR: Couldn't extract id or pup spawn settings from " + (id == null ? idUnknown : id).ToUpper() + " campaign settings!");
                 return null;
             }
 
@@ -763,8 +765,6 @@ namespace dynamicpupspawns
 
         private CustomRegionSettings ParseRegionSettings(LinkedList<string> symbols)
         {
-            Logger.LogInfo("Parsing region settings... ");
-
             LinkedListNode<string> node = symbols.First;
 
             string name = null;
@@ -772,7 +772,7 @@ namespace dynamicpupspawns
 
             while (node != null)
             {
-                if (node.Value.StartsWith("name"))
+                if (node.Value.ToLower().StartsWith("name"))
                 {
                     object o = ParseValue(node.Value);
                     if (o != null)
@@ -797,7 +797,8 @@ namespace dynamicpupspawns
             
             if (name == null || pupSettings == null)
             {
-                Logger.LogInfo("ERROR: Couldn't extract id or pup spawn settings from campaign settings!");
+                string nameUnknown = "unknown";
+                Logger.LogInfo("ERROR: Couldn't extract id or pup spawn settings from " + (name == null ? nameUnknown : name).ToUpper() + " region settings!");
                 return null;
             }
             return new CustomRegionSettings(name, pupSettings);
