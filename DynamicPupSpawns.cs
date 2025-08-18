@@ -59,7 +59,7 @@ namespace dynamicpupspawns
                 CustomCampaignSettings c = set.GetCampaign(self.game.StoryCharacter.ToString());
                 if (c != null)
                 {
-                    Logger.LogInfo("Found settings for " + c.CampaignID);
+                    Logger.LogInfo("Found campaign settings for " + c.CampaignID);
                     if (!c.PupSpawnSettings.SpawnsDynamicPups)
                     {
                         allowsSpawn = false;
@@ -592,7 +592,7 @@ namespace dynamicpupspawns
             
             if (_settings == null)
             {
-                Logger.LogInfo("Creating new global settings list\n");
+                Logger.LogInfo("Creating new settings list");
                 _settings = new List<CustomSettingsWrapper>();
             }
 
@@ -644,41 +644,7 @@ namespace dynamicpupspawns
             {   
                 string settings = File.ReadAllText(filePath);
                 settings = Regex.Replace(settings, @"\s+", "");
-                StringReader reader = new StringReader(settings);
-                
-                string symbol = "";
-                while (reader.Peek() >= 0)
-                {
-                    char c = (char)reader.Peek();
-                    if (c != ';')
-                    {
-                        if (c == '{')
-                        {
-                            while (reader.Peek() >= 0)
-                            {
-                                c = (char)reader.Peek();
-                                if (c != '}')
-                                {
-                                    symbol += (char)reader.Read();
-                                }
-                                else
-                                {
-                                    symbol += (char)reader.Read();
-                                    break;
-                                }
-                            }
-
-                            continue;
-                        }
-                        symbol += (char)reader.Read();
-                    }
-                    else
-                    {
-                        reader.Read();
-                        symbols.AddLast(symbol);
-                        symbol = "";
-                    }
-                }
+                symbols = CreateSymbolsList(settings);
             }
             catch (FileNotFoundException e)
             {
@@ -691,12 +657,53 @@ namespace dynamicpupspawns
                 Debug.LogException(e);
             }
             
-            modSettings = ParseSymbols(symbols, modSettings);
+            modSettings = ParseGeneralSettings(symbols, modSettings);
             _settings.Add(modSettings);
             Logger.LogInfo("Finished parsing for " + modID + "!");
         }
 
-        private CustomSettingsWrapper ParseSymbols(LinkedList<string> symbols, CustomSettingsWrapper settings)
+        private LinkedList<string> CreateSymbolsList(string settings)
+        {
+            StringReader reader = new StringReader(settings);
+            LinkedList<string> symbols = new LinkedList<string>();    
+            
+            string symbol = "";
+            while (reader.Peek() >= 0)
+            {
+                char c = (char)reader.Peek();
+                if (c != ';')
+                {
+                    if (c == '{')
+                    {
+                        while (reader.Peek() >= 0)
+                        {
+                            c = (char)reader.Peek();
+                            if (c != '}')
+                            {
+                                symbol += (char)reader.Read();
+                            }
+                            else
+                            {
+                                symbol += (char)reader.Read();
+                                break;
+                            }
+                        }
+
+                        continue;
+                    }
+                    symbol += (char)reader.Read();
+                }
+                else
+                {
+                    reader.Read();
+                    symbols.AddLast(symbol);
+                    symbol = "";
+                }
+            }
+            return symbols;
+        }
+
+        private CustomSettingsWrapper ParseGeneralSettings(LinkedList<string> symbols, CustomSettingsWrapper settings)
         {
             Logger.LogInfo("Parsing symbols...");
             LinkedListNode<string> node = symbols.First;
@@ -751,6 +758,7 @@ namespace dynamicpupspawns
 
             string id = null;
             PupSpawnSettings pupSettings = null;
+            List<CustomRegionSettings> cRegions = new List<CustomRegionSettings>();
 
             while (node != null)
             {
@@ -773,7 +781,10 @@ namespace dynamicpupspawns
                     }
                     pupSettings = ParsePupSpawnSettings(pSettings);
                 }
-
+                else if (node.Value.ToLower().StartsWith("region_overrides"))
+                {
+                    
+                }
                 node = node.Next;
             }
             
