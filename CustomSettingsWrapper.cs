@@ -28,7 +28,7 @@ public class CustomSettingsWrapper
     {
         foreach (CustomCampaignSettings settings in _campaignSettings)
         {
-            if (id == settings.CampaignID)
+            if (id.ToLower() == settings.CampaignID.ToLower())
             {
                 return settings;
             }
@@ -41,7 +41,7 @@ public class CustomSettingsWrapper
     {
         foreach (CustomRegionSettings settings in _regionSettings)
         {
-            if (acronym == settings.RegionAcronym)
+            if (acronym.ToLower() == settings.RegionAcronym.ToLower())
             {
                 return settings;
             }

@@ -25,7 +25,7 @@ public class CustomCampaignSettings
     {
         foreach (CustomRegionSettings settings in _campaignRegionSettings)
         {
-            if (acronym == settings.RegionAcronym)
+            if (acronym.ToLower() == settings.RegionAcronym.ToLower())
             {
                 return settings;
             }
