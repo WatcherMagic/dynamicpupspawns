@@ -49,17 +49,31 @@ namespace dynamicpupspawns
             int minPupsInRegion = 1;
             int maxPupsInRegion = 5;
             float spawnChance = 0.3f;
+
+            bool allowsSpawn = true;
             
             foreach (CustomSettingsWrapper set in _settings)
             {
+                Logger.LogInfo("Iterating over settings for " + set.ModID);
+                
                 CustomCampaignSettings c = set.GetCampaign(self.game.StoryCharacter.ToString());
                 if (c != null)
                 {
                     Logger.LogInfo("Found settings for " + c.CampaignID);
+                    if (!c.PupSpawnSettings.SpawnsDynamicPups)
+                    {
+                        allowsSpawn = false;
+                        break;
+                    }
                     CustomRegionSettings cr = c.GetCampaignRegion(self.name);
                     if (cr != null)
                     {
                         Logger.LogInfo("Found region settings for " + cr.RegionAcronym + " in " + c.CampaignID);
+                        if (!cr.PupSpawnSettings.SpawnsDynamicPups)
+                        {
+                            allowsSpawn = false;
+                            break;
+                        }
                         minPupsInRegion = cr.PupSpawnSettings.MinPups;
                         maxPupsInRegion = cr.PupSpawnSettings.MaxPups;
                         spawnChance = cr.PupSpawnSettings.SpawnChance;
@@ -73,6 +87,11 @@ namespace dynamicpupspawns
                 if (r != null)
                 {
                     Logger.LogInfo("Found region settings for " + r.RegionAcronym);
+                    if (!r.PupSpawnSettings.SpawnsDynamicPups)
+                    {
+                        allowsSpawn = false;
+                        break;
+                    }
                     minPupsInRegion = r.PupSpawnSettings.MinPups;
                     maxPupsInRegion = r.PupSpawnSettings.MaxPups;
                     spawnChance = r.PupSpawnSettings.SpawnChance;
@@ -80,39 +99,39 @@ namespace dynamicpupspawns
                 }
             }
 
-            Logger.LogInfo("Chance of new pups spawning: " + spawnChance.ToString("P"));
-            Debug.Log("DynamicPupSpawns: Chance of new pups spawning: " + spawnChance.ToString("P"));
-            Logger.LogInfo("Min: " + minPupsInRegion);
-            Debug.Log("DynamicPupSpawns: Min: " + minPupsInRegion);
-            Logger.LogInfo("Max: " + maxPupsInRegion);
-            Debug.Log("DynamicPupSpawns: Max: " + maxPupsInRegion);
-            
-            //generate number of pups for this cycle
-            // + 1 to max to account for rounding down w/ cast to int
-            int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
-            Logger.LogInfo("Possibility of " + pupNum + " pups this cycle");
-            Debug.Log("DynamicPupSpawns: Possibility of " + pupNum + " pups this cycle");
-
-            //respawn pups from save data
-            pupNum = SpawnPersistentPups(self, pupNum);
-
-            bool spawnThisCycle = DoPupsSpawn(spawnChance);
-            if (spawnThisCycle)
+            if (allowsSpawn)
             {
-                //get rooms with unsubmerged den nodes
-                Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
+                Logger.LogInfo("Chance of new pups spawning: " + spawnChance.ToString("P"));
+                Debug.Log("DynamicPupSpawns: Chance of new pups spawning: " + spawnChance.ToString("P"));
+                Logger.LogInfo("Min: " + minPupsInRegion);
+                Debug.Log("DynamicPupSpawns: Min: " + minPupsInRegion);
+                Logger.LogInfo("Max: " + maxPupsInRegion);
+                Debug.Log("DynamicPupSpawns: Max: " + maxPupsInRegion);
+                
+                //generate number of pups for this cycle
+                // + 1 to max to account for rounding down w/ cast to int
+                int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
+                Logger.LogInfo("Possibility of " + pupNum + " pups this cycle");
+                Debug.Log("DynamicPupSpawns: Possibility of " + pupNum + " pups this cycle");
 
-                //determine room spawn weight based on number of dens in room
-                Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
+                //respawn pups from save data
+                pupNum = SpawnPersistentPups(self, pupNum);
 
-                //get dict of rooms and weights in parallel arrays
-                Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
-                float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
-            
-                if (pupNum > 0)
+                bool spawnThisCycle = DoPupsSpawn(spawnChance);
+                if (spawnThisCycle && pupNum > 0)
                 {
+                    //get rooms with unsubmerged den nodes
+                    Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
+
+                    //determine room spawn weight based on number of dens in room
+                    Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
+
+                    //get dict of rooms and weights in parallel arrays
+                    Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
+                    float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
+            
                     //get random room for each pup
-                    for (int i = 0; i < pupNum; i++)
+                    for (; pupNum > 0; pupNum--)
                     {
                         AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
                         if (self.game.IsStorySession)
@@ -121,6 +140,11 @@ namespace dynamicpupspawns
                         }
                     }
                 }
+            }
+            else
+            {
+                Debug.Log("DynamicPupSpawns: Region or campaign does not allow spawns.");
+                Logger.LogInfo("Region or campaign does not allow spawns.");
             }
 
             return orig(self);
