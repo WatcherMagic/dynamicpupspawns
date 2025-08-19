@@ -25,6 +25,7 @@ namespace dynamicpupspawns
         private const string CAMPAIGN_SETTINGS_DELIM = "campaigns";
         private const string CAMPAIGN_SETTINGS_STOP = "end_campaigns";
         private const string REGION_SETTINGS_DELIM = "regions";
+        private const string REGION_SETTINGS_DIVIDE = "region";
         private const string REGION_SETTINGS_STOP = "end_regions";
         private const string PUP_SETTINGS_DELIM = "pupsettings";
         private const string PUP_SETTINGS_STOP = "end_pupsettings";
@@ -644,7 +645,7 @@ namespace dynamicpupspawns
             {   
                 string settings = File.ReadAllText(filePath);
                 settings = Regex.Replace(settings, @"\s+", "");
-                symbols = CreateSymbolsList(settings);
+                symbols = CreateSymbolsList(settings, '{', '}');
             }
             catch (FileNotFoundException e)
             {
@@ -662,7 +663,7 @@ namespace dynamicpupspawns
             Logger.LogInfo("Finished parsing for " + modID + "!");
         }
 
-        private LinkedList<string> CreateSymbolsList(string settings)
+        private LinkedList<string> CreateSymbolsList(string settings, char bracket, char endBracket)
         {
             StringReader reader = new StringReader(settings);
             LinkedList<string> symbols = new LinkedList<string>();    
@@ -673,12 +674,12 @@ namespace dynamicpupspawns
                 char c = (char)reader.Peek();
                 if (c != ';')
                 {
-                    if (c == '{')
+                    if (c == bracket)
                     {
                         while (reader.Peek() >= 0)
                         {
                             c = (char)reader.Peek();
-                            if (c != '}')
+                            if (c != endBracket)
                             {
                                 symbol += (char)reader.Read();
                             }
@@ -754,6 +755,7 @@ namespace dynamicpupspawns
         
         private CustomCampaignSettings ParseCampaignSettings(LinkedList<string> symbols)
         {
+            Logger.LogInfo("In ParseCamapignSettings()");
             LinkedListNode<string> node = symbols.First;
 
             string id = null;
@@ -783,7 +785,34 @@ namespace dynamicpupspawns
                 }
                 else if (node.Value.ToLower().StartsWith("region_overrides"))
                 {
-                    
+                    Logger.LogInfo("Found region overrides");
+                    object o = ParseValue(node.Value);
+                    if (o != null)
+                    {
+                        string r = (string)o;
+                        Logger.LogInfo("r: " + r);
+                        r = r.Substring(1, r.Length - 2);
+                        Logger.LogInfo("r substringed: " + r);
+                        
+                        LinkedList<string> regionSymbols = CreateSymbolsList(r, '[', ']');
+                        //LinkedList<string> singleRegion = new LinkedList<string>();
+                        Logger.LogInfo("region symbols: ");
+                        foreach (string s in regionSymbols)
+                        {
+                            Logger.LogInfo(s);
+                            if (s.ToLower() == REGION_SETTINGS_DIVIDE)
+                            {
+                                //cRegions.Add(ParseRegionSettings(singleRegion));
+                                //singleRegion.Clear();
+                                continue;
+                            }
+                            //singleRegion.AddLast(s);
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogInfo("Object returned null from ParseValue()!");
+                    }
                 }
                 node = node.Next;
             }
@@ -791,11 +820,21 @@ namespace dynamicpupspawns
             if (id == null || pupSettings == null)
             {
                 string idUnknown = "unknown";
-                Logger.LogError("ERROR: Couldn't extract id or pup spawn settings from " + (id == null ? idUnknown : id).ToUpper() + " campaign settings!");
+                Logger.LogError("Couldn't extract id or pup spawn settings from " + (id == null ? idUnknown : id).ToUpper() + " campaign settings!");
                 return null;
             }
 
-            return new CustomCampaignSettings(id, pupSettings);
+            CustomCampaignSettings result = new CustomCampaignSettings(id, pupSettings);
+            // if (cRegions.Count > 0)
+            // {
+            //     Logger.LogInfo("Adding custom region settings to campaign");
+            //     foreach (CustomRegionSettings r in cRegions)
+            //     {
+            //         result.AddCampaignRegionSettings(r);
+            //     }
+            // }
+
+            return result;
         }
 
         private CustomRegionSettings ParseRegionSettings(LinkedList<string> symbols)
@@ -833,7 +872,7 @@ namespace dynamicpupspawns
             if (name == null || pupSettings == null)
             {
                 string nameUnknown = "unknown";
-                Logger.LogInfo("ERROR: Couldn't extract id or pup spawn settings from " + (name == null ? nameUnknown : name).ToUpper() + " region settings!");
+                Logger.LogError("Couldn't extract acronym or pup spawn settings from " + (name == null ? nameUnknown : name).ToUpper() + " region settings!");
                 return null;
             }
             return new CustomRegionSettings(name, pupSettings);
@@ -881,7 +920,7 @@ namespace dynamicpupspawns
         
         private object ParseValue(string setting)
         {
-            string[] value = Regex.Split(setting, ":");
+            string[] value = setting.Split(":".ToCharArray(), 2);
             if (value.Length == 2)
             {
                 float parsedNum;
@@ -902,6 +941,7 @@ namespace dynamicpupspawns
                 return value[1];
             }
             
+            Logger.LogWarning("Value array was less than the expected size of 2! ParseValue() is returning null for " + setting + "!");
             return null;
         }
     }
