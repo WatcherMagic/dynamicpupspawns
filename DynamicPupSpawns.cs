@@ -591,6 +591,11 @@ namespace dynamicpupspawns
         {
             orig();
             
+            //thanks wellme
+            Logger.LogWarning("Logging mods:");
+            foreach (var kvp in BepInEx.Bootstrap.Chainloader.PluginInfos)
+                Logger.LogWarning($"{kvp.Key} {kvp.Value?.Location ?? "null"}");
+            
             if (_settings == null)
             {
                 Logger.LogInfo("Creating new settings list");
