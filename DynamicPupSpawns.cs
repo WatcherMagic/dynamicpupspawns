@@ -622,7 +622,7 @@ namespace dynamicpupspawns
                 Debug.LogException(e);
             }
             
-            modSettings = ParseSymbols(symbols, modSettings);
+            modSettings = ParseGeneralSettings(symbols, modSettings);
             _settings.Add(modSettings);
             Logger.LogInfo("Finished parsing for " + modID + "!");
         }
@@ -644,7 +644,7 @@ namespace dynamicpupspawns
         END_CAMPAIGNS;
         */
         
-        private CustomSettingsWrapper ParseSymbols(LinkedList<string> symbols, CustomSettingsWrapper settings)
+        private CustomSettingsWrapper ParseGeneralSettings(LinkedList<string> symbols, CustomSettingsWrapper settings)
         {
             Logger.LogInfo("Parsing symbols...");
             LinkedListNode<string> node = symbols.First;
