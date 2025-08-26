@@ -627,6 +627,23 @@ namespace dynamicpupspawns
             Logger.LogInfo("Finished parsing for " + modID + "!");
         }
 
+        //copy of settings in custom slugcat test mod
+        /*
+         CAMPAIGNS;
+        id: mcevilslug;
+        PUPSETTINGS;
+        pupsDynamicSpawn: true;
+        min: 2;
+        max: 5;
+        spawnChance: 1.0;
+        END_PUPSETTINGS;
+        region_overrides: {
+            name: ss;
+            pupsDynamicSpawn: false;
+        };
+        END_CAMPAIGNS;
+        */
+        
         private CustomSettingsWrapper ParseSymbols(LinkedList<string> symbols, CustomSettingsWrapper settings)
         {
             Logger.LogInfo("Parsing symbols...");
