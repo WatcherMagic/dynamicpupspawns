@@ -817,7 +817,7 @@ namespace dynamicpupspawns
         
         private object ParseValue(string setting)
         {
-            string[] value = Regex.Split(setting, ":");
+            string[] value = setting.Split(":".ToCharArray(), 2);
             if (value.Length == 2)
             {
                 float parsedNum;
@@ -837,7 +837,8 @@ namespace dynamicpupspawns
 
                 return value[1];
             }
-            
+
+            Logger.LogError("Array for extracting setting value was not the expected size of 2! Returning null.");
             return null;
         }
     }
