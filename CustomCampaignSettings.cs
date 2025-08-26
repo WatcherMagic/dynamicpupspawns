@@ -42,6 +42,7 @@ public class CustomCampaignSettings
         s += "Spawns Dynamic Pups: " +  PupSpawnSettings.SpawnsDynamicPups + "\n";
         s += "MinPups: " + PupSpawnSettings.MinPups + "\n";
         s += "MaxPups: " + PupSpawnSettings.MaxPups + "\n";
+        s += "SpawnChance: " + PupSpawnSettings.SpawnChance.ToString("P") + "\n";
         // s += "Campaign Region Settings:\n";
         // foreach (CustomRegionSettings regionSettings in _campaignRegionSettings)
         // {

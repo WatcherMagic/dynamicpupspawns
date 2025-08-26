@@ -23,6 +23,7 @@ public class CustomRegionSettings
         s += "Spawns Dynamic Pups: " +  PupSpawnSettings.SpawnsDynamicPups + "\n";
         s += "MinPups: " + PupSpawnSettings.MinPups + "\n";
         s += "MaxPups: " + PupSpawnSettings.MaxPups + "\n";
+        s += "SpawnChance: " + PupSpawnSettings.SpawnChance.ToString("P") + "\n";
         
         return s;
     }

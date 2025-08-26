@@ -49,6 +49,24 @@ public class CustomSettingsWrapper
 
         return null;
     }
+
+    public bool HasRegionSettings()
+    {
+        if (_regionSettings.Count > 0)
+        {
+            return true;
+        }
+        return false;
+    }
+    
+    public bool HasCampaignSettings()
+    {
+        if (_campaignSettings.Count > 0)
+        {
+            return true;
+        }
+        return false;
+    }
     
     public override string ToString()
     {

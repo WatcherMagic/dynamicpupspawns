@@ -523,48 +523,198 @@ namespace dynamicpupspawns
             
             if (_settings == null)
             {
-                Logger.LogInfo("Creating new global settings list\n");
+                Logger.LogInfo("Creating new global settings list");
                 _settings = new List<CustomSettingsWrapper>();
             }
 
-            foreach (ModManager.Mod mod in ModManager.ActiveMods)
-            {
-                bool depends = false;
-                string filePath = mod.path + "\\dynamicpups\\settings.txt";
-                for (int i = 0; i < mod.requirements.Length; i++)
-                {
-                    if (mod.requirements[i] == _MOD_ID)
-                    {
-                        depends = true;
-                        Logger.LogInfo("Found dependent!: " + mod.name);
-                        ProcessSettings(filePath, mod.id);
-                        break;
-                    }
-                }
+            //temporarily removed while settings functionality is tested
+            // foreach (ModManager.Mod mod in ModManager.ActiveMods)
+            // {
+            //     bool depends = false;
+            //     string filePath = mod.path + "\\dynamicpups\\settings.txt";
+            //     for (int i = 0; i < mod.requirements.Length; i++)
+            //     {
+            //         if (mod.requirements[i] == _MOD_ID)
+            //         {
+            //             depends = true;
+            //             Logger.LogInfo("Found dependent!: " + mod.name);
+            //             ProcessSettings(filePath, mod.id);
+            //             break;
+            //         }
+            //     }
+            //
+            //     if (!depends)
+            //     {
+            //         for (int i = 0; i < mod.priorities.Length; i++)
+            //         {
+            //             if (mod.priorities[i] == _MOD_ID)
+            //             {
+            //                 Logger.LogInfo("Found priority!: " + mod.name);
+            //                 ProcessSettings(filePath, mod.id);
+            //                 break;
+            //             }
+            //         }
+            //     }
+            // }
 
-                if (!depends)
-                {
-                    for (int i = 0; i < mod.priorities.Length; i++)
-                    {
-                        if (mod.priorities[i] == _MOD_ID)
-                        {
-                            Logger.LogInfo("Found priority!: " + mod.name);
-                            ProcessSettings(filePath, mod.id);
-                            break;
-                        }
-                    }
-                }
+            string[] testSettingsArray = SettingTestData();
+            for (int i = 0; i < testSettingsArray.Length; i++)
+            {
+                ProcessSettings(testSettingsArray[i], "Test Data " + (i + 1), true);
             }
 
-            string message = "Finished processing custom settings for dependents!:\n";
+            string message = "Finished processing custom settings for dependents!:";
             foreach (CustomSettingsWrapper wrapper in _settings)
             {
-                message += wrapper.ToString();
+                message += "\n" + wrapper.ToString();
             }
             Logger.LogInfo(message);
         }
 
-        private void ProcessSettings(string filePath, string modID)
+        private string[] SettingTestData()
+        {
+            return new[]
+            {
+                /*DATA SET 1 [X]
+                empty file
+                expected behavior: triggers PrintNullReturnError() in ProcessSettings()
+                 due to missing campaign or region objects*/
+                "",
+                
+                /*DATA SET 2 [X]
+                empty campaign data
+                expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
+                 due to missing a campaign ID and pup settings object*/
+                "CAMPAIGNS;\n" +
+                "END_CAMPAIGNS;",
+                
+                /*DATA SET 3 [X]
+                campaign data with no pup settings
+                expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
+                 due to missing a pup settings object*/
+                "CAMPAIGNS;\n" +
+                "id: Campaign with no pup settings;\n" +
+                "END_CAMPAIGNS;",
+                
+                /*DATA SET 4 [X]
+                campaign data with empty pup settings
+                expected behavior: triggers PrintNullReturnError() in ParseCampaignSettings()
+                 due to ParsePupSpawnSettings() returning null because the values list is empty*/
+                "CAMPAIGNS;\n" +
+                "id: Campaign with empty pup settings;\n" +
+                "PUPSETTINGS;\n" +
+                "END_PUPSETTINGS;\n" +
+                "END_CAMPAIGNS;",
+                
+                /*DATA SET 5 [X]
+                campaign where pups spawn (correct)
+                expected behavior: results in a CustomSettingsWrapper object
+                 with one CustomCampaignSettings object inside, which holds one
+                 PupSpawnSettings object that allows pups to spawn with a 100% spawn rate of 2-5*/
+                "CAMPAIGNS;\n" +
+                "id: 1st Campaign with pup settings (correct);\n" +
+                "PUPSETTINGS;\n" +
+                "pupsDynamicSpawn: true;\n" +
+                "min: 2;\n" +
+                "max: 5;\n" +
+                "spawnChance: 1.0;\n" +
+                "END_PUPSETTINGS;\n" +
+                "END_CAMPAIGNS;",
+                
+                /*DATA SET 6 [X]
+                campaign where pups don't spawn (correct)
+                expected behavior: results in a CustomSettingsWrapper object
+                 with one CustomCampaignSettings object inside, which holds one
+                 PupSpawnSettings object that disallows dynamic pups spawning*/
+                "CAMPAIGNS;\n" +
+                "id: 2nd Campaign with pup settings (correct);\n" +
+                "PUPSETTINGS;\n" +
+                "pupsDynamicSpawn: false;\n" +
+                "END_PUPSETTINGS;\n" +
+                "END_CAMPAIGNS;",
+                
+                /*DATA SET 7 [X]
+                empty region data
+                expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
+                 due to missing a region acronym and pup settings object*/
+                "REGIONS;" +
+                "END_REGIONS;",
+
+                /*DATA SET 8 [X]
+                //region with no pup settings
+                expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
+                 due to missing a pup settings object*/
+                "REGIONS;\n" +
+                "name: Region with no pup settings;\n" +
+                "END_REGIONS;",
+                
+                /*DATA SET 9 [X]
+                region with empty pup settings
+                expected behavior: triggers PrintNullReturnError() in ParseRegionSettings()
+                 due to ParsePupSpawnSettings() returning null because the values list is empty*/
+                "REGIONS;\n" +
+                "name: Region with empty pup settings;\n" +
+                "PUPSETTINGS;\n" +
+                "END_PUPSETTINGS;\n" +
+                "END_REGIONS;",
+                
+                /*DATA SET 10 [X]
+                region where pups spawn (correct)
+                expected behavior: results in a CustomSettingsWrapper object
+                 which contains one CustomRegionSettings object that allows 1-10 pups
+                 to spawn at a 100% rate*/
+                "REGIONS;\n" +
+                "name: 1st Region with pup settings (correct);\n" +
+                "PUPSETTINGS;\n" +
+                "pupsDynamicSpawn: true;\n" +
+                "min: 1;\n" +
+                "max: 10;\n" +
+                "spawnChance: 1.0;\n" +
+                "END_PUPSETTINGS;\n" +
+                "END_REGIONS;",
+                
+                /*DATA SET 11 [X]
+                region where pups don't spawn (correct)
+                expected behavior: results in a CustomSettingsWrapper object that contains
+                 one CustomRegionSettings object which disallows pup dynamic spawning*/
+                "REGIONS;\n" +
+                "name: 2nd Region with pup settings (correct);\n" +
+                "PUPSETTINGS;\n" +
+                "pupsDynamicSpawn: false;\n" +
+                "END_PUPSETTINGS;\n" +
+                "END_REGIONS;",
+                
+                /*DATA SET 12 [X]
+                campaign with empty id value & correct pup settings
+                expected behavior: triggers PrintNullReturnError() in ParseCampaignSettings()
+                 due to the id field being empty*/
+                "CAMPAIGNS;\n" +
+                "id:  ;\n" +
+                "PUPSETTINGS;\n" +
+                "pupsDynamicSpawn: false;\n" +
+                "END_PUPSETTINGS;\n" +
+                "END_CAMPAIGNS;",
+                
+                /*DATA SET 13 [X]
+                region with empty name value & no pup settings
+                expected behavior: triggers PrintNullReturnError() in ParseRegionSettings()
+                 due to the name field being empty*/
+                "REGIONS;\n" +
+                "name:  ;\n" +
+                "END_REGIONS;",
+                
+                /*DATA SET 14 [X]
+                campaign with empty id value and empty pup settings
+                expected behavior: triggers PrintNullReturnError() TWICE in ParseCampaignSettings()*/
+                "CAMPAIGNS;\n" +
+                "id:;\n" +
+                "PUPSETTINGS;\n" +
+                "END_PUPSETTINGS;\n" +
+                "END_CAMPAIGNS;"
+            };
+        }
+
+        private void ProcessSettings(string filePath, string modID, bool testing)
         {
             Logger.LogInfo("Parsing settings for " + modID + ":");
 
@@ -572,8 +722,17 @@ namespace dynamicpupspawns
             LinkedList<string> symbols = new LinkedList<string>();
             
             try
-            {   
-                string settings = File.ReadAllText(filePath);
+            {
+                string settings;
+                if (!testing)
+                {
+                    settings = File.ReadAllText(filePath);
+                    
+                }
+                else
+                {
+                    settings = filePath;
+                }
                 settings = Regex.Replace(settings, @"\s+", "");
                 StringReader reader = new StringReader(settings);
                 
@@ -623,13 +782,21 @@ namespace dynamicpupspawns
             }
             
             modSettings = ParseGeneralSettings(symbols, modSettings);
-            _settings.Add(modSettings);
+            if (modSettings == null)
+            {
+                PrintNullReturnError("Custom Settings Wrapper", "ProcessSettings()");
+            }
+            else
+            {
+                _settings.Add(modSettings);
+            }
+            
             Logger.LogInfo("Finished parsing for " + modID + "!");
         }
 
         //copy of settings in custom slugcat test mod
         /*
-         CAMPAIGNS;
+        CAMPAIGNS;
         id: mcevilslug;
         PUPSETTINGS;
         pupsDynamicSpawn: true;
@@ -646,7 +813,7 @@ namespace dynamicpupspawns
         
         private CustomSettingsWrapper ParseGeneralSettings(LinkedList<string> symbols, CustomSettingsWrapper settings)
         {
-            Logger.LogInfo("Parsing symbols...");
+            Logger.LogInfo("Parsing General Settings...");
             LinkedListNode<string> node = symbols.First;
             
             while (node != null)
@@ -664,8 +831,12 @@ namespace dynamicpupspawns
                     CustomCampaignSettings set = ParseCampaignSettings(cSettings);
                     if (set != null)
                     {
-                        Logger.LogInfo("Succeeded for campaign " + set.CampaignID + "!\n");
+                        Logger.LogInfo("Succeeded for campaign " + set.CampaignID + "!");
                         settings.AddCampaignSettings(set);
+                    }
+                    else
+                    {
+                        PrintNullReturnError("Campaign Settings Object", "ParseGeneralSettings()");
                     }
                 }
                 else if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
@@ -681,13 +852,21 @@ namespace dynamicpupspawns
                     CustomRegionSettings set = ParseRegionSettings(rSettings);
                     if (set != null)
                     {
-                        Logger.LogInfo("Succeeded for region " + set.RegionAcronym + "!\n");
+                        Logger.LogInfo("Succeeded for region " + set.RegionAcronym + "!");
                         settings.AddRegionSettings(set);
+                    }
+                    else
+                    {
+                        PrintNullReturnError("Region Settings Object", "ParseGeneralSettings()");
                     }
                 }
                 node = node.Next;
             }
 
+            if (!settings.HasCampaignSettings() && !settings.HasRegionSettings())
+            {
+                return null;
+            }
             return settings;
         }
         
@@ -708,6 +887,10 @@ namespace dynamicpupspawns
                     {
                         id = (string)o;
                     }
+                    else
+                    {
+                        PrintNullReturnError("Campaign ID", "ParseCampaignSettings()");
+                    }
                 }
                 else if (node.Value.ToLower() == PUP_SETTINGS_DELIM)
                 {
@@ -719,6 +902,10 @@ namespace dynamicpupspawns
                         node = node.Next;
                     }
                     pupSettings = ParsePupSpawnSettings(pSettings);
+                    if (pupSettings == null)
+                    {
+                        PrintNullReturnError("Pup Settings Object", "ParseCampaignSettings()");
+                    }
                 }
 
                 node = node.Next;
@@ -726,7 +913,6 @@ namespace dynamicpupspawns
             
             if (id == null || pupSettings == null)
             {
-                Logger.LogError("ERROR: Couldn't extract id or pup spawn settings from campaign settings!");
                 return null;
             }
 
@@ -751,6 +937,10 @@ namespace dynamicpupspawns
                     {
                         name = (string)o;
                     }
+                    else
+                    {
+                        PrintNullReturnError("Region Name", "ParseRegionSettings()");
+                    }
                 }
                 else if (node.Value.ToLower() == PUP_SETTINGS_DELIM)
                 {
@@ -762,6 +952,10 @@ namespace dynamicpupspawns
                         node = node.Next;
                     }
                     pupSettings = ParsePupSpawnSettings(pSettings);
+                    if (pupSettings == null)
+                    {
+                        PrintNullReturnError("Pup Settings Object", "ParseRegionSettings()");
+                    }
                 }
 
                 node = node.Next;
@@ -769,7 +963,6 @@ namespace dynamicpupspawns
             
             if (name == null || pupSettings == null)
             {
-                Logger.LogInfo("ERROR: Couldn't extract id or pup spawn settings from campaign settings!");
                 return null;
             }
             return new CustomRegionSettings(name, pupSettings);
@@ -777,6 +970,11 @@ namespace dynamicpupspawns
 
         private PupSpawnSettings ParsePupSpawnSettings(List<string> pSettings)
         {
+            if (pSettings.Count == 0)
+            {
+                return null;
+            }
+            
             bool spawns = false;
             float chance = -1f;
             int min = -1;
@@ -810,6 +1008,10 @@ namespace dynamicpupspawns
                         Logger.LogWarning("Unrecognized value in Pup Spawns settings!");
                     }
                 }
+                else
+                {
+                    PrintNullReturnError("Setting String", "PupSpawnSettings()");
+                }
             }
             
             return new PupSpawnSettings(spawns, min, max, chance);
@@ -817,7 +1019,8 @@ namespace dynamicpupspawns
         
         private object ParseValue(string setting)
         {
-            string[] value = setting.Split(":".ToCharArray(), 2);
+            string[] value = setting.Split(":".ToCharArray(), 2, StringSplitOptions.RemoveEmptyEntries);
+            
             if (value.Length == 2)
             {
                 float parsedNum;
@@ -838,8 +1041,12 @@ namespace dynamicpupspawns
                 return value[1];
             }
 
-            Logger.LogError("Array for extracting setting value was not the expected size of 2! Returning null.");
             return null;
+        }
+
+        private void PrintNullReturnError(string value, string source)
+        {
+            Logger.LogError("A " + value + " returned null in " + source + "!");
         }
     }
 }
