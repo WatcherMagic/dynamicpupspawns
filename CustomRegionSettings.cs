@@ -19,8 +19,8 @@ public class CustomRegionSettings
     {
         string s = "CustomRegionSettings Object:\n";
         
-        s += "Acronym*: " + RegionAcronym + "\n";
-        s += "Spawns Dynamic Pups*: " +  PupSpawnSettings.SpawnsDynamicPups + "\n";
+        s += "Acronym: " + RegionAcronym + "\n";
+        s += "Spawns Dynamic Pups: " +  PupSpawnSettings.SpawnsDynamicPups + "\n";
         s += "MinPups: " + PupSpawnSettings.MinPups + "\n";
         s += "MaxPups: " + PupSpawnSettings.MaxPups + "\n";
         

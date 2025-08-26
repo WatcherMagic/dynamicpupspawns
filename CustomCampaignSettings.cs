@@ -38,15 +38,15 @@ public class CustomCampaignSettings
     {
         string s = "CustomCampaignSettings Object:\n";
         
-        s += "Campaign ID*: " + CampaignID + "\n";
+        s += "Campaign ID: " + CampaignID + "\n";
         s += "Spawns Dynamic Pups: " +  PupSpawnSettings.SpawnsDynamicPups + "\n";
         s += "MinPups: " + PupSpawnSettings.MinPups + "\n";
         s += "MaxPups: " + PupSpawnSettings.MaxPups + "\n";
-        s += "Campaign Region Settings:\n";
-        foreach (CustomRegionSettings regionSettings in _campaignRegionSettings)
-        {
-            s += regionSettings.ToString();
-        }
+        // s += "Campaign Region Settings:\n";
+        // foreach (CustomRegionSettings regionSettings in _campaignRegionSettings)
+        // {
+        //     s += regionSettings.ToString();
+        // }
         
         return s;
     }
