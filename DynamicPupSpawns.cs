@@ -711,6 +711,26 @@ namespace dynamicpupspawns
                 "PUPSETTINGS;\n" +
                 "END_PUPSETTINGS;\n" +
                 "END_CAMPAIGNS;"
+                
+                /*DATA SET 15 [_]
+                campaign with custom region overrides
+                expected behavior: will result in a CustomCampaignSettings object which
+                 has a _campaignRegionSettings list size of 1 CustomRegionSettings object*/
+                // "CAMPAIGNS;\n" +
+                // "id: SimpleRegionOverrides;\n" +
+                // "PUPSETTINGS;\n" +
+                // "pupsDynamicSpawn: false;\n" +
+                // "END_PUPSETTINGS;\n" +
+                // "region_overrides: {\n" +
+                // "\tname: TR;\n" +
+                // "\tPUPSETTINGS;\n" +
+                // "\tpupsDynamicSpawn: true;\n" +
+                // "\tmin: 1;\n" +
+                // "\tmax: 3;\n" +
+                // "\tspawnChance: 0.5;\n" +
+                // "\tEND_PUPSETTINGS;\n" +
+                // "};\n" +
+                // "END_CAMAPIGNS;"
             };
         }
 
@@ -734,41 +754,7 @@ namespace dynamicpupspawns
                     settings = filePath;
                 }
                 settings = Regex.Replace(settings, @"\s+", "");
-                StringReader reader = new StringReader(settings);
-                
-                string symbol = "";
-                while (reader.Peek() >= 0)
-                {
-                    char c = (char)reader.Peek();
-                    if (c != ';')
-                    {
-                        if (c == '{')
-                        {
-                            while (reader.Peek() >= 0)
-                            {
-                                c = (char)reader.Peek();
-                                if (c != '}')
-                                {
-                                    symbol += (char)reader.Read();
-                                }
-                                else
-                                {
-                                    symbol += (char)reader.Read();
-                                    break;
-                                }
-                            }
-
-                            continue;
-                        }
-                        symbol += (char)reader.Read();
-                    }
-                    else
-                    {
-                        reader.Read();
-                        symbols.AddLast(symbol);
-                        symbol = "";
-                    }
-                }
+                symbols = ParseSymbols(settings);
             }
             catch (FileNotFoundException e)
             {
@@ -794,22 +780,47 @@ namespace dynamicpupspawns
             Logger.LogInfo("Finished parsing for " + modID + "!");
         }
 
-        //copy of settings in custom slugcat test mod
-        /*
-        CAMPAIGNS;
-        id: mcevilslug;
-        PUPSETTINGS;
-        pupsDynamicSpawn: true;
-        min: 2;
-        max: 5;
-        spawnChance: 1.0;
-        END_PUPSETTINGS;
-        region_overrides: {
-            name: ss;
-            pupsDynamicSpawn: false;
-        };
-        END_CAMPAIGNS;
-        */
+        private LinkedList<string> ParseSymbols(string settings)
+        {
+            StringReader reader = new StringReader(settings);
+            LinkedList<string> symbols = new LinkedList<string>();
+            
+            string symbol = "";
+            while (reader.Peek() >= 0)
+            {
+                char c = (char)reader.Peek();
+                if (c != ';')
+                {
+                    if (c == '{')
+                    {
+                        while (reader.Peek() >= 0)
+                        {
+                            c = (char)reader.Peek();
+                            if (c != '}')
+                            {
+                                symbol += (char)reader.Read();
+                            }
+                            else
+                            {
+                                symbol += (char)reader.Read();
+                                break;
+                            }
+                        }
+
+                        continue;
+                    }
+                    symbol += (char)reader.Read();
+                }
+                else
+                {
+                    reader.Read();
+                    symbols.AddLast(symbol);
+                    symbol = "";
+                }
+            }
+
+            return symbols;
+        }
         
         private CustomSettingsWrapper ParseGeneralSettings(LinkedList<string> symbols, CustomSettingsWrapper settings)
         {
@@ -877,10 +888,11 @@ namespace dynamicpupspawns
 
             string id = null;
             PupSpawnSettings pupSettings = null;
+            List<CustomRegionSettings> rOverrides = null;
 
             while (node != null)
             {
-                if (node.Value.StartsWith("id"))
+                if (node.Value.ToLower().StartsWith("id"))
                 {
                     object o = ParseValue(node.Value);
                     if (o != null)
@@ -891,6 +903,22 @@ namespace dynamicpupspawns
                     {
                         PrintNullReturnError("Campaign ID", "ParseCampaignSettings()");
                     }
+                }
+                else if (node.Value.ToLower().StartsWith("region_overrides"))
+                {
+                    // Logger.LogInfo("Found region overrides!");
+                    // object o = ParseValue(node.Value);
+                    // if (o != null)
+                    // {
+                    //     rOverrides = new List<CustomRegionSettings>();
+                    //     string rSettings = (string)o;
+                    //     rSettings = rSettings.Substring(1, rSettings.Length - 2);
+                    //     Logger.LogInfo("Region overrides without brackets: " + rSettings);
+                    // }
+                    // else
+                    // {
+                    //     PrintNullReturnError("Region Overrides String", "ParseCampaignSettings()");
+                    // }
                 }
                 else if (node.Value.ToLower() == PUP_SETTINGS_DELIM)
                 {
@@ -906,6 +934,10 @@ namespace dynamicpupspawns
                     {
                         PrintNullReturnError("Pup Settings Object", "ParseCampaignSettings()");
                     }
+                }
+                else
+                {
+                    Logger.LogWarning("Unrecognized value in ParseCampaigNSettings()!");
                 }
 
                 node = node.Next;
