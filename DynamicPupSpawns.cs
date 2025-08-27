@@ -963,10 +963,7 @@ namespace dynamicpupspawns
                             Logger.LogInfo("Node: " + rNode.Value);
                             singleRegion.AddLast(rNode.Value);
                             
-                            string rmessage = "You reached rNode.Next!\n";
-                            rmessage += "current node: " + rNode.Value.ToString() + "\n";
-                            rmessage += "next node: " + rNode.Next.Value.ToString() + "\n";
-                            Logger.LogInfo(rmessage);
+                            Logger.LogInfo("You reached rNode.Next!");
                             rNode = rNode.Next;
                         }
                         CustomRegionSettings rSet = ParseRegionSettings(singleRegion);
@@ -1006,10 +1003,7 @@ namespace dynamicpupspawns
                     Logger.LogWarning("Unrecognized value in ParseCampaignSettings()!");
                 }
 
-                string message = "You reached node.Next!\n";
-                message += "current node: " + node.Value.ToString() + "\n";
-                message += "next node: " + node.Next.Value.ToString() + "\n";
-                Logger.LogInfo(message);
+                Logger.LogInfo("You reached node.Next!");
                 node = node.Next;
             }
             
