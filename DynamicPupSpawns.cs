@@ -707,27 +707,44 @@ namespace dynamicpupspawns
                 "id:;\n" +
                 "PUPSETTINGS;\n" +
                 "END_PUPSETTINGS;\n" +
-                "END_CAMPAIGNS;"
+                "END_CAMPAIGNS;",
                 
                 /*DATA SET 15 [_]
                 campaign with custom region overrides
                 expected behavior: will result in a CustomCampaignSettings object which
                  has a _campaignRegionSettings list size of 1 CustomRegionSettings object*/
-                // "CAMPAIGNS;\n" +
-                // "id: SimpleRegionOverrides;\n" +
-                // "PUPSETTINGS;\n" +
-                // "pupsDynamicSpawn: false;\n" +
-                // "END_PUPSETTINGS;\n" +
-                // "region_overrides: {\n" +
-                // "\tname: TR;\n" +
-                // "\tPUPSETTINGS;\n" +
-                // "\tpupsDynamicSpawn: true;\n" +
-                // "\tmin: 1;\n" +
-                // "\tmax: 3;\n" +
-                // "\tspawnChance: 0.5;\n" +
-                // "\tEND_PUPSETTINGS;\n" +
-                // "};\n" +
-                // "END_CAMAPIGNS;"
+                "CAMPAIGNS;\n" +
+                "id: RegionOverrideWithoutSpawns;\n" +
+                "PUPSETTINGS;\n" +
+                "pupsDynamicSpawn: true;\n" +
+                "min: 2;\n" +
+                "max: 20;\n" +
+                "spawnChance: 0.2;\n" +
+                "END_PUPSETTINGS;\n" +
+                "region_overrides: {\n" +
+                "\tname: TR;\n" +
+                "};\n" +
+                "END_CAMAPIGNS;",
+                
+                /*DATA SET 16 [_]
+                campaign with custom region overrides
+                expected behavior: will result in a CustomCampaignSettings object which
+                 has a _campaignRegionSettings list size of 1 CustomRegionSettings object*/
+                "CAMPAIGNS;\n" +
+                "id: RegionOverrideWithSpawns;\n" +
+                "PUPSETTINGS;\n" +
+                "pupsDynamicSpawn: false;\n" +
+                "END_PUPSETTINGS;\n" +
+                "region_overrides: {\n" +
+                "\tname: TR;\n" +
+                "\tPUPSETTINGS;\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 3;\n" +
+                "\tspawnChance: 0.5;\n" +
+                "\tEND_PUPSETTINGS\n" +
+                "};\n" +
+                "END_CAMAPIGNS;"
             };
         }
 
@@ -894,7 +911,20 @@ namespace dynamicpupspawns
                     object o = ParseValue(node.Value);
                     if (o != null)
                     {
-                        id = (string)o;
+                        try
+                        {
+                            id = (string)o;
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+                            id = "Something went wrong casting from object to string!";
+
+                            if (e.GetType() == typeof(InvalidCastException))
+                            {
+                                PrintInvalidCastError("Campaign ID", "string", e.Message);
+                            }
+                        }
                     }
                     else
                     {
@@ -903,19 +933,51 @@ namespace dynamicpupspawns
                 }
                 else if (node.Value.ToLower().StartsWith("region_overrides"))
                 {
-                    // Logger.LogInfo("Found region overrides!");
-                    // object o = ParseValue(node.Value);
-                    // if (o != null)
-                    // {
-                    //     rOverrides = new List<CustomRegionSettings>();
-                    //     string rSettings = (string)o;
-                    //     rSettings = rSettings.Substring(1, rSettings.Length - 2);
-                    //     Logger.LogInfo("Region overrides without brackets: " + rSettings);
-                    // }
-                    // else
-                    // {
-                    //     PrintNullReturnError("Region Overrides String", "ParseCampaignSettings()");
-                    // }
+                    Logger.LogInfo("Found region overrides!");
+                    object o = ParseValue(node.Value);
+                    if (o != null)
+                    {
+                        string rSettings = "";
+                        try
+                        {
+                            rSettings = Convert.ToString(o);
+                            rSettings = rSettings.Substring(1, rSettings.Length - 2);
+                            Logger.LogInfo("Region overrides without brackets: " + rSettings);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+                            if (e.GetType() == typeof(InvalidCastException))
+                            {
+                                PrintInvalidCastError("Campaign Region Overrides", "string", e.Message);
+                            }
+                        }
+                        
+                        rOverrides = new List<CustomRegionSettings>();
+                        LinkedList<string> rSymbols = ParseSymbols(rSettings);
+                        LinkedList<string> singleRegion = new LinkedList<string>();
+
+                        LinkedListNode<string> rNode = rSymbols.First;
+                        while (rNode != null)
+                        {
+                            Logger.LogInfo("Node: " + rNode.Value);
+                            singleRegion.AddLast(rNode.Value);
+                            rNode = rNode.Next;
+                        }
+                        CustomRegionSettings rSet = ParseRegionSettings(singleRegion);
+                        if (rSet != null)
+                        {
+                            rOverrides.Add(rSet);
+                        }
+                        else
+                        {
+                            PrintNullReturnError("Region Settings Object", "ParseCampaignSettings()");
+                        }
+                    }
+                    else
+                    {
+                        PrintNullReturnError("Region Overrides String", "ParseCampaignSettings()");
+                    }
                 }
                 else if (node.Value.ToLower() == PUP_SETTINGS_DELIM)
                 {
@@ -934,7 +996,7 @@ namespace dynamicpupspawns
                 }
                 else
                 {
-                    Logger.LogWarning("Unrecognized value in ParseCampaigNSettings()!");
+                    Logger.LogWarning("Unrecognized value in ParseCampaignSettings()!");
                 }
 
                 node = node.Next;
@@ -959,12 +1021,25 @@ namespace dynamicpupspawns
 
             while (node != null)
             {
-                if (node.Value.StartsWith("name"))
+                if (node.Value.ToLower().StartsWith("name"))
                 {
                     object o = ParseValue(node.Value);
                     if (o != null)
                     {
-                        name = (string)o;
+                        try
+                        {
+                            name = Convert.ToString(o);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+                            name = "Something went wrong casting from object to string!";
+
+                            if (e.GetType() == typeof(InvalidCastException))
+                            {
+                                PrintInvalidCastError("Region Acronym", "string", e.Message);
+                            }
+                        }
                     }
                     else
                     {
@@ -1005,7 +1080,7 @@ namespace dynamicpupspawns
             }
             
             bool spawns = false;
-            float chance = -1f;
+            float chance = 0f;
             int min = -1;
             int max = -1;
 
@@ -1016,7 +1091,19 @@ namespace dynamicpupspawns
                 {
                     if (s.StartsWith("pupsDynamicSpawn"))
                     {
-                        spawns = (bool)o;
+                        try
+                        {
+                            spawns = (bool)o;
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+
+                            if (e.GetType() == typeof(InvalidCastException))
+                            {
+                                PrintInvalidCastError("DoPupsSpawn Setting", "bool", e.Message);                                
+                            }
+                        }
                         if (!spawns)
                         {
                             return new PupSpawnSettings();
@@ -1024,17 +1111,53 @@ namespace dynamicpupspawns
                     }
                     else if (s.StartsWith("spawnChance"))
                     {
-                        chance = (float)o;
+                        try
+                        {
+                            chance = (float)o;
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+
+                            if (e.GetType() == typeof(InvalidCastException))
+                            {
+                                PrintInvalidCastError("SpawnChance Setting", "float", e.Message);
+                            }
+                        }
                     }
                     else if (s.StartsWith("min"))
                     {
-                        float f = (float)o;
-                        min = (int)f;
+                        try
+                        {
+                            float f = (float)o;
+                            min = (int)f;
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+
+                            if (e.GetType() == typeof(InvalidCastException))
+                            {
+                                PrintInvalidCastError("MinPups Setting", "float", e.Message);
+                            }
+                        }
                     }
                     else if (s.StartsWith("max"))
                     {
-                        float f = (float)o;
-                        max = (int)f;
+                        try
+                        {
+                            float f = (float)o;
+                            max = (int)f;
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+
+                            if (e.GetType() == typeof(InvalidCastException))
+                            {
+                                PrintInvalidCastError("MaxPups Setting", "float", e.Message);
+                            }
+                        }
                     }
                     else
                     {
@@ -1080,6 +1203,12 @@ namespace dynamicpupspawns
         private void PrintNullReturnError(string value, string source)
         {
             Logger.LogError("A " + value + " returned null in " + source + "!");
+        }
+
+        private void PrintInvalidCastError(string failedObj, string triedType, string message)
+        {
+            Logger.LogError("An invalid cast was encountered trying to convert " 
+                            + failedObj + " from object to " + triedType + "!:\n" + message);
         }
     }
 }
