@@ -22,6 +22,13 @@ public class PupSpawnSettings
     {
         get => _maxPups;
     }
+
+    public PupSpawnSettings()
+    {
+        SpawnsDynamicPups = false;
+        SetMinAndMaxPups(-1, -1);
+        SpawnChance = 0f;
+    }
     
     public PupSpawnSettings(bool spawns, int min, int max, float chance)
     {

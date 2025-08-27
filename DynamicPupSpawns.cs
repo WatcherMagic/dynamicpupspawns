@@ -584,14 +584,14 @@ namespace dynamicpupspawns
                 /*DATA SET 2 [X]
                 empty campaign data
                 expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
-                 due to missing a campaign ID and pup settings object*/
+                 due to missing a campaign ID*/
                 "CAMPAIGNS;\n" +
                 "END_CAMPAIGNS;",
                 
                 /*DATA SET 3 [X]
                 campaign data with no pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
-                 due to missing a pup settings object*/
+                expected behavior: results in a CustomCampaignSettings object with
+                 dynamic pup spawning defaulted to false*/
                 "CAMPAIGNS;\n" +
                 "id: Campaign with no pup settings;\n" +
                 "END_CAMPAIGNS;",
@@ -607,7 +607,7 @@ namespace dynamicpupspawns
                 "END_CAMPAIGNS;",
                 
                 /*DATA SET 5 [X]
-                campaign where pups spawn (correct)
+                campaign where pups spawn
                 expected behavior: results in a CustomSettingsWrapper object
                  with one CustomCampaignSettings object inside, which holds one
                  PupSpawnSettings object that allows pups to spawn with a 100% spawn rate of 2-5*/
@@ -622,12 +622,10 @@ namespace dynamicpupspawns
                 "END_CAMPAIGNS;",
                 
                 /*DATA SET 6 [X]
-                campaign where pups don't spawn (correct)
-                expected behavior: results in a CustomSettingsWrapper object
-                 with one CustomCampaignSettings object inside, which holds one
-                 PupSpawnSettings object that disallows dynamic pups spawning*/
+                campaign where pups don't spawn (explicit)
+                expected behavior: results in a CustomCampaignSettings object with pup spawns defaulted to false*/
                 "CAMPAIGNS;\n" +
-                "id: 2nd Campaign with pup settings (correct);\n" +
+                "id: 2nd Campaign with pup settings (explicit);\n" +
                 "PUPSETTINGS;\n" +
                 "pupsDynamicSpawn: false;\n" +
                 "END_PUPSETTINGS;\n" +
@@ -642,8 +640,7 @@ namespace dynamicpupspawns
 
                 /*DATA SET 8 [X]
                 //region with no pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
-                 due to missing a pup settings object*/
+                expected behavior: results in CustomRegionSettings object with pup spawns defaulted to false*/
                 "REGIONS;\n" +
                 "name: Region with no pup settings;\n" +
                 "END_REGIONS;",
@@ -674,18 +671,17 @@ namespace dynamicpupspawns
                 "END_REGIONS;",
                 
                 /*DATA SET 11 [X]
-                region where pups don't spawn (correct)
-                expected behavior: results in a CustomSettingsWrapper object that contains
-                 one CustomRegionSettings object which disallows pup dynamic spawning*/
+                region where pups don't spawn (explicit)
+                expected behavior: results in CustomRegionSettings object with pup spawns defaulted to false*/
                 "REGIONS;\n" +
-                "name: 2nd Region with pup settings (correct);\n" +
+                "name: 2nd Region with pup settings (explicit);\n" +
                 "PUPSETTINGS;\n" +
                 "pupsDynamicSpawn: false;\n" +
                 "END_PUPSETTINGS;\n" +
                 "END_REGIONS;",
                 
                 /*DATA SET 12 [X]
-                campaign with empty id value & correct pup settings
+                campaign with empty id value & explicit false pup settings
                 expected behavior: triggers PrintNullReturnError() in ParseCampaignSettings()
                  due to the id field being empty*/
                 "CAMPAIGNS;\n" +
@@ -705,7 +701,8 @@ namespace dynamicpupspawns
                 
                 /*DATA SET 14 [X]
                 campaign with empty id value and empty pup settings
-                expected behavior: triggers PrintNullReturnError() TWICE in ParseCampaignSettings()*/
+                expected behavior: triggers PrintNullReturnError() in ParseCampaignSettings()
+                 due to missing ID*/
                 "CAMPAIGNS;\n" +
                 "id:;\n" +
                 "PUPSETTINGS;\n" +
@@ -887,7 +884,7 @@ namespace dynamicpupspawns
             LinkedListNode<string> node = symbols.First;
 
             string id = null;
-            PupSpawnSettings pupSettings = null;
+            PupSpawnSettings pupSettings = new PupSpawnSettings();
             List<CustomRegionSettings> rOverrides = null;
 
             while (node != null)
@@ -958,7 +955,7 @@ namespace dynamicpupspawns
             LinkedListNode<string> node = symbols.First;
 
             string name = null;
-            PupSpawnSettings pupSettings = null;
+            PupSpawnSettings pupSettings = new PupSpawnSettings();
 
             while (node != null)
             {
@@ -1020,6 +1017,10 @@ namespace dynamicpupspawns
                     if (s.StartsWith("pupsDynamicSpawn"))
                     {
                         spawns = (bool)o;
+                        if (!spawns)
+                        {
+                            return new PupSpawnSettings();
+                        }
                     }
                     else if (s.StartsWith("spawnChance"))
                     {
