@@ -27,8 +27,6 @@ namespace dynamicpupspawns
         private const string REGION_SETTINGS_DELIM = "regions";
         private const string REGION_SETTINGS_STOP = "end_regions";
         private const string REGION_SETTINGS_DIVIDE = "region";
-        private const string PUP_SETTINGS_DELIM = "pupsettings";
-        private const string PUP_SETTINGS_STOP = "end_pupsettings";
 
         private List<CustomSettingsWrapper> _settings;
         private void OnEnable()
@@ -603,10 +601,10 @@ namespace dynamicpupspawns
                  due to ParsePupSpawnSettings() returning null because the values list is empty*/
                 "CAMPAIGNS;\n" +
                 "id: Campaign with empty pup settings;\n" +
-                "PUPSETTINGS;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {};\n" +
                 "END_CAMPAIGNS;",
                 
+                //succeeds creating pup settings but data string returns null in PupSpawnSettings()
                 /*DATA SET 5 [X]
                 campaign where pups spawn
                 expected behavior: results in a CustomSettingsWrapper object
@@ -614,22 +612,23 @@ namespace dynamicpupspawns
                  PupSpawnSettings object that allows pups to spawn with a 100% spawn rate of 2-5*/
                 "CAMPAIGNS;\n" +
                 "id: 1st Campaign with pup settings (correct);\n" +
-                "PUPSETTINGS;\n" +
-                "pupsDynamicSpawn: true;\n" +
-                "min: 2;\n" +
-                "max: 5;\n" +
-                "spawnChance: 1.0;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 2;\n" +
+                "\tmax: 5;\n" +
+                "\tspawnChance: 1.0;\n" +
+                "};\n" +
                 "END_CAMPAIGNS;",
                 
+                //succeeds creating pup settings but data string returns null in PupSpawnSettings()
                 /*DATA SET 6 [X]
                 campaign where pups don't spawn (explicit)
                 expected behavior: results in a CustomCampaignSettings object with pup spawns defaulted to false*/
                 "CAMPAIGNS;\n" +
                 "id: 2nd Campaign with pup settings (explicit);\n" +
-                "PUPSETTINGS;\n" +
-                "pupsDynamicSpawn: false;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: false;\n" +
+                "};\n" +
                 "END_CAMPAIGNS;",
                 
                 /*DATA SET 7 [X]
@@ -652,8 +651,7 @@ namespace dynamicpupspawns
                  due to ParsePupSpawnSettings() returning null because the values list is empty*/
                 "REGIONS;\n" +
                 "name: Region with empty pup settings;\n" +
-                "PUPSETTINGS;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {};\n" +
                 "END_REGIONS;",
                 
                 /*DATA SET 10 [X]
@@ -663,12 +661,12 @@ namespace dynamicpupspawns
                  to spawn at a 100% rate*/
                 "REGIONS;\n" +
                 "name: 1st Region with pup settings (correct);\n" +
-                "PUPSETTINGS;\n" +
-                "pupsDynamicSpawn: true;\n" +
-                "min: 1;\n" +
-                "max: 10;\n" +
-                "spawnChance: 1.0;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 10;\n" +
+                "\tspawnChance: 1.0;\n" +
+                "};\n" +
                 "END_REGIONS;",
                 
                 /*DATA SET 11 [X]
@@ -676,9 +674,9 @@ namespace dynamicpupspawns
                 expected behavior: results in CustomRegionSettings object with pup spawns defaulted to false*/
                 "REGIONS;\n" +
                 "name: 2nd Region with pup settings (explicit);\n" +
-                "PUPSETTINGS;\n" +
-                "pupsDynamicSpawn: false;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: false;\n" +
+                "};\n" +
                 "END_REGIONS;",
                 
                 /*DATA SET 12 [X]
@@ -687,9 +685,9 @@ namespace dynamicpupspawns
                  due to the id field being empty*/
                 "CAMPAIGNS;\n" +
                 "id:  ;\n" +
-                "PUPSETTINGS;\n" +
-                "pupsDynamicSpawn: false;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: false;\n" +
+                "};\n" +
                 "END_CAMPAIGNS;",
                 
                 /*DATA SET 13 [X]
@@ -706,8 +704,7 @@ namespace dynamicpupspawns
                  due to missing ID*/
                 "CAMPAIGNS;\n" +
                 "id:;\n" +
-                "PUPSETTINGS;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {};\n" +
                 "END_CAMPAIGNS;",
                 
                 /*DATA SET 15 [X]
@@ -716,12 +713,12 @@ namespace dynamicpupspawns
                  has a _campaignRegionSettings list size of 1 CustomRegionSettings object*/
                 "CAMPAIGNS;\n" +
                 "id: RegionOverrideWithoutSpawns;\n" +
-                "PUPSETTINGS;\n" +
-                "pupsDynamicSpawn: true;\n" +
-                "min: 2;\n" +
-                "max: 20;\n" +
-                "spawnChance: 0.2;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 2;\n" +
+                "\tmax: 20;\n" +
+                "\tspawnChance: 0.2;\n" +
+                "};\n" +
                 "region_overrides: {\n" +
                 "\tname: TR;\n" +
                 "};\n" +
@@ -733,17 +730,17 @@ namespace dynamicpupspawns
                  has a _campaignRegionSettings list size of 1 CustomRegionSettings object*/
                 "CAMPAIGNS;\n" +
                 "id: RegionOverrideWithSpawns;\n" +
-                "PUPSETTINGS;\n" +
-                "pupsDynamicSpawn: false;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: false;\n" +
+                "};\n" +
                 "region_overrides: {\n" +
                 "\tname: TR;\n" +
-                "\tPUPSETTINGS;\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 3;\n" +
-                "\tspawnChance: 0.5;\n" +
-                "\tEND_PUPSETTINGS;\n" +
+                "\tpup_settings: [\n" +
+                "\t\tpupsDynamicSpawn: true;\n" +
+                "\t\tmin: 1;\n" +
+                "\t\tmax: 3;\n" +
+                "\t\tspawnChance: 0.5;\n" +
+                "\t];\n" +
                 "};\n" +
                 "END_CAMPAIGNS;",
                 
@@ -752,23 +749,23 @@ namespace dynamicpupspawns
                 expected behavior: results in a CustomCampaignSettings object with pup spawns set to false by default, 
                 and a _campaignRegionSettings list of size 2 CustomRegionSettings objects*/
                 "CAMPAIGNS;\n" +
-                "id: 1stCampaignWithMultipleRegionOverrides;\n" +
+                "id: CampaignWithMultipleRegionOverrides;\n" +
                 "region_overrides: {\n" +
                 "\tname: AB;\n" +
-                "\tPUPSETTINGS;\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 10;\n" +
-                "\tmax: 50;\n" +
-                "\tspawnChance: 0.01;\n" +
-                "\tEND_PUPSETTINGS;\n" +
+                "\tpup_settings: [\n" +
+                "\t\tpupsDynamicSpawn: true;\n" +
+                "\t\tmin: 10;\n" +
+                "\t\tmax: 50;\n" +
+                "\t\tspawnChance: 0.01;\n" +
+                "\t];\n" +
                 "\tREGION;\n" +
                 "\tname: BC;\n" +
-                "\tPUPSETTINGS;\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 2;\n" +
-                "\tmax: 7;\n" +
-                "\tspawnChance: 0.1;\n" +
-                "\tEND_PUPSETTINGS;\n" +
+                "\tpup_settings: [\n" +
+                "\t\tpupsDynamicSpawn: true;\n" +
+                "\t\tmin: 2;\n" +
+                "\t\tmax: 7;\n" +
+                "\t\tspawnChance: 0.1;\n" +
+                "\t];\n" +
                 "};\n" +
                 "END_CAMPAIGNS;",
                 
@@ -778,22 +775,22 @@ namespace dynamicpupspawns
                 list size of 3 CustomRegionSettings objects*/
                 "REGIONS;\n" +
                 "name: SomeSpawnsRegion;\n" +
-                "PUPSETTINGS;\n" +
-                "pupsDynamicSpawn: true;\n" +
-                "min: 1;\n" +
-                "max: 3;\n" +
-                "spawnChance: 0.4;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 3;\n" +
+                "\tspawnChance: 0.4;\n" +
+                "};\n" +
                 "REGION;\n" +
                 "name: NoSpawnsRegion;\n" +
                 "REGION;\n" +
                 "name: ManySpawnsRegion;\n" +
-                "PUPSETTINGS;\n" +
-                "pupsDynamicSpawn: true;\n" +
-                "min: 100;\n" +
-                "max: 200;\n" +
-                "spawnChance: 1;\n" +
-                "END_PUPSETTINGS;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 100;\n" +
+                "\tmax: 200;\n" +
+                "\tspawnChance: 1;\n" +
+                "};\n" +
                 "END_REGIONS;"
             };
         }
@@ -844,7 +841,7 @@ namespace dynamicpupspawns
             Logger.LogInfo("Finished parsing for " + modID + "!");
         }
 
-        private LinkedList<string> ParseSymbols(string settings)
+        private LinkedList<string> ParseSymbols(string settings, char openBracket = '{', char closeBracket = '}')
         {
             StringReader reader = new StringReader(settings);
             LinkedList<string> symbols = new LinkedList<string>();
@@ -855,12 +852,12 @@ namespace dynamicpupspawns
                 char c = (char)reader.Peek();
                 if (c != ';')
                 {
-                    if (c == '{')
+                    if (c == openBracket)
                     {
                         while (reader.Peek() >= 0)
                         {
                             c = (char)reader.Peek();
-                            if (c != '}')
+                            if (c != closeBracket)
                             {
                                 symbol += (char)reader.Read();
                             }
@@ -982,7 +979,7 @@ namespace dynamicpupspawns
             List<CustomRegionSettings> rOverrides = new List<CustomRegionSettings>();
 
             while (node != null)
-            {
+            {   
                 if (node.Value.ToLower().StartsWith("id"))
                 {
                     object o = ParseValue(node.Value);
@@ -1010,7 +1007,6 @@ namespace dynamicpupspawns
                 }
                 else if (node.Value.ToLower().StartsWith("region_overrides"))
                 {
-                    Logger.LogInfo("Found region overrides!");
                     object o = ParseValue(node.Value);
                     if (o != null)
                     {
@@ -1029,7 +1025,7 @@ namespace dynamicpupspawns
                             }
                         }
                         
-                        LinkedList<string> rSymbols = ParseSymbols(rSettings);
+                        LinkedList<string> rSymbols = ParseSymbols(rSettings, '[', ']');
                         LinkedList<string> singleRegion = new LinkedList<string>();
 
                         LinkedListNode<string> rNode = rSymbols.First;
@@ -1070,30 +1066,51 @@ namespace dynamicpupspawns
                         PrintNullReturnError("Region Overrides String", "ParseCampaignSettings()");
                     }
                 }
-                else if (node.Value.ToLower() == PUP_SETTINGS_DELIM)
+                else if (node.Value.ToLower().StartsWith("pup_settings"))
                 {
-                    node = node.Next;
-                    List<string> pSettings = new List<string>();
-                    while (node != null && node.Value.ToLower() != PUP_SETTINGS_STOP)
+                    object o = ParseValue(node.Value);
+                    if (o != null)
                     {
-                        pSettings.Add(node.Value);
-                        node = node.Next;
+                        string pSettings = "";
+                        try
+                        {
+                            pSettings = Convert.ToString(o);
+                            pSettings = pSettings.Substring(1, pSettings.Length - 2);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+                            if (e.GetType() == typeof(InvalidCastException))
+                            {
+                                PrintInvalidCastError("Campaign Pup Settings", "string", e.Message);
+                            }
+                        }
+                        
+                        LinkedList<string> pSymbols = ParseSymbols(pSettings);
+                        
+                        //eventually all linked lists will be replaced with Lists, temporary measure in meantime
+                        LinkedListNode<string> pNode = pSymbols.First;
+                        List<string> pSym = new List<string>();
+                        while (pNode != null)
+                        {
+                            pSym.Add(pNode.Value);
+                            pNode = pNode.Next;
+                        }
+                        
+                        pupSettings = ParsePupSpawnSettings(pSym);
+                        if (pupSettings == null)
+                        {
+                            PrintNullReturnError("Pup Settings Object", "ParseCampaignSettings()");
+                        }
                     }
-                    pupSettings = ParsePupSpawnSettings(pSettings);
-                    if (pupSettings == null)
+                    else
                     {
-                        PrintNullReturnError("Pup Settings Object", "ParseCampaignSettings()");
+                        PrintNullReturnError("Pup Settings String", "ParseCampaignSettings()");
                     }
                 }
                 else
                 {
                     Logger.LogWarning("Unrecognized value in ParseCampaignSettings()!");
-                }
-
-                if (node == null)
-                {
-                    Logger.LogWarning("ParseCampaignSettings() reached unexpected end of settings.txts!");
-                    break;
                 }
                 node = node.Next;
             }
@@ -1125,6 +1142,8 @@ namespace dynamicpupspawns
 
             while (node != null)
             {
+                Logger.LogInfo("Region settings symbol: " + node.Value);
+                
                 if (node.Value.ToLower().StartsWith("name"))
                 {
                     object o = ParseValue(node.Value);
@@ -1150,30 +1169,51 @@ namespace dynamicpupspawns
                         PrintNullReturnError("Region Name", "ParseRegionSettings()");
                     }
                 }
-                else if (node.Value.ToLower() == PUP_SETTINGS_DELIM)
+                else if (node.Value.ToLower().StartsWith("pup_settings"))
                 {
-                    node = node.Next;
-                    List<string> pSettings = new List<string>();
-                    while (node != null && node.Value.ToLower() != PUP_SETTINGS_STOP)
+                    object o = ParseValue(node.Value);
+                    if (o != null)
                     {
-                        pSettings.Add(node.Value);
-                        node = node.Next;
+                        string pSettings = "";
+                        try
+                        {
+                            pSettings = Convert.ToString(o);
+                            pSettings = pSettings.Substring(1, pSettings.Length - 2);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+                            if (e.GetType() == typeof(InvalidCastException))
+                            {
+                                PrintInvalidCastError("Campaign Pup Settings", "string", e.Message);
+                            }
+                        }
+
+                        LinkedList<string> pSymbols = ParseSymbols(pSettings);
+
+                        //eventually all linked lists will be replaced with Lists, temporary measure in meantime
+                        LinkedListNode<string> pNode = pSymbols.First;
+                        List<string> pSym = new List<string>();
+                        while (pNode != null)
+                        {
+                            pSym.Add(pNode.Value);
+                            pNode = pNode.Next;
+                        }
+                        
+                        pupSettings = ParsePupSpawnSettings(pSym);
+                        if (pupSettings == null)
+                        {
+                            PrintNullReturnError("Pup Settings Object", "ParseRegionSettings()");
+                        }
                     }
-                    pupSettings = ParsePupSpawnSettings(pSettings);
-                    if (pupSettings == null)
+                    else
                     {
-                        PrintNullReturnError("Pup Settings Object", "ParseRegionSettings()");
+                        PrintNullReturnError("Pup Settings String", "ParseCampaignSettings()");
                     }
                 }
                 else
                 {
                     Logger.LogWarning("Unrecognized value in ParseRegionSettings()!");
-                }
-                
-                if (node == null)
-                {
-                    Logger.LogWarning("ParseRegionSettings() reached unexpected end of settings.txts!");
-                    break;
                 }
                 node = node.Next;
             }
