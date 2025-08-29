@@ -710,7 +710,7 @@ namespace dynamicpupspawns
                 "END_PUPSETTINGS;\n" +
                 "END_CAMPAIGNS;",
                 
-                /*DATA SET 15 [_]
+                /*DATA SET 15 [X]
                 campaign with custom region overrides
                 expected behavior: will result in a CustomCampaignSettings object which
                  has a _campaignRegionSettings list size of 1 CustomRegionSettings object*/
@@ -727,7 +727,7 @@ namespace dynamicpupspawns
                 "};\n" +
                 "END_CAMPAIGNS;",
                 
-                /*DATA SET 16 [_]
+                /*DATA SET 16 [X]
                 campaign with custom region overrides
                 expected behavior: will result in a CustomCampaignSettings object which
                  has a _campaignRegionSettings list size of 1 CustomRegionSettings object*/
@@ -745,7 +745,54 @@ namespace dynamicpupspawns
                 "\tspawnChance: 0.5;\n" +
                 "\tEND_PUPSETTINGS;\n" +
                 "};\n" +
-                "END_CAMPAIGNS;"
+                "END_CAMPAIGNS;",
+                
+                /*DATA SET 17 [X]
+                campaign with MULTIPLE custom region overrides
+                expected behavior: results in a CustomCampaignSettings object with pup spawns set to false by default, 
+                and a _campaignRegionSettings list of size 2 CustomRegionSettings objects*/
+                "CAMPAIGNS;\n" +
+                "id: 1stCampaignWithMultipleRegionOverrides;\n" +
+                "region_overrides: {\n" +
+                "\tname: AB;\n" +
+                "\tPUPSETTINGS;\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 10;\n" +
+                "\tmax: 50;\n" +
+                "\tspawnChance: 0.01;\n" +
+                "\tEND_PUPSETTINGS;\n" +
+                "\tREGION;\n" +
+                "\tname: BC;\n" +
+                "\tPUPSETTINGS;\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 2;\n" +
+                "\tmax: 7;\n" +
+                "\tspawnChance: 0.1;\n" +
+                "\tEND_PUPSETTINGS;\n" +
+                "};\n" +
+                "END_CAMPAIGNS;",
+                
+                /*DATA SET 18 [_]
+                multiple regions under one mod
+                expected behavior: results in a CustomSettingsWrapper object with a _regionSettings
+                list size of 3 CustomRegionSettings objects*/
+                "REGIONS;\n" +
+                "name: SomeSpawnsRegion;\n" +
+                "PUPSETTINGS;\n" +
+                "pupsDynamicSpawn: true;\n" +
+                "min: 1;\n" +
+                "max: 3;\n" +
+                "spawnChance: 0.4;\n" +
+                "END_PUPSETTINGS;\n" +
+                "REGION;\n" +
+                "name: NoSpawnsRegion;\n" +
+                "REGION;\n" +
+                "name: ManySpawnsRegion;\n" +
+                "pupsDynamicSpawn: true;\n" +
+                "min: 100;\n" +
+                "max: 200;\n" +
+                "spawnChance: 1;\n" +
+                "END_REGIONS;"
             };
         }
 
@@ -877,21 +924,37 @@ namespace dynamicpupspawns
                 {
                     node = node.Next;
                     LinkedList<string> rSettings = new LinkedList<string>();
+                    CustomRegionSettings set;
                     while (node != null && node.Value.ToLower() != REGION_SETTINGS_STOP)
                     {
+                        Logger.LogInfo("Current node: " + node.Value);
+                        
+                        if (node.Value.ToLower() == REGION_SETTINGS_DIVIDE
+                            || node.Next.Value.ToLower() == REGION_SETTINGS_STOP)
+                        {
+                            if (node.Next.Value.ToLower() == REGION_SETTINGS_STOP)
+                            {
+                                rSettings.AddLast(node.Value);
+                            }
+                            
+                            set = ParseRegionSettings(rSettings);
+                            if (set != null)
+                            {
+                                Logger.LogInfo("Succeeded for region " + set.RegionAcronym + "!");
+                                settings.AddRegionSettings(set);
+                            }
+                            else
+                            {
+                                PrintNullReturnError("Region Settings Object", "ParseGeneralSettings()");
+                            }
+                            rSettings.Clear();
+                            Logger.LogInfo("Setting node to " + node.Next);
+                            node = node.Next;
+                            continue;
+                        }
+                        
                         rSettings.AddLast(node.Value);
                         node = node.Next;
-                    }
-
-                    CustomRegionSettings set = ParseRegionSettings(rSettings);
-                    if (set != null)
-                    {
-                        Logger.LogInfo("Succeeded for region " + set.RegionAcronym + "!");
-                        settings.AddRegionSettings(set);
-                    }
-                    else
-                    {
-                        PrintNullReturnError("Region Settings Object", "ParseGeneralSettings()");
                     }
                 }
                 
@@ -912,6 +975,7 @@ namespace dynamicpupspawns
         
         private CustomCampaignSettings ParseCampaignSettings(LinkedList<string> symbols)
         {
+            Logger.LogInfo("Parsing campaign settings");
             LinkedListNode<string> node = symbols.First;
 
             string id = null;
@@ -970,23 +1034,36 @@ namespace dynamicpupspawns
                         LinkedList<string> singleRegion = new LinkedList<string>();
 
                         LinkedListNode<string> rNode = rSymbols.First;
+                        CustomRegionSettings rSet;
                         while (rNode != null)
                         {
+                            if (rNode.Value.ToLower() == REGION_SETTINGS_DIVIDE
+                                || rNode.Next == null)
+                            {
+                                if (rNode.Next == null)
+                                {
+                                    Logger.LogInfo("Node: " + rNode.Value);
+                                    singleRegion.AddLast(rNode.Value);
+                                }
+                                
+                                rSet = ParseRegionSettings(singleRegion);
+                                if (rSet != null)
+                                {
+                                    rOverrides.Add(rSet);
+                                }
+                                else
+                                {
+                                    PrintNullReturnError("Region Settings Object", "ParseCampaignSettings()");
+                                }
+                                singleRegion.Clear();
+                                rNode = rNode.Next;
+                                continue;
+                            }
+                            
                             Logger.LogInfo("Node: " + rNode.Value);
                             singleRegion.AddLast(rNode.Value);
                             
                             rNode = rNode.Next;
-                        }
-                        CustomRegionSettings rSet = ParseRegionSettings(singleRegion);
-                        
-                        //check if singleRegion has objects
-                        if (rSet != null)
-                        {
-                            rOverrides.Add(rSet);
-                        }
-                        else
-                        {
-                            PrintNullReturnError("Region Settings Object", "ParseCampaignSettings()");
                         }
                     }
                     else
@@ -1041,6 +1118,7 @@ namespace dynamicpupspawns
 
         private CustomRegionSettings ParseRegionSettings(LinkedList<string> symbols)
         {
+            Logger.LogInfo("Parsing Region settings");
             LinkedListNode<string> node = symbols.First;
 
             string name = null;

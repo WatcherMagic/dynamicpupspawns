@@ -54,7 +54,7 @@ public class PupSpawnSettings
             "Spawns Dynamic Pups: {0}\n" +
             "MinPups: {1}\n" +
             "MaxPups: {2}\n" +
-            "SpawnChance: {3}", SpawnsDynamicPups, MinPups, MaxPups, SpawnChance);
+            "SpawnChance: {3:P0}", SpawnsDynamicPups, MinPups, MaxPups, SpawnChance);
         
         return s;
     }

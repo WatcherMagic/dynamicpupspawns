@@ -46,7 +46,7 @@ public class CustomCampaignSettings
         // s += "Campaign Region Settings:\n";
         
         string s = string.Format(
-            "Acronym: {0}\n" +
+            "ID: {0}\n" +
             PupSpawnSettings.ToString() + "\n" +
             "Region Overrides:\n", CampaignID);
         foreach (CustomRegionSettings regionSettings in _campaignRegionSettings)
