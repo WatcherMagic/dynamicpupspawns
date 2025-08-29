@@ -26,6 +26,7 @@ namespace dynamicpupspawns
         private const string CAMPAIGN_SETTINGS_STOP = "end_campaigns";
         private const string REGION_SETTINGS_DELIM = "regions";
         private const string REGION_SETTINGS_STOP = "end_regions";
+        private const string REGION_SETTINGS_DIVIDE = "region";
         private const string PUP_SETTINGS_DELIM = "pupsettings";
         private const string PUP_SETTINGS_STOP = "end_pupsettings";
 
@@ -724,7 +725,7 @@ namespace dynamicpupspawns
                 "region_overrides: {\n" +
                 "\tname: TR;\n" +
                 "};\n" +
-                "END_CAMAPIGNS;",
+                "END_CAMPAIGNS;",
                 
                 /*DATA SET 16 [_]
                 campaign with custom region overrides
@@ -742,9 +743,9 @@ namespace dynamicpupspawns
                 "\tmin: 1;\n" +
                 "\tmax: 3;\n" +
                 "\tspawnChance: 0.5;\n" +
-                "\tEND_PUPSETTINGS\n" +
+                "\tEND_PUPSETTINGS;\n" +
                 "};\n" +
-                "END_CAMAPIGNS;"
+                "END_CAMPAIGNS;"
             };
         }
 
@@ -838,11 +839,19 @@ namespace dynamicpupspawns
         
         private CustomSettingsWrapper ParseGeneralSettings(LinkedList<string> symbols, CustomSettingsWrapper settings)
         {
-            Logger.LogInfo("Parsing General Settings...");
             LinkedListNode<string> node = symbols.First;
-            
+
+            int infiniteCatch = 0;
             while (node != null)
             {
+                infiniteCatch++;
+                if (infiniteCatch > 200)
+                {
+                    Logger.LogWarning("ParseGeneralSettings() entered an infinite loop, " +
+                                      "check that your settings.txt is free of typos " +
+                                      "and that there's a semicolon (;) at the end of every line!");
+                }
+                
                 if (node.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
                 {
                     node = node.Next;
@@ -885,6 +894,12 @@ namespace dynamicpupspawns
                         PrintNullReturnError("Region Settings Object", "ParseGeneralSettings()");
                     }
                 }
+                
+                if (node == null)
+                {
+                    Logger.LogWarning("ParseGeneralSettings() reached unexpected end of settings.txts!");
+                    break;
+                }
                 node = node.Next;
             }
 
@@ -897,12 +912,11 @@ namespace dynamicpupspawns
         
         private CustomCampaignSettings ParseCampaignSettings(LinkedList<string> symbols)
         {
-            Logger.LogInfo("Parsing campaign settings...");
             LinkedListNode<string> node = symbols.First;
 
             string id = null;
             PupSpawnSettings pupSettings = new PupSpawnSettings();
-            List<CustomRegionSettings> rOverrides = null;
+            List<CustomRegionSettings> rOverrides = new List<CustomRegionSettings>();
 
             while (node != null)
             {
@@ -942,7 +956,6 @@ namespace dynamicpupspawns
                         {
                             rSettings = Convert.ToString(o);
                             rSettings = rSettings.Substring(1, rSettings.Length - 2);
-                            Logger.LogInfo("Region overrides without brackets: " + rSettings);
                         }
                         catch (Exception e)
                         {
@@ -953,7 +966,6 @@ namespace dynamicpupspawns
                             }
                         }
                         
-                        rOverrides = new List<CustomRegionSettings>();
                         LinkedList<string> rSymbols = ParseSymbols(rSettings);
                         LinkedList<string> singleRegion = new LinkedList<string>();
 
@@ -963,7 +975,6 @@ namespace dynamicpupspawns
                             Logger.LogInfo("Node: " + rNode.Value);
                             singleRegion.AddLast(rNode.Value);
                             
-                            Logger.LogInfo("You reached rNode.Next!");
                             rNode = rNode.Next;
                         }
                         CustomRegionSettings rSet = ParseRegionSettings(singleRegion);
@@ -1003,7 +1014,11 @@ namespace dynamicpupspawns
                     Logger.LogWarning("Unrecognized value in ParseCampaignSettings()!");
                 }
 
-                Logger.LogInfo("You reached node.Next!");
+                if (node == null)
+                {
+                    Logger.LogWarning("ParseCampaignSettings() reached unexpected end of settings.txts!");
+                    break;
+                }
                 node = node.Next;
             }
             
@@ -1012,13 +1027,20 @@ namespace dynamicpupspawns
                 return null;
             }
 
-            return new CustomCampaignSettings(id, pupSettings);
+            CustomCampaignSettings result = new CustomCampaignSettings(id, pupSettings);
+            if (rOverrides.Count > 0)
+            {
+                foreach (CustomRegionSettings r in rOverrides)
+                {
+                    result.AddCampaignRegionSettings(r);
+                }
+            }
+            
+            return result;
         }
 
         private CustomRegionSettings ParseRegionSettings(LinkedList<string> symbols)
         {
-            Logger.LogInfo("Parsing region settings... ");
-
             LinkedListNode<string> node = symbols.First;
 
             string name = null;
@@ -1066,7 +1088,11 @@ namespace dynamicpupspawns
                         PrintNullReturnError("Pup Settings Object", "ParseRegionSettings()");
                     }
                 }
-
+                if (node == null)
+                {
+                    Logger.LogWarning("ParseRegionSettings() reached unexpected end of settings.txts!");
+                    break;
+                }
                 node = node.Next;
             }
             
@@ -1190,11 +1216,11 @@ namespace dynamicpupspawns
                     return parsedNum;
                 }
 
-                if (value[1].ToLower().StartsWith("f"))
+                if (value[1].ToLower() == "false")
                 {
                     return false;
                 }
-                if (value[1].ToLower().StartsWith("t"))
+                if (value[1].ToLower() == "true")
                 {
                     return true;
                 }

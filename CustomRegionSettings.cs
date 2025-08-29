@@ -17,13 +17,9 @@ public class CustomRegionSettings
 
     public override string ToString()
     {
-        string s = "CustomRegionSettings Object:\n";
-        
-        s += "Acronym: " + RegionAcronym + "\n";
-        s += "Spawns Dynamic Pups: " +  PupSpawnSettings.SpawnsDynamicPups + "\n";
-        s += "MinPups: " + PupSpawnSettings.MinPups + "\n";
-        s += "MaxPups: " + PupSpawnSettings.MaxPups + "\n";
-        s += "SpawnChance: " + PupSpawnSettings.SpawnChance.ToString("P") + "\n";
+        string s = string.Format(
+            "Acronym: {0}\n" +
+            PupSpawnSettings.ToString() + "\n", RegionAcronym);
         
         return s;
     }

@@ -47,4 +47,15 @@ public class PupSpawnSettings
         _maxPups = max;
         _setMinMaxSucceeded = true;
     }
+
+    public override string ToString()
+    {
+        string s = string.Format(
+            "Spawns Dynamic Pups: {0}\n" +
+            "MinPups: {1}\n" +
+            "MaxPups: {2}\n" +
+            "SpawnChance: {3}", SpawnsDynamicPups, MinPups, MaxPups, SpawnChance);
+        
+        return s;
+    }
 }

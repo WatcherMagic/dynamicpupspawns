@@ -70,18 +70,19 @@ public class CustomSettingsWrapper
     
     public override string ToString()
     {
-        string s = "CustomSettingsWrapper Object:\n";
+        string s = string.Format("Mod ID: {0}\n\n", ModID);
         
-        s += "Mod ID: " + ModID + "\n";
-        s += "Campaign-specific settings:\n";
+        s += "Campaign Settings:\n";
         foreach (CustomCampaignSettings campaignSettings in _campaignSettings)
         {
             s += campaignSettings.ToString();
+            s += "___________________________\n\n";
         }
-        s += "Standalone region settings:\n";
+        s += "Standalone Region Settings:\n";
         foreach (CustomRegionSettings regionSettings in _regionSettings)
         {
             s += regionSettings.ToString();
+            s += "___________________________\n\n";
         }
         
         return s;

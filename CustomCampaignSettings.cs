@@ -36,19 +36,25 @@ public class CustomCampaignSettings
     
     public override string ToString()
     {
-        string s = "CustomCampaignSettings Object:\n";
-        
-        s += "Campaign ID: " + CampaignID + "\n";
-        s += "Spawns Dynamic Pups: " +  PupSpawnSettings.SpawnsDynamicPups + "\n";
-        s += "MinPups: " + PupSpawnSettings.MinPups + "\n";
-        s += "MaxPups: " + PupSpawnSettings.MaxPups + "\n";
-        s += "SpawnChance: " + PupSpawnSettings.SpawnChance.ToString("P") + "\n";
+        // string s = "CustomCampaignSettings Object:\n";
+        //
+        // s += "Campaign ID: " + CampaignID + "\n";
+        // s += "Spawns Dynamic Pups: " +  PupSpawnSettings.SpawnsDynamicPups + "\n";
+        // s += "MinPups: " + PupSpawnSettings.MinPups + "\n";
+        // s += "MaxPups: " + PupSpawnSettings.MaxPups + "\n";
+        // s += "SpawnChance: " + PupSpawnSettings.SpawnChance.ToString("P") + "\n";
         // s += "Campaign Region Settings:\n";
-        // foreach (CustomRegionSettings regionSettings in _campaignRegionSettings)
-        // {
-        //     s += regionSettings.ToString();
-        // }
         
+        string s = string.Format(
+            "Acronym: {0}\n" +
+            PupSpawnSettings.ToString() + "\n" +
+            "Region Overrides:\n", CampaignID);
+        foreach (CustomRegionSettings regionSettings in _campaignRegionSettings)
+        {
+            s += regionSettings.ToString();
+            s += "---------------------------\n";
+        }
+
         return s;
     }
 }
