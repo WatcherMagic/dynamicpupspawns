@@ -772,7 +772,7 @@ namespace dynamicpupspawns
                 "};\n" +
                 "END_CAMPAIGNS;",
                 
-                /*DATA SET 18 [_]
+                /*DATA SET 18 [X]
                 multiple regions under one mod
                 expected behavior: results in a CustomSettingsWrapper object with a _regionSettings
                 list size of 3 CustomRegionSettings objects*/
@@ -788,10 +788,12 @@ namespace dynamicpupspawns
                 "name: NoSpawnsRegion;\n" +
                 "REGION;\n" +
                 "name: ManySpawnsRegion;\n" +
+                "PUPSETTINGS;\n" +
                 "pupsDynamicSpawn: true;\n" +
                 "min: 100;\n" +
                 "max: 200;\n" +
                 "spawnChance: 1;\n" +
+                "END_PUPSETTINGS;\n" +
                 "END_REGIONS;"
             };
         }
@@ -927,10 +929,8 @@ namespace dynamicpupspawns
                     CustomRegionSettings set;
                     while (node != null && node.Value.ToLower() != REGION_SETTINGS_STOP)
                     {
-                        Logger.LogInfo("Current node: " + node.Value);
-                        
                         if (node.Value.ToLower() == REGION_SETTINGS_DIVIDE
-                            || node.Next.Value.ToLower() == REGION_SETTINGS_STOP)
+                            || node.Next != null && node.Next.Value.ToLower() == REGION_SETTINGS_STOP)
                         {
                             if (node.Next.Value.ToLower() == REGION_SETTINGS_STOP)
                             {
@@ -948,7 +948,6 @@ namespace dynamicpupspawns
                                 PrintNullReturnError("Region Settings Object", "ParseGeneralSettings()");
                             }
                             rSettings.Clear();
-                            Logger.LogInfo("Setting node to " + node.Next);
                             node = node.Next;
                             continue;
                         }
@@ -1166,6 +1165,11 @@ namespace dynamicpupspawns
                         PrintNullReturnError("Pup Settings Object", "ParseRegionSettings()");
                     }
                 }
+                else
+                {
+                    Logger.LogWarning("Unrecognized value in ParseRegionSettings()!");
+                }
+                
                 if (node == null)
                 {
                     Logger.LogWarning("ParseRegionSettings() reached unexpected end of settings.txts!");
@@ -1277,6 +1281,12 @@ namespace dynamicpupspawns
                 {
                     PrintNullReturnError("Setting String", "PupSpawnSettings()");
                 }
+            }
+
+            PupSpawnSettings result = new PupSpawnSettings(spawns, min, max, chance);
+            if (!result.SetMinMaxSucceeded)
+            {
+                Logger.LogWarning("Failed to set min and max property in PupSpawnSettings! " + min + " > " + max);
             }
             
             return new PupSpawnSettings(spawns, min, max, chance);
