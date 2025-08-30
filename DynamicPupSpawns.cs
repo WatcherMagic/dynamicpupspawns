@@ -23,9 +23,7 @@ namespace dynamicpupspawns
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
         private const string DATA_DIVIDER = ":";
         private const string CAMPAIGN_SETTINGS_DELIM = "campaigns";
-        private const string CAMPAIGN_SETTINGS_STOP = "end_campaigns";
         private const string REGION_SETTINGS_DELIM = "regions";
-        private const string REGION_SETTINGS_STOP = "end_regions";
         private const string REGION_SETTINGS_DIVIDE = "region";
 
         private List<CustomSettingsWrapper> _settings;
@@ -584,16 +582,14 @@ namespace dynamicpupspawns
                 empty campaign data
                 expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
                  due to missing a campaign ID*/
-                "CAMPAIGNS;\n" +
-                "END_CAMPAIGNS;",
+                "CAMPAIGNS;\n",
                 
                 /*DATA SET 3 [X]
                 campaign data with no pup settings
                 expected behavior: results in a CustomCampaignSettings object with
                  dynamic pup spawning defaulted to false*/
                 "CAMPAIGNS;\n" +
-                "id: Campaign with no pup settings;\n" +
-                "END_CAMPAIGNS;",
+                "id: Campaign with no pup settings;\n",
                 
                 /*DATA SET 4 [X]
                 campaign data with empty pup settings
@@ -601,10 +597,8 @@ namespace dynamicpupspawns
                  due to ParsePupSpawnSettings() returning null because the values list is empty*/
                 "CAMPAIGNS;\n" +
                 "id: Campaign with empty pup settings;\n" +
-                "pup_settings: {};\n" +
-                "END_CAMPAIGNS;",
+                "pup_settings: {};\n",
                 
-                //succeeds creating pup settings but data string returns null in PupSpawnSettings()
                 /*DATA SET 5 [X]
                 campaign where pups spawn
                 expected behavior: results in a CustomSettingsWrapper object
@@ -617,8 +611,7 @@ namespace dynamicpupspawns
                 "\tmin: 2;\n" +
                 "\tmax: 5;\n" +
                 "\tspawnChance: 1.0;\n" +
-                "};\n" +
-                "END_CAMPAIGNS;",
+                "};\n",
                 
                 //succeeds creating pup settings but data string returns null in PupSpawnSettings()
                 /*DATA SET 6 [X]
@@ -628,33 +621,29 @@ namespace dynamicpupspawns
                 "id: 2nd Campaign with pup settings (explicit);\n" +
                 "pup_settings: {\n" +
                 "\tpupsDynamicSpawn: false;\n" +
-                "};\n" +
-                "END_CAMPAIGNS;",
+                "};\n",
                 
-                /*DATA SET 7 [X]
+                /*DATA SET 7 [_]
                 empty region data
                 expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
                  due to missing a region acronym and pup settings object*/
-                "REGIONS;" +
-                "END_REGIONS;",
+                "REGIONS;\n",
 
-                /*DATA SET 8 [X]
+                /*DATA SET 8 [_]
                 //region with no pup settings
                 expected behavior: results in CustomRegionSettings object with pup spawns defaulted to false*/
                 "REGIONS;\n" +
-                "name: Region with no pup settings;\n" +
-                "END_REGIONS;",
+                "name: Region with no pup settings;\n",
                 
-                /*DATA SET 9 [X]
+                /*DATA SET 9 [_]
                 region with empty pup settings
                 expected behavior: triggers PrintNullReturnError() in ParseRegionSettings()
                  due to ParsePupSpawnSettings() returning null because the values list is empty*/
                 "REGIONS;\n" +
                 "name: Region with empty pup settings;\n" +
-                "pup_settings: {};\n" +
-                "END_REGIONS;",
+                "pup_settings: {};\n",
                 
-                /*DATA SET 10 [X]
+                /*DATA SET 10 [_]
                 region where pups spawn (correct)
                 expected behavior: results in a CustomSettingsWrapper object
                  which contains one CustomRegionSettings object that allows 1-10 pups
@@ -666,18 +655,16 @@ namespace dynamicpupspawns
                 "\tmin: 1;\n" +
                 "\tmax: 10;\n" +
                 "\tspawnChance: 1.0;\n" +
-                "};\n" +
-                "END_REGIONS;",
+                "};\n",
                 
-                /*DATA SET 11 [X]
+                /*DATA SET 11 [_]
                 region where pups don't spawn (explicit)
                 expected behavior: results in CustomRegionSettings object with pup spawns defaulted to false*/
                 "REGIONS;\n" +
                 "name: 2nd Region with pup settings (explicit);\n" +
                 "pup_settings: {\n" +
                 "\tpupsDynamicSpawn: false;\n" +
-                "};\n" +
-                "END_REGIONS;",
+                "};\n",
                 
                 /*DATA SET 12 [X]
                 campaign with empty id value & explicit false pup settings
@@ -687,25 +674,21 @@ namespace dynamicpupspawns
                 "id:  ;\n" +
                 "pup_settings: {\n" +
                 "\tpupsDynamicSpawn: false;\n" +
-                "};\n" +
-                "END_CAMPAIGNS;",
+                "};\n",
                 
-                /*DATA SET 13 [X]
+                /*DATA SET 13 [_]
                 region with empty name value & no pup settings
                 expected behavior: triggers PrintNullReturnError() in ParseRegionSettings()
                  due to the name field being empty*/
                 "REGIONS;\n" +
-                "name:  ;\n" +
-                "END_REGIONS;",
+                "name:  ;\n",
                 
                 /*DATA SET 14 [X]
                 campaign with empty id value and empty pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseCampaignSettings()
-                 due to missing ID*/
+                expected behavior: triggers PrintNullReturnError() TWICE ParseCampaignSettings()*/
                 "CAMPAIGNS;\n" +
                 "id:;\n" +
-                "pup_settings: {};\n" +
-                "END_CAMPAIGNS;",
+                "pup_settings: {};\n",
                 
                 /*DATA SET 15 [X]
                 campaign with custom region overrides
@@ -721,8 +704,7 @@ namespace dynamicpupspawns
                 "};\n" +
                 "region_overrides: {\n" +
                 "\tname: TR;\n" +
-                "};\n" +
-                "END_CAMPAIGNS;",
+                "};\n",
                 
                 /*DATA SET 16 [X]
                 campaign with custom region overrides
@@ -741,8 +723,7 @@ namespace dynamicpupspawns
                 "\t\tmax: 3;\n" +
                 "\t\tspawnChance: 0.5;\n" +
                 "\t];\n" +
-                "};\n" +
-                "END_CAMPAIGNS;",
+                "};\n",
                 
                 /*DATA SET 17 [X]
                 campaign with MULTIPLE custom region overrides
@@ -766,10 +747,9 @@ namespace dynamicpupspawns
                 "\t\tmax: 7;\n" +
                 "\t\tspawnChance: 0.1;\n" +
                 "\t];\n" +
-                "};\n" +
-                "END_CAMPAIGNS;",
+                "};\n",
                 
-                /*DATA SET 18 [X]
+                /*DATA SET 18 [_]
                 multiple regions under one mod
                 expected behavior: results in a CustomSettingsWrapper object with a _regionSettings
                 list size of 3 CustomRegionSettings objects*/
@@ -790,8 +770,7 @@ namespace dynamicpupspawns
                 "\tmin: 100;\n" +
                 "\tmax: 200;\n" +
                 "\tspawnChance: 1;\n" +
-                "};\n" +
-                "END_REGIONS;"
+                "};\n"
             };
         }
 
@@ -902,7 +881,7 @@ namespace dynamicpupspawns
                 {
                     node = node.Next;
                     LinkedList<string> cSettings = new LinkedList<string>();
-                    while (node != null && node.Value.ToLower() != CAMPAIGN_SETTINGS_STOP)
+                    while (node != null && node.Value.ToLower() != REGION_SETTINGS_DELIM)
                     {
                         cSettings.AddLast(node.Value);
                         node = node.Next;
@@ -918,18 +897,20 @@ namespace dynamicpupspawns
                     {
                         PrintNullReturnError("Campaign Settings Object", "ParseGeneralSettings()");
                     }
+
+                    continue;
                 }
-                else if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
+                if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
                 {
                     node = node.Next;
                     LinkedList<string> rSettings = new LinkedList<string>();
                     CustomRegionSettings set;
-                    while (node != null && node.Value.ToLower() != REGION_SETTINGS_STOP)
+                    while (node != null && node.Value.ToLower() != CAMPAIGN_SETTINGS_DELIM)
                     {
                         if (node.Value.ToLower() == REGION_SETTINGS_DIVIDE
-                            || node.Next != null && node.Next.Value.ToLower() == REGION_SETTINGS_STOP)
+                            || node.Next != null && node.Next.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
                         {
-                            if (node.Next.Value.ToLower() == REGION_SETTINGS_STOP)
+                            if (node.Next.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
                             {
                                 rSettings.AddLast(node.Value);
                             }
@@ -952,13 +933,9 @@ namespace dynamicpupspawns
                         rSettings.AddLast(node.Value);
                         node = node.Next;
                     }
+                    continue;
                 }
                 
-                if (node == null)
-                {
-                    Logger.LogWarning("ParseGeneralSettings() reached unexpected end of settings.txts!");
-                    break;
-                }
                 node = node.Next;
             }
 
