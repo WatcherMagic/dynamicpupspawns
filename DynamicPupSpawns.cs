@@ -23,6 +23,7 @@ namespace dynamicpupspawns
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
         private const string DATA_DIVIDER = ":";
         private const string CAMPAIGN_SETTINGS_DELIM = "campaigns";
+        private const string CAMPAIGN_SETTINGS_DIVIDE = "campaign";
         private const string REGION_SETTINGS_DELIM = "regions";
         private const string REGION_SETTINGS_DIVIDE = "region";
 
@@ -757,7 +758,29 @@ namespace dynamicpupspawns
                 "\tmin: 100;\n" +
                 "\tmax: 200;\n" +
                 "\tspawnChance: 1;\n" +
-                "};\n"
+                "};\n",
+                
+                /*DATA SET 17 [X]
+                multiple campaign under one mod
+                expected behavior: results in 3 CustomSettingsObjects of type Campaign*/
+                "CAMPAIGNS;\n" +
+                "id: Campaign1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 10;\n" +
+                "\tmax: 10;\n" +
+                "\tspawnChance: 0.1;\n" +
+                "};\n" +
+                "CAMPAIGN;\n" +
+                "id: Campaign2;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 2;\n" +
+                "\tspawnChance: 0.75;\n" +
+                "};\n" +
+                "CAMPAIGN;\n" +
+                "id: Campaign3;"
             };
         }
 
@@ -810,24 +833,24 @@ namespace dynamicpupspawns
                 if (symbols[i].ToLower() == CAMPAIGN_SETTINGS_DELIM)
                 {
                     List<string> cSettings = new List<string>();
-                    for (i++; i < symbols.Count; i++)
-                    {
-                        if (symbols[i].ToLower() != REGION_SETTINGS_DELIM)
-                        {
-                            cSettings.Add(symbols[i]);
-                        }
-                    }
 
                     _parseSettingsRecursed = 0;
-                    CustomSettingsObject cSet = ParseSettings(cSettings, CustomSettingsObject.ObjectType.Campaign);
-                    if (cSet != null)
+                    for (i++; i < symbols.Count; i++)
                     {
-                        bool succeedAdd = settings.AddNewSettings(cSet);
-                        if (!succeedAdd)
+                        if (symbols[i].ToLower() == CAMPAIGN_SETTINGS_DIVIDE
+                            || symbols[i].ToLower() == REGION_SETTINGS_DELIM)
                         {
-                            Logger.LogWarning("Failed to add Campaign " + cSet.ID + " to settings wrapper!");
+                            settings = AddSetting(cSettings, settings, CustomSettingsObject.ObjectType.Campaign);
+                            cSettings.Clear();
+                            if (symbols[i] == REGION_SETTINGS_DELIM)
+                            {
+                                break;
+                            }
+                            continue;
                         }
+                        cSettings.Add(symbols[i]);
                     }
+                    settings = AddSetting(cSettings, settings, CustomSettingsObject.ObjectType.Campaign);
                     continue;
                 }
                 if (symbols[i].ToLower() == REGION_SETTINGS_DELIM)
@@ -889,6 +912,7 @@ namespace dynamicpupspawns
             
             for (int i = 0; i < symbols.Count; i++)
             {
+                
                 if (symbols[i].ToLower().StartsWith("id"))
                 {
                     object o = ParseValue(symbols[i]);
