@@ -22,6 +22,13 @@ public class PupSpawnSettings
     {
         get => _maxPups;
     }
+
+    public PupSpawnSettings()
+    {
+        SpawnsDynamicPups = false;
+        SetMinAndMaxPups(-1, -1);
+        SpawnChance = 0f;
+    }
     
     public PupSpawnSettings(bool spawns, int min, int max, float chance)
     {
@@ -39,5 +46,16 @@ public class PupSpawnSettings
         _minPups = min;
         _maxPups = max;
         _setMinMaxSucceeded = true;
+    }
+
+    public override string ToString()
+    {
+        string s = string.Format(
+            "Spawns Dynamic Pups: {0}\n" +
+            "MinPups: {1}\n" +
+            "MaxPups: {2}\n" +
+            "SpawnChance: {3:P0}", SpawnsDynamicPups, MinPups, MaxPups, SpawnChance);
+        
+        return s;
     }
 }
