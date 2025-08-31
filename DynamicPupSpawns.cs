@@ -527,41 +527,40 @@ namespace dynamicpupspawns
                 _settings = new List<CustomSettingsWrapper>();
             }
 
-            //temporarily removed while settings functionality is tested
-            // foreach (ModManager.Mod mod in ModManager.ActiveMods)
-            // {
-            //     bool depends = false;
-            //     string filePath = mod.path + "\\dynamicpups\\settings.txt";
-            //     for (int i = 0; i < mod.requirements.Length; i++)
-            //     {
-            //         if (mod.requirements[i] == _MOD_ID)
-            //         {
-            //             depends = true;
-            //             Logger.LogInfo("Found dependent!: " + mod.name);
-            //             ProcessSettings(filePath, mod.id);
-            //             break;
-            //         }
-            //     }
-            //
-            //     if (!depends)
-            //     {
-            //         for (int i = 0; i < mod.priorities.Length; i++)
-            //         {
-            //             if (mod.priorities[i] == _MOD_ID)
-            //             {
-            //                 Logger.LogInfo("Found priority!: " + mod.name);
-            //                 ProcessSettings(filePath, mod.id);
-            //                 break;
-            //             }
-            //         }
-            //     }
-            // }
+             foreach (ModManager.Mod mod in ModManager.ActiveMods)
+             {
+                 bool depends = false;
+                 string filePath = mod.path + "\\dynamicpups\\settings.txt";
+                 for (int i = 0; i < mod.requirements.Length; i++)
+                 {
+                     if (mod.requirements[i] == _MOD_ID)
+                     {
+                         depends = true;
+                         Logger.LogInfo("Found dependent!: " + mod.name);
+                         ProcessSettings(filePath, mod.id, false);
+                         break;
+                     }
+                 }
+            
+                 if (!depends)
+                 {
+                     for (int i = 0; i < mod.priorities.Length; i++)
+                     {
+                         if (mod.priorities[i] == _MOD_ID)
+                         {
+                             Logger.LogInfo("Found priority!: " + mod.name);
+                             ProcessSettings(filePath, mod.id, false);
+                             break;
+                         }
+                     }
+                 }
+             }
 
-            string[] testSettingsArray = SettingTestData();
-            for (int i = 0; i < testSettingsArray.Length; i++)
-            {
-                ProcessSettings(testSettingsArray[i], "Test Data " + (i + 1), true);
-            }
+            // string[] testSettingsArray = SettingTestData();
+            // for (int i = 0; i < testSettingsArray.Length; i++)
+            // {
+            //     ProcessSettings(testSettingsArray[i], "Test Data " + (i + 1), true);
+            // }
 
             string message = "Finished processing custom settings for dependents!:";
             foreach (CustomSettingsWrapper wrapper in _settings)
@@ -569,269 +568,6 @@ namespace dynamicpupspawns
                 message += "\n" + wrapper.ToString();
             }
             Logger.LogInfo(message);
-        }
-
-        private string[] SettingTestData()
-        {
-            return new[]
-            {
-                /*DATA SET 1 [X]
-                empty file
-                expected behavior: triggers PrintNullReturnError() in ProcessSettings()
-                 due to missing campaign or region objects*/
-                "",
-                
-                /*DATA SET 2 [X]
-                empty campaign data
-                expected behavior: triggers PrintNullReturnError() in ParseSettings()
-                 due to missing a campaign ID*/
-                "CAMPAIGNS;\n",
-                
-                /*DATA SET 3 [X]
-                campaign data with no pup settings
-                expected behavior: results in a CustomSettingsObject of type Campaign
-                 with dynamic pup spawning defaulted to false*/
-                "CAMPAIGNS;\n" +
-                "id: Campaign with no pup settings;\n",
-                
-                /*DATA SET 4 [X]
-                campaign where pups spawn
-                expected behavior: results in a CustomSettingsWrapper object
-                 with one CustomSettingsObject of type Campaign*/
-                "CAMPAIGNS;\n" +
-                "id: 1st Campaign with pup settings (correct);\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 2;\n" +
-                "\tmax: 5;\n" +
-                "\tspawnChance: 1.0;\n" +
-                "};\n",
-                
-                /*DATA SET 5 [X]
-                campaign where pups don't spawn (explicit)
-                expected behavior: results in a CustomSettings object of type Campaign
-                 with pup spawns defaulted to false*/
-                "CAMPAIGNS;\n" +
-                "id: 2nd Campaign with pup settings (explicit);\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: false;\n" +
-                "};\n",
-                
-                /*DATA SET 6 [X]
-                empty region data
-                expected behavior: triggers PrintNullReturnError() in ParseSettings()
-                 due to missing id*/
-                "REGIONS;\n",
-
-                /*DATA SET 7 [X]
-                region with no pup settings
-                expected behavior: results in CustomSettingsObject of type Region
-                 with pup spawns defaulted to false*/
-                "REGIONS;\n" +
-                "id: Region with no pup settings;\n",
-                
-                /*DATA SET 8 [X]
-                region with empty pup settings
-                expected behavior: triggers PrintNullReturnError() in ParsePupSpawnSettings()
-                 due to empty settings list for pup settings*/
-                "REGIONS;\n" +
-                "id: Region with empty pup settings;\n" +
-                "pup_settings: {};\n",
-                
-                /*DATA SET 9 [X]
-                region where pups spawn (correct)
-                expected behavior: results in a CustomSettingsWrapper object
-                 which contains one CustomSettingsObject of type Region in _regionSettings*/
-                "REGIONS;\n" +
-                "id: 1st Region with pup settings (correct);\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 10;\n" +
-                "\tspawnChance: 1.0;\n" +
-                "};\n",
-                
-                /*DATA SET 10 [X]
-                region where pups don't spawn (explicit)
-                expected behavior: results in CustomSettingsObject of type Region
-                 with pup spawns defaulted to false*/
-                "REGIONS;\n" +
-                "id: 2nd Region with pup settings (explicit);\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: false;\n" +
-                "};\n",
-                
-                /*DATA SET 11 [X]
-                campaign with empty id value & explicit false pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseValue()
-                 due to empty id string*/
-                "CAMPAIGNS;\n" +
-                "id:  ;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: false;\n" +
-                "};\n",
-                
-                /*DATA SET 12 [X]
-                region with empty id value & no pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseSettings()
-                 due to missing ID*/
-                "REGIONS;\n" +
-                "id:  ;\n",
-                
-                /*DATA SET 13 [X]
-                campaign with custom region overrides
-                expected behavior: will result in a CustomSettingsObject of type Campaign
-                 which has an _overrides list size of 1 CustomSettingsObject of type Region*/
-                "CAMPAIGNS;\n" +
-                "id: RegionOverrideWithoutSpawns;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 2;\n" +
-                "\tmax: 20;\n" +
-                "\tspawnChance: 0.2;\n" +
-                "};\n" +
-                "overrides: {\n" +
-                "\tid: TR;\n" +
-                "};\n",
-                
-                /*DATA SET 14 [X]
-                campaign with custom region overrides
-                expected behavior: will result in a CustomSettingsObject which
-                 has an _overrides list size of 1 CustomSettingsObject of type Region*/
-                "CAMPAIGNS;\n" +
-                "id: RegionOverrideWithSpawns;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: false;\n" +
-                "};\n" +
-                "overrides: {\n" +
-                "\tid: TR;\n" +
-                "\tpup_settings: [\n" +
-                "\t\tpupsDynamicSpawn: true;\n" +
-                "\t\tmin: 1;\n" +
-                "\t\tmax: 3;\n" +
-                "\t\tspawnChance: 0.5;\n" +
-                "\t];\n" +
-                "};\n",
-                
-                /*DATA SET 15 [X]
-                campaign with MULTIPLE custom region overrides
-                expected behavior: results in a CustomSettings object with pup spawns set to false by default, 
-                and an _overrides list of size 2 CustomSettingsObjects of type Region*/
-                "CAMPAIGNS;\n" +
-                "id: CampaignWithMultipleRegionOverrides;\n" +
-                "overrides: {\n" +
-                "\tid: AB;\n" +
-                "\tpup_settings: [\n" +
-                "\t\tpupsDynamicSpawn: true;\n" +
-                "\t\tmin: 10;\n" +
-                "\t\tmax: 50;\n" +
-                "\t\tspawnChance: 0.01;\n" +
-                "\t];\n" +
-                "\tREGION;\n" +
-                "\tid: BC;\n" +
-                "\tpup_settings: [\n" +
-                "\t\tpupsDynamicSpawn: true;\n" +
-                "\t\tmin: 2;\n" +
-                "\t\tmax: 7;\n" +
-                "\t\tspawnChance: 0.1;\n" +
-                "\t];\n" +
-                "};\n",
-                
-                /*DATA SET 16 [X]
-                multiple regions under one mod
-                expected behavior: results in a CustomSettingsWrapper object with a _regionSettings
-                list size of 3 CustomSettingsObjects of type Region*/
-                "REGIONS;\n" +
-                "id: SomeSpawnsRegion;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 3;\n" +
-                "\tspawnChance: 0.4;\n" +
-                "};\n" +
-                "REGION;\n" +
-                "id: NoSpawnsRegion;\n" +
-                "REGION;\n" +
-                "id: ManySpawnsRegion;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 100;\n" +
-                "\tmax: 200;\n" +
-                "\tspawnChance: 1;\n" +
-                "};\n",
-                
-                /*DATA SET 17 [X]
-                multiple campaign under one mod
-                expected behavior: results in 3 CustomSettingsObjects of type Campaign*/
-                "CAMPAIGNS;\n" +
-                "id: Campaign1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 10;\n" +
-                "\tmax: 10;\n" +
-                "\tspawnChance: 0.1;\n" +
-                "};\n" +
-                "CAMPAIGN;\n" +
-                "id: Campaign2;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 2;\n" +
-                "\tspawnChance: 0.75;\n" +
-                "};\n" +
-                "CAMPAIGN;\n" +
-                "id: Campaign3;",
-                
-                /*DATA SET 18 [X]
-                multiple campaigns and regions under one mod
-                expected behavior: results in 2 CustomSettingsObjects of type Campaign
-                 and 2 CustomSettingsObjects of type Region*/
-                "CAMPAIGNS;\n" +
-                "id: Campaign1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 10;\n" +
-                "\tmax: 10;\n" +
-                "\tspawnChance: 0.1;\n" +
-                "};\n" +
-                "CAMPAIGN;\n" +
-                "id: Campaign2;" +
-                "REGIONS;\n" +
-                "id: Region1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 3;\n" +
-                "\tspawnChance: 0.4;\n" +
-                "};\n" +
-                "REGION;\n" +
-                "id: Region2;\n",
-                
-                /*DATA SET 19 [X]
-                multiple campaigns and regions under one mod (reversed)
-                expected behavior: results in 2 CustomSettingsObjects of type Campaign
-                 and 2 CustomSettingsObjects of type Region*/
-                "REGIONS;\n" +
-                "id: Region1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 3;\n" +
-                "\tspawnChance: 0.4;\n" +
-                "};\n" +
-                "REGION;\n" +
-                "id: Region2;\n" +
-                "CAMPAIGNS;\n" +
-                "id: Campaign1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 10;\n" +
-                "\tmax: 10;\n" +
-                "\tspawnChance: 0.1;\n" +
-                "};\n" +
-                "CAMPAIGN;\n" +
-                "id: Campaign2;"
-            };
         }
 
         private void ProcessSettings(string filePath, string modID, bool testing)
@@ -959,7 +695,7 @@ namespace dynamicpupspawns
         
         private CustomSettingsObject ParseSettings(List<string> symbols, CustomSettingsObject.ObjectType t)
         {
-            Logger.LogInfo("Recursive passes through ParseSettings(): " + _parseSettingsRecursed);
+            //Logger.LogInfo("Recursive passes through ParseSettings(): " + _parseSettingsRecursed);
             _parseSettingsRecursed++;
             
             string id = "";
@@ -1241,6 +977,325 @@ namespace dynamicpupspawns
         {
             Logger.LogError("An invalid cast was encountered trying to convert " 
                             + failedObj + " from object to " + triedType + "!:\n" + message);
+        }
+        
+        private string[] SettingTestData()
+        {
+            return new[]
+            {
+                /*DATA SET 1 [X]
+                empty file
+                expected behavior: triggers PrintNullReturnError() in ProcessSettings()
+                 due to missing campaign or region objects*/
+                "",
+                
+                /*DATA SET 2 [X]
+                empty campaign data
+                expected behavior: triggers PrintNullReturnError() in ParseSettings()
+                 due to missing a campaign ID*/
+                "CAMPAIGNS;\n",
+                
+                /*DATA SET 3 [X]
+                campaign data with no pup settings
+                expected behavior: results in a CustomSettingsObject of type Campaign
+                 with dynamic pup spawning defaulted to false*/
+                "CAMPAIGNS;\n" +
+                "id: Campaign with no pup settings;\n",
+                
+                /*DATA SET 4 [X]
+                campaign where pups spawn
+                expected behavior: results in a CustomSettingsWrapper object
+                 with one CustomSettingsObject of type Campaign*/
+                "CAMPAIGNS;\n" +
+                "id: 1st Campaign with pup settings (correct);\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 2;\n" +
+                "\tmax: 5;\n" +
+                "\tspawnChance: 1.0;\n" +
+                "};\n",
+                
+                /*DATA SET 5 [X]
+                campaign where pups don't spawn (explicit)
+                expected behavior: results in a CustomSettings object of type Campaign
+                 with pup spawns defaulted to false*/
+                "CAMPAIGNS;\n" +
+                "id: 2nd Campaign with pup settings (explicit);\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: false;\n" +
+                "};\n",
+                
+                /*DATA SET 6 [X]
+                empty region data
+                expected behavior: triggers PrintNullReturnError() in ParseSettings()
+                 due to missing id*/
+                "REGIONS;\n",
+
+                /*DATA SET 7 [X]
+                region with no pup settings
+                expected behavior: results in CustomSettingsObject of type Region
+                 with pup spawns defaulted to false*/
+                "REGIONS;\n" +
+                "id: Region with no pup settings;\n",
+                
+                /*DATA SET 8 [X]
+                region with empty pup settings
+                expected behavior: triggers PrintNullReturnError() in ParsePupSpawnSettings()
+                 due to empty settings list for pup settings*/
+                "REGIONS;\n" +
+                "id: Region with empty pup settings;\n" +
+                "pup_settings: {};\n",
+                
+                /*DATA SET 9 [X]
+                region where pups spawn (correct)
+                expected behavior: results in a CustomSettingsWrapper object
+                 which contains one CustomSettingsObject of type Region in _regionSettings*/
+                "REGIONS;\n" +
+                "id: 1st Region with pup settings (correct);\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 10;\n" +
+                "\tspawnChance: 1.0;\n" +
+                "};\n",
+                
+                /*DATA SET 10 [X]
+                region where pups don't spawn (explicit)
+                expected behavior: results in CustomSettingsObject of type Region
+                 with pup spawns defaulted to false*/
+                "REGIONS;\n" +
+                "id: 2nd Region with pup settings (explicit);\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: false;\n" +
+                "};\n",
+                
+                /*DATA SET 11 [X]
+                campaign with empty id value & explicit false pup settings
+                expected behavior: triggers PrintNullReturnError() in ParseValue()
+                 due to empty id string*/
+                "CAMPAIGNS;\n" +
+                "id:  ;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: false;\n" +
+                "};\n",
+                
+                /*DATA SET 12 [X]
+                region with empty id value & no pup settings
+                expected behavior: triggers PrintNullReturnError() in ParseSettings()
+                 due to missing ID*/
+                "REGIONS;\n" +
+                "id:  ;\n",
+                
+                /*DATA SET 13 [X]
+                campaign with custom region overrides
+                expected behavior: will result in a CustomSettingsObject of type Campaign
+                 which has an _overrides list size of 1 CustomSettingsObject of type Region*/
+                "CAMPAIGNS;\n" +
+                "id: RegionOverrideWithoutSpawns;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 2;\n" +
+                "\tmax: 20;\n" +
+                "\tspawnChance: 0.2;\n" +
+                "};\n" +
+                "overrides: {\n" +
+                "\tid: TR;\n" +
+                "};\n",
+                
+                /*DATA SET 14 [X]
+                campaign with custom region overrides
+                expected behavior: will result in a CustomSettingsObject which
+                 has an _overrides list size of 1 CustomSettingsObject of type Region*/
+                "CAMPAIGNS;\n" +
+                "id: RegionOverrideWithSpawns;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: false;\n" +
+                "};\n" +
+                "overrides: {\n" +
+                "\tid: TR;\n" +
+                "\tpup_settings: [\n" +
+                "\t\tpupsDynamicSpawn: true;\n" +
+                "\t\tmin: 1;\n" +
+                "\t\tmax: 3;\n" +
+                "\t\tspawnChance: 0.5;\n" +
+                "\t];\n" +
+                "};\n",
+                
+                /*DATA SET 15 [X]
+                campaign with MULTIPLE custom region overrides
+                expected behavior: results in a CustomSettings object with pup spawns set to false by default, 
+                and an _overrides list of size 2 CustomSettingsObjects of type Region*/
+                "CAMPAIGNS;\n" +
+                "id: CampaignWithMultipleRegionOverrides;\n" +
+                "overrides: {\n" +
+                "\tid: AB;\n" +
+                "\tpup_settings: [\n" +
+                "\t\tpupsDynamicSpawn: true;\n" +
+                "\t\tmin: 10;\n" +
+                "\t\tmax: 50;\n" +
+                "\t\tspawnChance: 0.01;\n" +
+                "\t];\n" +
+                "\tREGION;\n" +
+                "\tid: BC;\n" +
+                "\tpup_settings: [\n" +
+                "\t\tpupsDynamicSpawn: true;\n" +
+                "\t\tmin: 2;\n" +
+                "\t\tmax: 7;\n" +
+                "\t\tspawnChance: 0.1;\n" +
+                "\t];\n" +
+                "};\n",
+                
+                /*DATA SET 16 [X]
+                multiple regions under one mod
+                expected behavior: results in a CustomSettingsWrapper object with a _regionSettings
+                list size of 3 CustomSettingsObjects of type Region*/
+                "REGIONS;\n" +
+                "id: SomeSpawnsRegion;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 3;\n" +
+                "\tspawnChance: 0.4;\n" +
+                "};\n" +
+                "REGION;\n" +
+                "id: NoSpawnsRegion;\n" +
+                "REGION;\n" +
+                "id: ManySpawnsRegion;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 100;\n" +
+                "\tmax: 200;\n" +
+                "\tspawnChance: 1;\n" +
+                "};\n",
+                
+                /*DATA SET 17 [X]
+                multiple campaign under one mod
+                expected behavior: results in 3 CustomSettingsObjects of type Campaign*/
+                "CAMPAIGNS;\n" +
+                "id: Campaign1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 10;\n" +
+                "\tmax: 10;\n" +
+                "\tspawnChance: 0.1;\n" +
+                "};\n" +
+                "CAMPAIGN;\n" +
+                "id: Campaign2;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 2;\n" +
+                "\tspawnChance: 0.75;\n" +
+                "};\n" +
+                "CAMPAIGN;\n" +
+                "id: Campaign3;",
+                
+                /*DATA SET 18 [X]
+                multiple campaigns and regions under one mod
+                expected behavior: results in 2 CustomSettingsObjects of type Campaign
+                 and 2 CustomSettingsObjects of type Region*/
+                "CAMPAIGNS;\n" +
+                "id: Campaign1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 10;\n" +
+                "\tmax: 10;\n" +
+                "\tspawnChance: 0.1;\n" +
+                "};\n" +
+                "CAMPAIGN;\n" +
+                "id: Campaign2;" +
+                "REGIONS;\n" +
+                "id: Region1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 3;\n" +
+                "\tspawnChance: 0.4;\n" +
+                "};\n" +
+                "REGION;\n" +
+                "id: Region2;\n",
+                
+                /*DATA SET 19 [X]
+                multiple campaigns and regions under one mod (reversed)
+                expected behavior: results in 2 CustomSettingsObjects of type Campaign
+                 and 2 CustomSettingsObjects of type Region*/
+                "REGIONS;\n" +
+                "id: Region1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 3;\n" +
+                "\tspawnChance: 0.4;\n" +
+                "};\n" +
+                "REGION;\n" +
+                "id: Region2;\n" +
+                "CAMPAIGNS;\n" +
+                "id: Campaign1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 10;\n" +
+                "\tmax: 10;\n" +
+                "\tspawnChance: 0.1;\n" +
+                "};\n" +
+                "CAMPAIGN;\n" +
+                "id: Campaign2;",
+                
+                /*DATA SET 20 [X]
+                multiple campaigns with multiple region overrides and multiple regions under one mod
+                expected behavior: results in 2 CustomSettingsObjects of type Campaign, each of which
+                 has 2 region overrides, and 2 CustomSettingsObjects of type Region*/
+                "CAMPAIGNS;\n" +
+                "id: Campaign1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 10;\n" +
+                "\tmax: 10;\n" +
+                "\tspawnChance: 0.1;\n" +
+                "};\n" +
+                "overrides: {\n" +
+                "\tid: AB;\n" +
+                "\tpup_settings: [\n" +
+                "\t\tpupsDynamicSpawn: false;\n" +
+                "\t];\n" +
+                "\tREGION;\n" +
+                "\tid: BC;\n" +
+                "\tpup_settings: [\n" +
+                "\t\tpupsDynamicSpawn: true;\n" +
+                "\t\tmin: 2;\n" +
+                "\t\tmax: 7;\n" +
+                "\t\tspawnChance: 0.1;\n" +
+                "\t];\n" +
+                "};\n" +
+                "CAMPAIGN;\n" +
+                "id: Campaign2;" +
+                "overrides: {\n" +
+                "\tid: AB;\n" +
+                "\tpup_settings: [\n" +
+                "\t\tpupsDynamicSpawn: true;\n" +
+                "\t\tmin: 10;\n" +
+                "\t\tmax: 50;\n" +
+                "\t\tspawnChance: 0.01;\n" +
+                "\t];\n" +
+                "\tREGION;\n" +
+                "\tid: BC;\n" +
+                "\tpup_settings: [\n" +
+                "\t\tpupsDynamicSpawn: true;\n" +
+                "\t\tmin: 2;\n" +
+                "\t\tmax: 7;\n" +
+                "\t\tspawnChance: 0.1;\n" +
+                "\t];\n" +
+                "};\n" +
+                "REGIONS;\n" +
+                "id: Region1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 3;\n" +
+                "\tspawnChance: 0.4;\n" +
+                "};\n" +
+                "REGION;\n" +
+                "id: Region2;\n"
+            };
         }
     }
 }
