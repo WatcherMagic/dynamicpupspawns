@@ -780,7 +780,57 @@ namespace dynamicpupspawns
                 "\tspawnChance: 0.75;\n" +
                 "};\n" +
                 "CAMPAIGN;\n" +
-                "id: Campaign3;"
+                "id: Campaign3;",
+                
+                /*DATA SET 18 [X]
+                multiple campaigns and regions under one mod
+                expected behavior: results in 2 CustomSettingsObjects of type Campaign
+                 and 2 CustomSettingsObjects of type Region*/
+                "CAMPAIGNS;\n" +
+                "id: Campaign1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 10;\n" +
+                "\tmax: 10;\n" +
+                "\tspawnChance: 0.1;\n" +
+                "};\n" +
+                "CAMPAIGN;\n" +
+                "id: Campaign2;" +
+                "REGIONS;\n" +
+                "id: Region1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 3;\n" +
+                "\tspawnChance: 0.4;\n" +
+                "};\n" +
+                "REGION;\n" +
+                "id: Region2;\n",
+                
+                /*DATA SET 19 [X]
+                multiple campaigns and regions under one mod (reversed)
+                expected behavior: results in 2 CustomSettingsObjects of type Campaign
+                 and 2 CustomSettingsObjects of type Region*/
+                "REGIONS;\n" +
+                "id: Region1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 1;\n" +
+                "\tmax: 3;\n" +
+                "\tspawnChance: 0.4;\n" +
+                "};\n" +
+                "REGION;\n" +
+                "id: Region2;\n" +
+                "CAMPAIGNS;\n" +
+                "id: Campaign1;\n" +
+                "pup_settings: {\n" +
+                "\tpupsDynamicSpawn: true;\n" +
+                "\tmin: 10;\n" +
+                "\tmax: 10;\n" +
+                "\tspawnChance: 0.1;\n" +
+                "};\n" +
+                "CAMPAIGN;\n" +
+                "id: Campaign2;"
             };
         }
 
@@ -833,8 +883,6 @@ namespace dynamicpupspawns
                 if (symbols[i].ToLower() == CAMPAIGN_SETTINGS_DELIM)
                 {
                     List<string> cSettings = new List<string>();
-
-                    _parseSettingsRecursed = 0;
                     for (i++; i < symbols.Count; i++)
                     {
                         if (symbols[i].ToLower() == CAMPAIGN_SETTINGS_DIVIDE
@@ -842,22 +890,25 @@ namespace dynamicpupspawns
                         {
                             settings = AddSetting(cSettings, settings, CustomSettingsObject.ObjectType.Campaign);
                             cSettings.Clear();
-                            if (symbols[i] == REGION_SETTINGS_DELIM)
+                            if (symbols[i].ToLower() == REGION_SETTINGS_DELIM)
                             {
+                                i--;
                                 break;
                             }
                             continue;
                         }
                         cSettings.Add(symbols[i]);
                     }
-                    settings = AddSetting(cSettings, settings, CustomSettingsObject.ObjectType.Campaign);
+                    if (cSettings.Count > 0)
+                    {
+                        settings = AddSetting(cSettings, settings, CustomSettingsObject.ObjectType.Campaign);
+                    }
                     continue;
                 }
                 if (symbols[i].ToLower() == REGION_SETTINGS_DELIM)
                 {
                     List<string> rSettings = new List<string>();
 
-                    _parseSettingsRecursed = 0;
                     for (i++; i < symbols.Count; i++)
                     {
                         if (symbols[i].ToLower() == REGION_SETTINGS_DIVIDE
@@ -865,15 +916,19 @@ namespace dynamicpupspawns
                         {
                             settings = AddSetting(rSettings, settings, CustomSettingsObject.ObjectType.Region);
                             rSettings.Clear();
-                            if (symbols[i] == CAMPAIGN_SETTINGS_DELIM)
+                            if (symbols[i].ToLower() == CAMPAIGN_SETTINGS_DELIM)
                             {
+                                i--;
                                 break;
                             }
                             continue;
                         }
                         rSettings.Add(symbols[i]);
                     }
-                    settings = AddSetting(rSettings, settings, CustomSettingsObject.ObjectType.Region);
+                    if (rSettings.Count > 0)
+                    {
+                        settings = AddSetting(rSettings, settings, CustomSettingsObject.ObjectType.Region);
+                    }
                 }
             }
 
@@ -888,6 +943,7 @@ namespace dynamicpupspawns
         private CustomSettingsWrapper AddSetting(List<string> settings, CustomSettingsWrapper wrap,
             CustomSettingsObject.ObjectType t)
         {
+            _parseSettingsRecursed = 0;
             CustomSettingsObject set = ParseSettings(settings, t);
             if (set != null)
             {
