@@ -27,7 +27,7 @@ namespace dynamicpupspawns
         private const string REGION_SETTINGS_DELIM = "regions";
         private const string REGION_SETTINGS_DIVIDE = "region";
 
-        private int _parseSettingsRecursed = 0;
+        //private int _parseSettingsRecursed = 0;
 
         private List<CustomSettingsWrapper> _settings;
         private void OnEnable()
@@ -679,7 +679,7 @@ namespace dynamicpupspawns
         private CustomSettingsWrapper AddSetting(List<string> settings, CustomSettingsWrapper wrap,
             CustomSettingsObject.ObjectType t)
         {
-            _parseSettingsRecursed = 0;
+            //_parseSettingsRecursed = 0;
             CustomSettingsObject set = ParseSettings(settings, t);
             if (set != null)
             {
@@ -696,7 +696,7 @@ namespace dynamicpupspawns
         private CustomSettingsObject ParseSettings(List<string> symbols, CustomSettingsObject.ObjectType t)
         {
             //Logger.LogInfo("Recursive passes through ParseSettings(): " + _parseSettingsRecursed);
-            _parseSettingsRecursed++;
+            //_parseSettingsRecursed++;
             
             string id = "";
             PupSpawnSettings pupSettings = null;
