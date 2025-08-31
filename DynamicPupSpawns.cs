@@ -26,6 +26,8 @@ namespace dynamicpupspawns
         private const string REGION_SETTINGS_DELIM = "regions";
         private const string REGION_SETTINGS_DIVIDE = "region";
 
+        private int _parseSettingsRecursed = 0;
+
         private List<CustomSettingsWrapper> _settings;
         private void OnEnable()
         {
@@ -580,30 +582,21 @@ namespace dynamicpupspawns
                 
                 /*DATA SET 2 [X]
                 empty campaign data
-                expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
+                expected behavior: triggers PrintNullReturnError() in ParseSettings()
                  due to missing a campaign ID*/
                 "CAMPAIGNS;\n",
                 
                 /*DATA SET 3 [X]
                 campaign data with no pup settings
-                expected behavior: results in a CustomCampaignSettings object with
-                 dynamic pup spawning defaulted to false*/
+                expected behavior: results in a CustomSettingsObject of type Campaign
+                 with dynamic pup spawning defaulted to false*/
                 "CAMPAIGNS;\n" +
                 "id: Campaign with no pup settings;\n",
                 
                 /*DATA SET 4 [X]
-                campaign data with empty pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseCampaignSettings()
-                 due to ParsePupSpawnSettings() returning null because the values list is empty*/
-                "CAMPAIGNS;\n" +
-                "id: Campaign with empty pup settings;\n" +
-                "pup_settings: {};\n",
-                
-                /*DATA SET 5 [X]
                 campaign where pups spawn
                 expected behavior: results in a CustomSettingsWrapper object
-                 with one CustomCampaignSettings object inside, which holds one
-                 PupSpawnSettings object that allows pups to spawn with a 100% spawn rate of 2-5*/
+                 with one CustomSettingsObject of type Campaign*/
                 "CAMPAIGNS;\n" +
                 "id: 1st Campaign with pup settings (correct);\n" +
                 "pup_settings: {\n" +
@@ -613,43 +606,43 @@ namespace dynamicpupspawns
                 "\tspawnChance: 1.0;\n" +
                 "};\n",
                 
-                //succeeds creating pup settings but data string returns null in PupSpawnSettings()
-                /*DATA SET 6 [X]
+                /*DATA SET 5 [X]
                 campaign where pups don't spawn (explicit)
-                expected behavior: results in a CustomCampaignSettings object with pup spawns defaulted to false*/
+                expected behavior: results in a CustomSettings object of type Campaign
+                 with pup spawns defaulted to false*/
                 "CAMPAIGNS;\n" +
                 "id: 2nd Campaign with pup settings (explicit);\n" +
                 "pup_settings: {\n" +
                 "\tpupsDynamicSpawn: false;\n" +
                 "};\n",
                 
-                /*DATA SET 7 [_]
+                /*DATA SET 6 [X]
                 empty region data
-                expected behavior: triggers PrintNullReturnError() in ParseGeneralSettings()
-                 due to missing a region acronym and pup settings object*/
+                expected behavior: triggers PrintNullReturnError() in ParseSettings()
+                 due to missing id*/
                 "REGIONS;\n",
 
-                /*DATA SET 8 [_]
-                //region with no pup settings
-                expected behavior: results in CustomRegionSettings object with pup spawns defaulted to false*/
+                /*DATA SET 7 [X]
+                region with no pup settings
+                expected behavior: results in CustomSettingsObject of type Region
+                 with pup spawns defaulted to false*/
                 "REGIONS;\n" +
-                "name: Region with no pup settings;\n",
+                "id: Region with no pup settings;\n",
                 
-                /*DATA SET 9 [_]
+                /*DATA SET 8 [X]
                 region with empty pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseRegionSettings()
-                 due to ParsePupSpawnSettings() returning null because the values list is empty*/
+                expected behavior: triggers PrintNullReturnError() in ParsePupSpawnSettings()
+                 due to empty settings list for pup settings*/
                 "REGIONS;\n" +
-                "name: Region with empty pup settings;\n" +
+                "id: Region with empty pup settings;\n" +
                 "pup_settings: {};\n",
                 
-                /*DATA SET 10 [_]
+                /*DATA SET 9 [X]
                 region where pups spawn (correct)
                 expected behavior: results in a CustomSettingsWrapper object
-                 which contains one CustomRegionSettings object that allows 1-10 pups
-                 to spawn at a 100% rate*/
+                 which contains one CustomSettingsObject of type Region in _regionSettings*/
                 "REGIONS;\n" +
-                "name: 1st Region with pup settings (correct);\n" +
+                "id: 1st Region with pup settings (correct);\n" +
                 "pup_settings: {\n" +
                 "\tpupsDynamicSpawn: true;\n" +
                 "\tmin: 1;\n" +
@@ -657,43 +650,37 @@ namespace dynamicpupspawns
                 "\tspawnChance: 1.0;\n" +
                 "};\n",
                 
-                /*DATA SET 11 [_]
+                /*DATA SET 10 [X]
                 region where pups don't spawn (explicit)
-                expected behavior: results in CustomRegionSettings object with pup spawns defaulted to false*/
+                expected behavior: results in CustomSettingsObject of type Region
+                 with pup spawns defaulted to false*/
                 "REGIONS;\n" +
-                "name: 2nd Region with pup settings (explicit);\n" +
+                "id: 2nd Region with pup settings (explicit);\n" +
                 "pup_settings: {\n" +
                 "\tpupsDynamicSpawn: false;\n" +
                 "};\n",
                 
-                /*DATA SET 12 [X]
+                /*DATA SET 11 [X]
                 campaign with empty id value & explicit false pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseCampaignSettings()
-                 due to the id field being empty*/
+                expected behavior: triggers PrintNullReturnError() in ParseValue()
+                 due to empty id string*/
                 "CAMPAIGNS;\n" +
                 "id:  ;\n" +
                 "pup_settings: {\n" +
                 "\tpupsDynamicSpawn: false;\n" +
                 "};\n",
                 
-                /*DATA SET 13 [_]
-                region with empty name value & no pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseRegionSettings()
-                 due to the name field being empty*/
+                /*DATA SET 12 [X]
+                region with empty id value & no pup settings
+                expected behavior: triggers PrintNullReturnError() in ParseSettings()
+                 due to missing ID*/
                 "REGIONS;\n" +
-                "name:  ;\n",
+                "id:  ;\n",
                 
-                /*DATA SET 14 [X]
-                campaign with empty id value and empty pup settings
-                expected behavior: triggers PrintNullReturnError() TWICE ParseCampaignSettings()*/
-                "CAMPAIGNS;\n" +
-                "id:;\n" +
-                "pup_settings: {};\n",
-                
-                /*DATA SET 15 [X]
+                /*DATA SET 13 [X]
                 campaign with custom region overrides
-                expected behavior: will result in a CustomCampaignSettings object which
-                 has a _campaignRegionSettings list size of 1 CustomRegionSettings object*/
+                expected behavior: will result in a CustomSettingsObject of type Campaign
+                 which has an _overrides list size of 1 CustomSettingsObject of type Region*/
                 "CAMPAIGNS;\n" +
                 "id: RegionOverrideWithoutSpawns;\n" +
                 "pup_settings: {\n" +
@@ -702,21 +689,21 @@ namespace dynamicpupspawns
                 "\tmax: 20;\n" +
                 "\tspawnChance: 0.2;\n" +
                 "};\n" +
-                "region_overrides: {\n" +
-                "\tname: TR;\n" +
+                "overrides: {\n" +
+                "\tid: TR;\n" +
                 "};\n",
                 
-                /*DATA SET 16 [X]
+                /*DATA SET 14 [X]
                 campaign with custom region overrides
-                expected behavior: will result in a CustomCampaignSettings object which
-                 has a _campaignRegionSettings list size of 1 CustomRegionSettings object*/
+                expected behavior: will result in a CustomSettingsObject which
+                 has an _overrides list size of 1 CustomSettingsObject of type Region*/
                 "CAMPAIGNS;\n" +
                 "id: RegionOverrideWithSpawns;\n" +
                 "pup_settings: {\n" +
                 "\tpupsDynamicSpawn: false;\n" +
                 "};\n" +
-                "region_overrides: {\n" +
-                "\tname: TR;\n" +
+                "overrides: {\n" +
+                "\tid: TR;\n" +
                 "\tpup_settings: [\n" +
                 "\t\tpupsDynamicSpawn: true;\n" +
                 "\t\tmin: 1;\n" +
@@ -725,14 +712,14 @@ namespace dynamicpupspawns
                 "\t];\n" +
                 "};\n",
                 
-                /*DATA SET 17 [X]
+                /*DATA SET 15 [X]
                 campaign with MULTIPLE custom region overrides
-                expected behavior: results in a CustomCampaignSettings object with pup spawns set to false by default, 
-                and a _campaignRegionSettings list of size 2 CustomRegionSettings objects*/
+                expected behavior: results in a CustomSettings object with pup spawns set to false by default, 
+                and an _overrides list of size 2 CustomSettingsObjects of type Region*/
                 "CAMPAIGNS;\n" +
                 "id: CampaignWithMultipleRegionOverrides;\n" +
-                "region_overrides: {\n" +
-                "\tname: AB;\n" +
+                "overrides: {\n" +
+                "\tid: AB;\n" +
                 "\tpup_settings: [\n" +
                 "\t\tpupsDynamicSpawn: true;\n" +
                 "\t\tmin: 10;\n" +
@@ -740,7 +727,7 @@ namespace dynamicpupspawns
                 "\t\tspawnChance: 0.01;\n" +
                 "\t];\n" +
                 "\tREGION;\n" +
-                "\tname: BC;\n" +
+                "\tid: BC;\n" +
                 "\tpup_settings: [\n" +
                 "\t\tpupsDynamicSpawn: true;\n" +
                 "\t\tmin: 2;\n" +
@@ -749,12 +736,12 @@ namespace dynamicpupspawns
                 "\t];\n" +
                 "};\n",
                 
-                /*DATA SET 18 [_]
+                /*DATA SET 16 [X]
                 multiple regions under one mod
                 expected behavior: results in a CustomSettingsWrapper object with a _regionSettings
-                list size of 3 CustomRegionSettings objects*/
+                list size of 3 CustomSettingsObjects of type Region*/
                 "REGIONS;\n" +
-                "name: SomeSpawnsRegion;\n" +
+                "id: SomeSpawnsRegion;\n" +
                 "pup_settings: {\n" +
                 "\tpupsDynamicSpawn: true;\n" +
                 "\tmin: 1;\n" +
@@ -762,9 +749,9 @@ namespace dynamicpupspawns
                 "\tspawnChance: 0.4;\n" +
                 "};\n" +
                 "REGION;\n" +
-                "name: NoSpawnsRegion;\n" +
+                "id: NoSpawnsRegion;\n" +
                 "REGION;\n" +
-                "name: ManySpawnsRegion;\n" +
+                "id: ManySpawnsRegion;\n" +
                 "pup_settings: {\n" +
                 "\tpupsDynamicSpawn: true;\n" +
                 "\tmin: 100;\n" +
@@ -779,7 +766,7 @@ namespace dynamicpupspawns
             Logger.LogInfo("Parsing settings for " + modID + ":");
 
             CustomSettingsWrapper modSettings = new CustomSettingsWrapper(modID);
-            LinkedList<string> symbols = new LinkedList<string>();
+            List<string> symbols = new List<string>();
             
             try
             {
@@ -808,11 +795,7 @@ namespace dynamicpupspawns
             }
             
             modSettings = ParseGeneralSettings(symbols, modSettings);
-            if (modSettings == null)
-            {
-                PrintNullReturnError("Custom Settings Wrapper", "ProcessSettings()");
-            }
-            else
+            if (modSettings != null)
             {
                 _settings.Add(modSettings);
             }
@@ -820,392 +803,184 @@ namespace dynamicpupspawns
             Logger.LogInfo("Finished parsing for " + modID + "!");
         }
 
-        private LinkedList<string> ParseSymbols(string settings, char openBracket = '{', char closeBracket = '}')
+        private CustomSettingsWrapper ParseGeneralSettings(List<string> symbols, CustomSettingsWrapper settings)
         {
-            StringReader reader = new StringReader(settings);
-            LinkedList<string> symbols = new LinkedList<string>();
-            
-            string symbol = "";
-            while (reader.Peek() >= 0)
+            for (int i = 0; i < symbols.Count; i++)
             {
-                char c = (char)reader.Peek();
-                if (c != ';')
+                if (symbols[i].ToLower() == CAMPAIGN_SETTINGS_DELIM)
                 {
-                    if (c == openBracket)
+                    List<string> cSettings = new List<string>();
+                    for (i++; i < symbols.Count; i++)
                     {
-                        while (reader.Peek() >= 0)
+                        if (symbols[i].ToLower() != REGION_SETTINGS_DELIM)
                         {
-                            c = (char)reader.Peek();
-                            if (c != closeBracket)
+                            cSettings.Add(symbols[i]);
+                        }
+                    }
+
+                    _parseSettingsRecursed = 0;
+                    CustomSettingsObject cSet = ParseSettings(cSettings, CustomSettingsObject.ObjectType.Campaign);
+                    if (cSet != null)
+                    {
+                        bool succeedAdd = settings.AddNewSettings(cSet);
+                        if (!succeedAdd)
+                        {
+                            Logger.LogWarning("Failed to add Campaign " + cSet.ID + " to settings wrapper!");
+                        }
+                    }
+                    continue;
+                }
+                if (symbols[i].ToLower() == REGION_SETTINGS_DELIM)
+                {
+                    List<string> rSettings = new List<string>();
+
+                    _parseSettingsRecursed = 0;
+                    for (i++; i < symbols.Count; i++)
+                    {
+                        if (symbols[i].ToLower() == REGION_SETTINGS_DIVIDE
+                            || symbols[i].ToLower() == CAMPAIGN_SETTINGS_DELIM)
+                        {
+                            settings = AddSetting(rSettings, settings, CustomSettingsObject.ObjectType.Region);
+                            rSettings.Clear();
+                            if (symbols[i] == CAMPAIGN_SETTINGS_DELIM)
                             {
-                                symbol += (char)reader.Read();
-                            }
-                            else
-                            {
-                                symbol += (char)reader.Read();
                                 break;
                             }
-                        }
-
-                        continue;
-                    }
-                    symbol += (char)reader.Read();
-                }
-                else
-                {
-                    reader.Read();
-                    symbols.AddLast(symbol);
-                    symbol = "";
-                }
-            }
-
-            return symbols;
-        }
-        
-        private CustomSettingsWrapper ParseGeneralSettings(LinkedList<string> symbols, CustomSettingsWrapper settings)
-        {
-            LinkedListNode<string> node = symbols.First;
-
-            int infiniteCatch = 0;
-            while (node != null)
-            {
-                infiniteCatch++;
-                if (infiniteCatch > 200)
-                {
-                    Logger.LogWarning("ParseGeneralSettings() entered an infinite loop, " +
-                                      "check that your settings.txt is free of typos " +
-                                      "and that there's a semicolon (;) at the end of every line!");
-                }
-                
-                if (node.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
-                {
-                    node = node.Next;
-                    LinkedList<string> cSettings = new LinkedList<string>();
-                    while (node != null && node.Value.ToLower() != REGION_SETTINGS_DELIM)
-                    {
-                        cSettings.AddLast(node.Value);
-                        node = node.Next;
-                    }
-
-                    CustomCampaignSettings set = ParseCampaignSettings(cSettings);
-                    if (set != null)
-                    {
-                        Logger.LogInfo("Succeeded for campaign " + set.CampaignID + "!");
-                        settings.AddCampaignSettings(set);
-                    }
-                    else
-                    {
-                        PrintNullReturnError("Campaign Settings Object", "ParseGeneralSettings()");
-                    }
-
-                    continue;
-                }
-                if (node.Value.ToLower() == REGION_SETTINGS_DELIM)
-                {
-                    node = node.Next;
-                    LinkedList<string> rSettings = new LinkedList<string>();
-                    CustomRegionSettings set;
-                    while (node != null && node.Value.ToLower() != CAMPAIGN_SETTINGS_DELIM)
-                    {
-                        if (node.Value.ToLower() == REGION_SETTINGS_DIVIDE
-                            || node.Next != null && node.Next.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
-                        {
-                            if (node.Next.Value.ToLower() == CAMPAIGN_SETTINGS_DELIM)
-                            {
-                                rSettings.AddLast(node.Value);
-                            }
-                            
-                            set = ParseRegionSettings(rSettings);
-                            if (set != null)
-                            {
-                                Logger.LogInfo("Succeeded for region " + set.RegionAcronym + "!");
-                                settings.AddRegionSettings(set);
-                            }
-                            else
-                            {
-                                PrintNullReturnError("Region Settings Object", "ParseGeneralSettings()");
-                            }
-                            rSettings.Clear();
-                            node = node.Next;
                             continue;
                         }
-                        
-                        rSettings.AddLast(node.Value);
-                        node = node.Next;
+                        rSettings.Add(symbols[i]);
                     }
-                    continue;
+                    settings = AddSetting(rSettings, settings, CustomSettingsObject.ObjectType.Region);
                 }
-                
-                node = node.Next;
             }
 
             if (!settings.HasCampaignSettings() && !settings.HasRegionSettings())
             {
+                PrintNullReturnError("CustomSettingsWrapper", "ParseGeneralSettings()", "contains no setting objects");
                 return null;
             }
             return settings;
         }
-        
-        private CustomCampaignSettings ParseCampaignSettings(LinkedList<string> symbols)
+
+        private CustomSettingsWrapper AddSetting(List<string> settings, CustomSettingsWrapper wrap,
+            CustomSettingsObject.ObjectType t)
         {
-            Logger.LogInfo("Parsing campaign settings");
-            LinkedListNode<string> node = symbols.First;
-
-            string id = null;
-            PupSpawnSettings pupSettings = new PupSpawnSettings();
-            List<CustomRegionSettings> rOverrides = new List<CustomRegionSettings>();
-
-            while (node != null)
-            {   
-                if (node.Value.ToLower().StartsWith("id"))
+            CustomSettingsObject set = ParseSettings(settings, t);
+            if (set != null)
+            {
+                bool succeedAdd = wrap.AddNewSettings(set);
+                if (!succeedAdd)
                 {
-                    object o = ParseValue(node.Value);
+                    Logger.LogWarning("Failed to add " + set.Type + " settings for " + set.ID + " to settings wrapper!");
+                }
+            }
+
+            return wrap;
+        }
+        
+        private CustomSettingsObject ParseSettings(List<string> symbols, CustomSettingsObject.ObjectType t)
+        {
+            Logger.LogInfo("Recursive passes through ParseSettings(): " + _parseSettingsRecursed);
+            _parseSettingsRecursed++;
+            
+            string id = "";
+            PupSpawnSettings pupSettings = null;
+            List<CustomSettingsObject> overridesList = null;
+            
+            for (int i = 0; i < symbols.Count; i++)
+            {
+                if (symbols[i].ToLower().StartsWith("id"))
+                {
+                    object o = ParseValue(symbols[i]);
                     if (o != null)
                     {
-                        try
-                        {
-                            id = (string)o;
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogException(e);
-                            id = "Something went wrong casting from object to string!";
-
-                            if (e.GetType() == typeof(InvalidCastException))
-                            {
-                                PrintInvalidCastError("Campaign ID", "string", e.Message);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        PrintNullReturnError("Campaign ID", "ParseCampaignSettings()");
+                        id = Convert.ToString(o);
                     }
                 }
-                else if (node.Value.ToLower().StartsWith("region_overrides"))
+                else if (symbols[i].ToLower().StartsWith("pup_settings"))
                 {
-                    object o = ParseValue(node.Value);
+                    object o = ParseValue(symbols[i]);
                     if (o != null)
                     {
-                        string rSettings = "";
-                        try
-                        {
-                            rSettings = Convert.ToString(o);
-                            rSettings = rSettings.Substring(1, rSettings.Length - 2);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogException(e);
-                            if (e.GetType() == typeof(InvalidCastException))
-                            {
-                                PrintInvalidCastError("Campaign Region Overrides", "string", e.Message);
-                            }
-                        }
-                        
-                        LinkedList<string> rSymbols = ParseSymbols(rSettings, '[', ']');
-                        LinkedList<string> singleRegion = new LinkedList<string>();
+                        string pupSettingString = Convert.ToString(o);
+                        pupSettingString = pupSettingString.Substring(1, pupSettingString.Length - 2);
 
-                        LinkedListNode<string> rNode = rSymbols.First;
-                        CustomRegionSettings rSet;
-                        while (rNode != null)
-                        {
-                            if (rNode.Value.ToLower() == REGION_SETTINGS_DIVIDE
-                                || rNode.Next == null)
-                            {
-                                if (rNode.Next == null)
-                                {
-                                    Logger.LogInfo("Node: " + rNode.Value);
-                                    singleRegion.AddLast(rNode.Value);
-                                }
-                                
-                                rSet = ParseRegionSettings(singleRegion);
-                                if (rSet != null)
-                                {
-                                    rOverrides.Add(rSet);
-                                }
-                                else
-                                {
-                                    PrintNullReturnError("Region Settings Object", "ParseCampaignSettings()");
-                                }
-                                singleRegion.Clear();
-                                rNode = rNode.Next;
-                                continue;
-                            }
-                            
-                            Logger.LogInfo("Node: " + rNode.Value);
-                            singleRegion.AddLast(rNode.Value);
-                            
-                            rNode = rNode.Next;
-                        }
-                    }
-                    else
-                    {
-                        PrintNullReturnError("Region Overrides String", "ParseCampaignSettings()");
+                        List<string> pSettings = ParseSymbols(pupSettingString);
+                        pupSettings = ParsePupSpawnSettings(pSettings);
                     }
                 }
-                else if (node.Value.ToLower().StartsWith("pup_settings"))
+                else if (symbols[i].ToLower().StartsWith("overrides"))
                 {
-                    object o = ParseValue(node.Value);
+                    object o = ParseValue(symbols[i]);
                     if (o != null)
                     {
-                        string pSettings = "";
-                        try
+                        string overrideString = Convert.ToString(o);
+                        overrideString = overrideString.Substring(1, overrideString.Length - 2);
+
+                        List<string> allOverrides = ParseSymbols(overrideString, '[', ']');
+                        List<string> singleObject = new List<string>();
+                        overridesList = new List<CustomSettingsObject>();
+                        for (int x = 0; x < allOverrides.Count; x++)
                         {
-                            pSettings = Convert.ToString(o);
-                            pSettings = pSettings.Substring(1, pSettings.Length - 2);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogException(e);
-                            if (e.GetType() == typeof(InvalidCastException))
+                            if (t == CustomSettingsObject.ObjectType.Campaign)
                             {
-                                PrintInvalidCastError("Campaign Pup Settings", "string", e.Message);
+                                if (allOverrides[x].ToLower() == REGION_SETTINGS_DIVIDE)
+                                {
+                                    CustomSettingsObject overrideObject = ParseSettings(singleObject, CustomSettingsObject.ObjectType.Region);
+                                    singleObject.Clear();
+                                    overridesList.Add(overrideObject);
+                                    continue;
+                                }
+                                singleObject.Add(allOverrides[x]);
                             }
                         }
-                        
-                        LinkedList<string> pSymbols = ParseSymbols(pSettings);
-                        
-                        //eventually all linked lists will be replaced with Lists, temporary measure in meantime
-                        LinkedListNode<string> pNode = pSymbols.First;
-                        List<string> pSym = new List<string>();
-                        while (pNode != null)
+                        if (t == CustomSettingsObject.ObjectType.Campaign)
                         {
-                            pSym.Add(pNode.Value);
-                            pNode = pNode.Next;
+                            CustomSettingsObject overrideObject = ParseSettings(singleObject, CustomSettingsObject.ObjectType.Region);
+                            overridesList.Add(overrideObject);
                         }
-                        
-                        pupSettings = ParsePupSpawnSettings(pSym);
-                        if (pupSettings == null)
-                        {
-                            PrintNullReturnError("Pup Settings Object", "ParseCampaignSettings()");
-                        }
-                    }
-                    else
-                    {
-                        PrintNullReturnError("Pup Settings String", "ParseCampaignSettings()");
                     }
                 }
                 else
                 {
-                    Logger.LogWarning("Unrecognized value in ParseCampaignSettings()!");
+                    Logger.LogWarning("Unrecognized value for " + t + " setting!: " + symbols[i]);
                 }
-                node = node.Next;
-            }
-            
-            if (id == null || pupSettings == null)
-            {
-                return null;
             }
 
-            CustomCampaignSettings result = new CustomCampaignSettings(id, pupSettings);
-            if (rOverrides.Count > 0)
+            if (id == "")
             {
-                foreach (CustomRegionSettings r in rOverrides)
+                PrintNullReturnError("CustomSettingsObject of type " + t, "ParseSettings()", "id");
+                return null;
+            }
+            CustomSettingsObject result;
+            if (pupSettings == null)
+            {
+                result = new CustomSettingsObject(t, id);
+            }
+            else
+            {
+                result = new CustomSettingsObject(t, id, pupSettings);
+            }
+            if (overridesList != null)
+            {
+                foreach (CustomSettingsObject o in overridesList)
                 {
-                    result.AddCampaignRegionSettings(r);
+                    bool succeedAdd = result.AddOverride(o);
+                    if (!succeedAdd)
+                    {
+                        Logger.LogWarning("You cannot add objects of type " + o.Type + " to overrides of objects with type " + result.Type);
+                    }
                 }
             }
             
             return result;
         }
 
-        private CustomRegionSettings ParseRegionSettings(LinkedList<string> symbols)
-        {
-            Logger.LogInfo("Parsing Region settings");
-            LinkedListNode<string> node = symbols.First;
-
-            string name = null;
-            PupSpawnSettings pupSettings = new PupSpawnSettings();
-
-            while (node != null)
-            {
-                Logger.LogInfo("Region settings symbol: " + node.Value);
-                
-                if (node.Value.ToLower().StartsWith("name"))
-                {
-                    object o = ParseValue(node.Value);
-                    if (o != null)
-                    {
-                        try
-                        {
-                            name = Convert.ToString(o);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogException(e);
-                            name = "Something went wrong casting from object to string!";
-
-                            if (e.GetType() == typeof(InvalidCastException))
-                            {
-                                PrintInvalidCastError("Region Acronym", "string", e.Message);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        PrintNullReturnError("Region Name", "ParseRegionSettings()");
-                    }
-                }
-                else if (node.Value.ToLower().StartsWith("pup_settings"))
-                {
-                    object o = ParseValue(node.Value);
-                    if (o != null)
-                    {
-                        string pSettings = "";
-                        try
-                        {
-                            pSettings = Convert.ToString(o);
-                            pSettings = pSettings.Substring(1, pSettings.Length - 2);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogException(e);
-                            if (e.GetType() == typeof(InvalidCastException))
-                            {
-                                PrintInvalidCastError("Campaign Pup Settings", "string", e.Message);
-                            }
-                        }
-
-                        LinkedList<string> pSymbols = ParseSymbols(pSettings);
-
-                        //eventually all linked lists will be replaced with Lists, temporary measure in meantime
-                        LinkedListNode<string> pNode = pSymbols.First;
-                        List<string> pSym = new List<string>();
-                        while (pNode != null)
-                        {
-                            pSym.Add(pNode.Value);
-                            pNode = pNode.Next;
-                        }
-                        
-                        pupSettings = ParsePupSpawnSettings(pSym);
-                        if (pupSettings == null)
-                        {
-                            PrintNullReturnError("Pup Settings Object", "ParseRegionSettings()");
-                        }
-                    }
-                    else
-                    {
-                        PrintNullReturnError("Pup Settings String", "ParseCampaignSettings()");
-                    }
-                }
-                else
-                {
-                    Logger.LogWarning("Unrecognized value in ParseRegionSettings()!");
-                }
-                node = node.Next;
-            }
-            
-            if (name == null || pupSettings == null)
-            {
-                return null;
-            }
-            return new CustomRegionSettings(name, pupSettings);
-        }
-
         private PupSpawnSettings ParsePupSpawnSettings(List<string> pSettings)
         {
             if (pSettings.Count == 0)
             {
+                PrintNullReturnError("PupSpawnSettings Object", "ParsePupSpawnSettings()", "empty values list");
                 return null;
             }
             
@@ -1296,7 +1071,7 @@ namespace dynamicpupspawns
                 }
                 else
                 {
-                    PrintNullReturnError("Setting String", "PupSpawnSettings()");
+                    PrintNullReturnError("Setting String", "PupSpawnSettings()", "value");
                 }
             }
 
@@ -1307,6 +1082,48 @@ namespace dynamicpupspawns
             }
             
             return new PupSpawnSettings(spawns, min, max, chance);
+        }
+        
+        private List<string> ParseSymbols(string settings, char openBracket = '{', char closeBracket = '}')
+        {
+            StringReader reader = new StringReader(settings);
+            List<string> symbols = new List<string>();
+            
+            string symbol = "";
+            while (reader.Peek() >= 0)
+            {
+                char c = (char)reader.Peek();
+                if (c != ';')
+                {
+                    if (c == openBracket)
+                    {
+                        while (reader.Peek() >= 0)
+                        {
+                            c = (char)reader.Peek();
+                            if (c != closeBracket)
+                            {
+                                symbol += (char)reader.Read();
+                            }
+                            else
+                            {
+                                symbol += (char)reader.Read();
+                                break;
+                            }
+                        }
+
+                        continue;
+                    }
+                    symbol += (char)reader.Read();
+                }
+                else
+                {
+                    reader.Read();
+                    symbols.Add(symbol);
+                    symbol = "";
+                }
+            }
+
+            return symbols;
         }
         
         private object ParseValue(string setting)
@@ -1332,13 +1149,12 @@ namespace dynamicpupspawns
 
                 return value[1];
             }
-
             return null;
         }
 
-        private void PrintNullReturnError(string value, string source)
+        private void PrintNullReturnError(string value, string source, string cause)
         {
-            Logger.LogError("A " + value + " returned null in " + source + "!");
+            Logger.LogError("A " + value + " returned null in " + source + "! Cause: " + cause);
         }
 
         private void PrintInvalidCastError(string failedObj, string triedType, string message)

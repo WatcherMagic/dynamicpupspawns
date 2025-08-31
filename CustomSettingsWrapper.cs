@@ -6,44 +6,52 @@ public class CustomSettingsWrapper
 {
     public string ModID { get; }
 
-    private List<CustomCampaignSettings> _campaignSettings = new List<CustomCampaignSettings>();
-    private List<CustomRegionSettings> _regionSettings = new List<CustomRegionSettings>();
+    private List<CustomSettingsObject> _campaignSettings = new List<CustomSettingsObject>();
+    private List<CustomSettingsObject> _regionSettings = new List<CustomSettingsObject>();
 
     public CustomSettingsWrapper(string id)
     {
         ModID = id;
     }
 
-    public void AddCampaignSettings(CustomCampaignSettings campaignSettings)
+    public bool AddNewSettings(CustomSettingsObject settings)
     {
-        _campaignSettings.Add(campaignSettings);
-    }
-
-    public void AddRegionSettings(CustomRegionSettings regionSettings)
-    {
-        _regionSettings.Add(regionSettings);
-    }
-
-    public CustomCampaignSettings GetCampaign(string id)
-    {
-        foreach (CustomCampaignSettings settings in _campaignSettings)
+        if (settings.Type == CustomSettingsObject.ObjectType.Campaign)
         {
-            if (id == settings.CampaignID)
+            _campaignSettings.Add(settings);
+            return true;
+        }
+        
+        if (settings.Type == CustomSettingsObject.ObjectType.Region)
+        {
+            _regionSettings.Add(settings);
+            return true;
+        }
+        
+        return false;
+    }
+
+    public CustomSettingsObject GetSettings(CustomSettingsObject.ObjectType t, string id)
+    {
+        if (t == CustomSettingsObject.ObjectType.Campaign)
+        {
+            foreach (CustomSettingsObject campaign in _campaignSettings)
             {
-                return settings;
+                if (campaign.ID == id)
+                {
+                    return campaign;
+                }
             }
         }
 
-        return null;
-    }
-
-    public CustomRegionSettings GetRegion(string acronym)
-    {
-        foreach (CustomRegionSettings settings in _regionSettings)
+        if (t == CustomSettingsObject.ObjectType.Region)
         {
-            if (acronym == settings.RegionAcronym)
+            foreach (CustomSettingsObject region in _regionSettings)
             {
-                return settings;
+                if (region.ID == id)
+                {
+                    return region;
+                }
             }
         }
 
@@ -72,14 +80,14 @@ public class CustomSettingsWrapper
     {
         string s = string.Format("Mod ID: {0}\n\n", ModID);
         
-        s += "Campaign Settings:\n";
-        foreach (CustomCampaignSettings campaignSettings in _campaignSettings)
+        s += "CAMPAIGNS:\n";
+        foreach (CustomSettingsObject campaignSettings in _campaignSettings)
         {
             s += campaignSettings.ToString();
             s += "___________________________\n\n";
         }
-        s += "Standalone Region Settings:\n";
-        foreach (CustomRegionSettings regionSettings in _regionSettings)
+        s += "REGIONS:\n";
+        foreach (CustomSettingsObject regionSettings in _regionSettings)
         {
             s += regionSettings.ToString();
             s += "___________________________\n\n";
