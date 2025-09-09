@@ -21,11 +21,11 @@ namespace dynamicpupspawns
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
-        private const string DATA_DIVIDER = ":";
-        private const string CAMPAIGN_SETTINGS_DELIM = "campaigns";
-        private const string CAMPAIGN_SETTINGS_DIVIDE = "campaign";
-        private const string REGION_SETTINGS_DELIM = "regions";
-        private const string REGION_SETTINGS_DIVIDE = "region";
+        private const string _DATA_DIVIDER = ":";
+        private const string _CAMPAIGN_SETTINGS_DELIM = "campaigns";
+        private const string _CAMPAIGN_SETTINGS_DIVIDE = "campaign";
+        private const string _REGION_SETTINGS_DELIM = "regions";
+        private const string _REGION_SETTINGS_DIVIDE = "region";
 
         //private int _parseSettingsRecursed = 0;
 
@@ -357,7 +357,7 @@ namespace dynamicpupspawns
                             if (abstractCreature.creatureTemplate.type == MoreSlugcatsEnums.CreatureTemplateType.SlugNPC
                                 && !abstractCreature.state.dead)
                             {
-                                data += abstractCreature.ID + DATA_DIVIDER + _world.abstractRooms[i].name +
+                                data += abstractCreature.ID + _DATA_DIVIDER + _world.abstractRooms[i].name +
                                         _REGX_STR_SPLIT;
                                 //if tamed, save tamed status here
                             }
@@ -616,17 +616,17 @@ namespace dynamicpupspawns
         {
             for (int i = 0; i < symbols.Count; i++)
             {
-                if (symbols[i].ToLower() == CAMPAIGN_SETTINGS_DELIM)
+                if (symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DELIM)
                 {
                     List<string> cSettings = new List<string>();
                     for (i++; i < symbols.Count; i++)
                     {
-                        if (symbols[i].ToLower() == CAMPAIGN_SETTINGS_DIVIDE
-                            || symbols[i].ToLower() == REGION_SETTINGS_DELIM)
+                        if (symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DIVIDE
+                            || symbols[i].ToLower() == _REGION_SETTINGS_DELIM)
                         {
                             settings = AddSetting(cSettings, settings, CustomSettingsObject.ObjectType.Campaign);
                             cSettings.Clear();
-                            if (symbols[i].ToLower() == REGION_SETTINGS_DELIM)
+                            if (symbols[i].ToLower() == _REGION_SETTINGS_DELIM)
                             {
                                 i--;
                                 break;
@@ -641,18 +641,18 @@ namespace dynamicpupspawns
                     }
                     continue;
                 }
-                if (symbols[i].ToLower() == REGION_SETTINGS_DELIM)
+                if (symbols[i].ToLower() == _REGION_SETTINGS_DELIM)
                 {
                     List<string> rSettings = new List<string>();
 
                     for (i++; i < symbols.Count; i++)
                     {
-                        if (symbols[i].ToLower() == REGION_SETTINGS_DIVIDE
-                            || symbols[i].ToLower() == CAMPAIGN_SETTINGS_DELIM)
+                        if (symbols[i].ToLower() == _REGION_SETTINGS_DIVIDE
+                            || symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DELIM)
                         {
                             settings = AddSetting(rSettings, settings, CustomSettingsObject.ObjectType.Region);
                             rSettings.Clear();
-                            if (symbols[i].ToLower() == CAMPAIGN_SETTINGS_DELIM)
+                            if (symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DELIM)
                             {
                                 i--;
                                 break;
@@ -740,7 +740,7 @@ namespace dynamicpupspawns
                         {
                             if (t == CustomSettingsObject.ObjectType.Campaign)
                             {
-                                if (allOverrides[x].ToLower() == REGION_SETTINGS_DIVIDE)
+                                if (allOverrides[x].ToLower() == _REGION_SETTINGS_DIVIDE)
                                 {
                                     CustomSettingsObject overrideObject = ParseSettings(singleObject, CustomSettingsObject.ObjectType.Region);
                                     singleObject.Clear();
