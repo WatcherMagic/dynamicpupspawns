@@ -18,6 +18,7 @@ namespace dynamicpupspawns
 
         private World _world;
         private Dictionary<string, string> _persistentPups;
+        private List<CustomSettingsWrapper> _settings;
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
@@ -28,8 +29,7 @@ namespace dynamicpupspawns
         private const string _REGION_SETTINGS_DIVIDE = "region";
 
         //private int _parseSettingsRecursed = 0;
-
-        private List<CustomSettingsWrapper> _settings;
+        
         private void OnEnable()
         {
             On.World.SpawnPupNPCs += SpawnPups;
