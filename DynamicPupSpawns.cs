@@ -88,7 +88,7 @@ namespace dynamicpupspawns
             }
             else if (self.game.GetStorySession.slugPupMaxCount == 0)
             {
-                Debug.Log("DynamicPupSpawns: This campaign does not allow pups!");
+                Debug.Log("DynamicPupSpawns: This campaign does not allow pups or pups are not unlocked!");
             }
             else if (!spawnThisCycle)
             {
