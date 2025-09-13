@@ -59,36 +59,45 @@ namespace dynamicpupspawns
 
             bool spawnThisCycle = DoPupsSpawn(spawnChance);
 
-            if (spawnThisCycle)
+            if (spawnThisCycle 
+                && self.game.GetStorySession.slugPupMaxCount != 0
+                && pupNum > 0)
             {
-                if (pupNum > 0)
+                Debug.Log("DynamicPupSpawns: spawning " + pupNum + " new pups this cycle");
+                
+                //get rooms with unsubmerged den nodes
+                Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
+
+                //determine room spawn weight based on number of dens in room
+                Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
+
+                //get dict of rooms and weights in parallel arrays
+                Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
+                float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
+                
+                //get random room for each pup
+                for (int i = 0; i < pupNum; i++)
                 {
-                    Debug.Log("DynamicPupSpawns: spawning " + pupNum + " new pups this cycle");
-                    
-                    //get rooms with unsubmerged den nodes
-                    Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
-
-                    //determine room spawn weight based on number of dens in room
-                    Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
-
-                    //get dict of rooms and weights in parallel arrays
-                    Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
-                    float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
-                    
-                    //get random room for each pup
-                    for (int i = 0; i < pupNum; i++)
+                    AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
+                    if (self.game.IsStorySession)
                     {
-                        AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
-                        if (self.game.IsStorySession)
-                        {
-                            PutPupInRoom(self.game, self, spawnRoom, null, self.game.GetStorySession.characterStats.name);
-                        }
+                        PutPupInRoom(self.game, self, spawnRoom, null, self.game.GetStorySession.characterStats.name);
                     }
                 }
+            
             }
-            else
+            else if (self.game.GetStorySession.slugPupMaxCount == 0)
+            {
+                Debug.Log("DynamicPupSpawns: This campaign does not allow pups!");
+            }
+            else if (!spawnThisCycle)
             {
                 Debug.Log("DynamicPupSpawns: Chance to spawn new pups failed this cycle!");
+            }
+            else if (pupNum > 0)
+            {
+                Debug.Log("DynamicPupSpawns: Something went wrong trying to spawn new pups!");
+                Logger.LogWarning("Something went wrong trying to spawn new pups!");
             }
             
             return orig(self);
@@ -274,62 +283,54 @@ namespace dynamicpupspawns
         public void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, string pupID,
             SlugcatStats.Name curSlug)
         {
-            bool temp = false;
             if (ModManager.MSC && game.IsStorySession)
             {
-                if (ModManager.Watcher && curSlug == Watcher.WatcherEnums.SlugcatStatsName.Watcher)
+                bool persistent = false;
+                EntityID id;
+                if (pupID != null)
                 {
-                    temp = true;
+                    id = EntityID.FromString(pupID);
+                    persistent = true;
+                }
+                else
+                {
+                    //spawn new pup with random ID
+                    id = game.GetNewID();
                 }
 
-                if (!temp)
+                //copied from AbstractRoom.RealizeRoom()
+                AbstractCreature abstractPup = new AbstractCreature(world,
+                    StaticWorld.GetCreatureTemplate(MoreSlugcatsEnums.CreatureTemplateType.SlugNPC),
+                    null,
+                    new WorldCoordinate(room.index, -1, -1, 0),
+                    id);
+
+                try
                 {
-                    bool persistent = false;
-                    EntityID id;
-                    if (pupID != null)
+                    room.AddEntity(abstractPup);
+                    if (room.realizedRoom != null)
                     {
-                        id = EntityID.FromString(pupID);
-                        persistent = true;
+                        abstractPup.RealizeInRoom();
                     }
-                    else
-                    {
-                        //spawn new pup with random ID
-                        id = game.GetNewID();
-                    }
-
-                    //copied from AbstractRoom.RealizeRoom()
-                    AbstractCreature abstractPup = new AbstractCreature(world,
-                        StaticWorld.GetCreatureTemplate(MoreSlugcatsEnums.CreatureTemplateType.SlugNPC),
-                        null,
-                        new WorldCoordinate(room.index, -1, -1, 0),
-                        id);
-
                     try
                     {
-                        room.AddEntity(abstractPup);
-                        if (room.realizedRoom != null)
-                        {
-                            abstractPup.RealizeInRoom();
-                        }
-                        try
-                        {
-                            (abstractPup.state as PlayerNPCState).foodInStomach = 1;
-                        }
-                        catch (Exception e)
-                        {
-                            Logger.LogError(e.Message);
-                        }
-
-                        Logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " +
-                                       abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
-                        Debug.Log("DynamicPupSpawns: " + abstractPup.creatureTemplate.type + " " + abstractPup.ID +
-                                  " spawned in " + abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
+                        (abstractPup.state as PlayerNPCState).foodInStomach = 1;
                     }
                     catch (Exception e)
                     {
                         Logger.LogError(e.Message);
                     }
+
+                    Logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " +
+                                   abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
+                    Debug.Log("DynamicPupSpawns: " + abstractPup.creatureTemplate.type + " " + abstractPup.ID +
+                              " spawned in " + abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
                 }
+                catch (Exception e)
+                {
+                    Logger.LogError(e.Message);
+                }
+            
             }
         }
 
