@@ -45,43 +45,52 @@ namespace dynamicpupspawns
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
         {
             _world = self;
-
+            
             int minPupsInRegion = 1;
             int maxPupsInRegion = 5;
             float spawnChance = 0.3f;
-
-            //get rooms with unsubmerged den nodes
-            Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
-
-            //determine room spawn weight based on number of dens in room
-            Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
-
-            //get dict of rooms and weights in parallel arrays
-            Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
-            float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
-
             
             //generate number of pups for this cycle
             // + 1 to max to account for rounding down w/ cast to int
             int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
-            Debug.Log("DynamicPupSpawns: " + pupNum + " pups this cycle");
 
             //respawn pups from save data
             pupNum = SpawnPersistentPups(self, pupNum);
 
-            if (pupNum > 0)
+            bool spawnThisCycle = DoPupsSpawn(spawnChance);
+
+            if (spawnThisCycle)
             {
-                //get random room for each pup
-                for (int i = 0; i < pupNum; i++)
+                if (pupNum > 0)
                 {
-                    AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
-                    if (self.game.IsStorySession)
+                    Debug.Log("DynamicPupSpawns: spawning " + pupNum + " new pups this cycle");
+                    
+                    //get rooms with unsubmerged den nodes
+                    Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
+
+                    //determine room spawn weight based on number of dens in room
+                    Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
+
+                    //get dict of rooms and weights in parallel arrays
+                    Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
+                    float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
+                    
+                    //get random room for each pup
+                    for (int i = 0; i < pupNum; i++)
                     {
-                        PutPupInRoom(self.game, self, spawnRoom, null, self.game.GetStorySession.characterStats.name);
+                        AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
+                        if (self.game.IsStorySession)
+                        {
+                            PutPupInRoom(self.game, self, spawnRoom, null, self.game.GetStorySession.characterStats.name);
+                        }
                     }
                 }
             }
-
+            else
+            {
+                Debug.Log("DynamicPupSpawns: Chance to spawn new pups failed this cycle!");
+            }
+            
             return orig(self);
         }
 

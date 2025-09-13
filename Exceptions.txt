@@ -1,0 +1,12 @@
+IndexOutOfRangeException: Index was outside the bounds of the array.
+World.GetNode (WorldCoordinate c) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
+AbstractCreatureAI.RandomMoveToOtherRoom (System.Int32 maxRoamDistance) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
+MoreSlugcats.SlugNPCAbstractAI.AbstractBehavior (System.Int32 time) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
+AbstractCreatureAI.Update (System.Int32 time) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
+AbstractCreature.Update (System.Int32 time) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
+AbstractRoom.Update (System.Int32 timePassed) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
+RainWorldGame.Update () (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
+MainLoopProcess.RawUpdate (System.Single dt) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
+RainWorldGame.RawUpdate (System.Single dt) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
+ProcessManager.Update (System.Single deltaTime) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
+RainWorld.Update () (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
