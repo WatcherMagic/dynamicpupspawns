@@ -17,7 +17,7 @@ namespace dynamicpupspawns
         private const string _MOD_ID = "dynamicpupspawns";
 
         private World _world;
-        private Dictionary<string, string> _persistentPups;
+        private Dictionary<string, List<PersistentPupData>> _persistentPups;
         private List<CustomSettingsWrapper> _settings;
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
@@ -81,7 +81,7 @@ namespace dynamicpupspawns
                     AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
                     if (self.game.IsStorySession)
                     {
-                        PutPupInRoom(self.game, self, spawnRoom, null, self.game.GetStorySession.characterStats.name);
+                        PutPupInRoom(self.game, self, spawnRoom, null, false, self.game.GetStorySession.characterStats.name);
                     }
                 }
             
@@ -246,41 +246,49 @@ namespace dynamicpupspawns
         {
             if (_persistentPups != null)
             {
-                foreach (KeyValuePair<string, string> pup in _persistentPups)
+                if (_persistentPups.TryGetValue(world.game.GetStorySession.saveStateNumber.ToString().ToLower(),
+                        out var campaignPupsList))
                 {
-                    string[] region = pup.Value.Split('_');
-                    if (region.Length >= 1)
+                    foreach (PersistentPupData pup in campaignPupsList)
                     {
-                        if (world.region.name.ToLower() == region[0].ToLower())
+                        string[] region = pup.Room.Split('_');
+                        if (region.Length >= 1)
                         {
-                            AbstractRoom room = world.GetAbstractRoom(pup.Value);
-                            if (room != null)
+                            if (world.region.name.ToLower() == region[0].ToLower())
                             {
-                                PutPupInRoom(world.game, world, room, pup.Key,
-                                    world.game.GetStorySession.characterStats.name);
-                                pupNum--; //persistent pups count towards the total pups spawned per cycle
-                            }
-                            else
-                            {
-                                Logger.LogInfo("Room " + room.name + " pulled from save data not recognized!");
+                                AbstractRoom room = world.GetAbstractRoom(pup.Room);
+                                if (room != null)
+                                {
+                                    PutPupInRoom(world.game, world, room, pup.ID, pup.IsTame,
+                                        world.game.GetStorySession.characterStats.name);
+                                    pupNum--; //persistent pups count towards the total pups spawned per cycle
+                                }
+                                else
+                                {
+                                    Logger.LogInfo("Room " + pup.Room + " pulled from save data not recognized!");
+                                }
                             }
                         }
+                        else
+                        {
+                            Logger.LogError("Region acronym could not be pulled from room name " + pup.Room + "!");
+                        }
                     }
-                    else
-                    {
-                        Logger.LogError("Region acronym could not be pulled from room name " + pup.Value + "!");
-                    }
+                }
+                else
+                {
+                    Logger.LogInfo("No saved pups were found for " + world.game.GetStorySession.saveStateNumber + " at time of placement.");
                 }
             }
             else
             {
-                Logger.LogInfo("Saved pup data not found in Dictionary at time of pup placement!");
+                Logger.LogInfo("There was no saved pup data!");
             }
 
             return pupNum;
         }
 
-        public void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, string pupID,
+        public void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, string pupID, bool isTame,
             SlugcatStats.Name curSlug)
         {
             if (ModManager.MSC && game.IsStorySession)
@@ -305,79 +313,89 @@ namespace dynamicpupspawns
                     new WorldCoordinate(room.index, -1, -1, 0),
                     id);
 
+                room.AddEntity(abstractPup);
+                if (room.realizedRoom != null)
+                {
+                    abstractPup.RealizeInRoom();
+                }
                 try
                 {
-                    room.AddEntity(abstractPup);
-                    if (room.realizedRoom != null)
-                    {
-                        abstractPup.RealizeInRoom();
-                    }
-                    try
-                    {
-                        (abstractPup.state as PlayerNPCState).foodInStomach = 1;
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.LogError(e.Message);
-                    }
-
-                    Logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " +
-                                   abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
-                    Debug.Log("DynamicPupSpawns: " + abstractPup.creatureTemplate.type + " " + abstractPup.ID +
-                              " spawned in " + abstractPup.Room.name + (persistent ? " PERSISTENT" : ""));
+                    (abstractPup.state as PlayerNPCState).foodInStomach = 1;
+                    (abstractPup.abstractAI as SlugNPCAbstractAI).isTamed = isTame;
                 }
                 catch (Exception e)
                 {
                     Logger.LogError(e.Message);
                 }
-            
+
+                Logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " +
+                               abstractPup.Room.name + (persistent ? " PERSISTENT" : "")
+                               + (isTame ? " TAMED" : ""));
+                Debug.Log("DynamicPupSpawns: " + abstractPup.creatureTemplate.type + " " + abstractPup.ID +
+                          " spawned in " + abstractPup.Room.name + (persistent ? " PERSISTENT" : "")
+                          + (isTame ? " TAMED" : ""));
+                
             }
         }
 
         private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
         {
-            string s = orig(self);
+            string gameSaveData = orig(self);
 
-            string data = _SAVE_DATA_DELIMITER;
-
+            string modSaveData = _SAVE_DATA_DELIMITER;
+            
             string message = "Adding pups to save data...\n";
             if (_world != null)
             {
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
                 {
-                    foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
+                    if (_world.abstractRooms[i].shelter)
                     {
-                        //check for player's shelter
-                        if (_world.abstractRooms[i].shelter
-                            && abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
-                            && abstractCreature.ID.number < 1000)
+                        bool playersShelter = false;
+                        
+                        foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
                         {
-                            message += "Found shelter " + _world.abstractRooms[i].name + " for Slugcat " + abstractCreature.ID.number + "; skipping\n";
+                            if (abstractCreature.ID.number < 1000)
+                            {
+                                message += "Found shelter " + _world.abstractRooms[i].name + " for "
+                                           + abstractCreature.type + " " + abstractCreature.ID.number + "; skipping\n";
+                                playersShelter = true;
+                                break;
+                            }
+                        }
+
+                        if (playersShelter)
+                        {
                             continue;
                         }
-                        
-                        //this autofilled: investigate usefulness
-                        //if (abstractCreature.state is MoreSlugcats.PlayerNPCState)
-                        
-                        /*ISSUE: abstractCreature.creatureTemplate.type == CreatureTemplate.Type.Slugcat
-                         only detects players, not SlugNPCs. Additionally, Bups and likely others
-                         are apparently different templates from SlugNPC. Hardcoded workaround for now.*/
-                        //foreach (string pupType in recognizedPupTypes)
-                        //{
-                            if (abstractCreature.creatureTemplate.type == MoreSlugcatsEnums.CreatureTemplateType.SlugNPC
-                                && !abstractCreature.state.dead)
+                    }
+                    
+                    foreach (AbstractCreature abstractCreature in _world.abstractRooms[i].creatures)
+                    {
+                        if (abstractCreature.creatureTemplate.type == MoreSlugcatsEnums.CreatureTemplateType.SlugNPC
+                            && !abstractCreature.state.dead)
+                        {
+                            modSaveData += abstractCreature.ID + _DATA_DIVIDER 
+                                        + _world.game.GetStorySession.saveStateNumber + _DATA_DIVIDER
+                                        + _world.abstractRooms[i].name;
+                            try
                             {
-                                data += abstractCreature.ID + _DATA_DIVIDER + _world.abstractRooms[i].name +
-                                        _REGX_STR_SPLIT;
-                                //if tamed, save tamed status here
+                                modSaveData += _DATA_DIVIDER + (abstractCreature.abstractAI as SlugNPCAbstractAI).isTamed;
                             }
-                        //}
+                            catch (NullReferenceException e)
+                            {
+                                Debug.LogException(e);
+                                Logger.LogError(e.Message);
+                            }
+
+                            modSaveData += _REGX_STR_SPLIT;
+                        }
                     }
                 }
-
+                
                 //remove trailing split sequence to prevent unrecognized data pair error at end in ExtractSaveValues()
-                data = data.Remove(data.Length - _REGX_STR_SPLIT.Length, _REGX_STR_SPLIT.Length);
-                message += "Final save string: " + data;
+                modSaveData = modSaveData.Remove(modSaveData.Length - _REGX_STR_SPLIT.Length, _REGX_STR_SPLIT.Length);
+                message += "Final save string: " + modSaveData;
                 Logger.LogInfo(message);
             }
             else
@@ -385,9 +403,9 @@ namespace dynamicpupspawns
                 Logger.LogError("_world was null, cannot save abstract pups!");
             }
 
-            s = String.Concat(s, data, "<svA>");
+            gameSaveData = String.Concat(gameSaveData, modSaveData, "<svA>");
 
-            return s;
+            return gameSaveData;
         }
 
         private void GetSaveDataFromString(On.SaveState.orig_LoadGame orig, SaveState self, string str,
@@ -425,57 +443,55 @@ namespace dynamicpupspawns
 
         private void ExtractSaveValues(string modString)
         {
-            string[] dataValues = Regex.Split(modString, _REGX_STR_SPLIT);
-            string message = "";
-
-            // foreach (string s in dataValues)
-            // {
-            //     Logger.LogInfo("Data values: " + s);
-            // }
-
+            string[] pups = Regex.Split(modString, _REGX_STR_SPLIT);
+            
             if (_persistentPups == null)
             {
-                _persistentPups = new Dictionary<string, string>();
+                _persistentPups = new Dictionary<string, List<PersistentPupData>>();
             }
             else
             {
-                message += "_persistentPups was not null on value extraction from save string.\n";
-                foreach (KeyValuePair<string, string> pair in _persistentPups)
-                {
-                    message += pair.Key + " : " + pair.Value + "\n";
-                }
-
-                message += "Clearing _persistentPups!";
-                Logger.LogInfo(message);
-
                 _persistentPups.Clear();
             }
 
-            string[] pairContainer;
-            message = "Adding pups from save data to _persistentPups...\n";
-            for (int i = 0; i < dataValues.Length; i++)
+            string[] pupValues;
+            foreach (string pup in pups)
             {
-                pairContainer = Regex.Split(dataValues[i], ":");
-                if (pairContainer.Length >= 2)
+                pupValues = Regex.Split(pup, _DATA_DIVIDER);
+                if (pupValues.Length >= 4)
                 {
-                    try
+                    string id = pupValues[0];
+                    string campaign = pupValues[1];
+                    string room = pupValues[2];
+                    bool isTame = pupValues[3].ToLower().StartsWith("t");
+    
+                    if (_persistentPups.TryGetValue(campaign.ToLower(), out var campaignPupsList))
                     {
-                        _persistentPups.Add(pairContainer[0], pairContainer[1]);
-                        message += "Added " + pairContainer[0] + " : " + pairContainer[1] + "\n";
+                        campaignPupsList.Add(new PersistentPupData(id, room, isTame));
                     }
-                    catch (Exception e)
+                    else
                     {
-                        message += "ERROR: " + e.Message + "\n";
-                        Debug.LogError(e.Message);
+                        List<PersistentPupData> newCampaignPupList = new List<PersistentPupData> {new (id, room, isTame)};
+                        _persistentPups.Add(campaign.ToLower(), newCampaignPupList);
                     }
                 }
                 else
                 {
-                    message += "Returned invalid data pair while extracting from save string!\n";
+                    Logger.LogWarning("Found invalid data set while loading pups from save data! Check the save string is formatted correctly.");
+                    Logger.LogInfo("pupValues length: " + pupValues.Length);
                 }
             }
 
-            Logger.LogInfo(message);
+            string debugMessage = "New persistent pups dictionary:\n";
+            foreach (KeyValuePair<string, List<PersistentPupData>> pair in _persistentPups)
+            {
+                debugMessage += "Campaign id: " + pair.Key + "\n";
+                foreach (PersistentPupData pup in pair.Value)
+                {
+                    debugMessage += "\tPup: " + pup.ID + ", " + pup.Room + ", " + pup.IsTame + "\n";
+                }
+            }
+            Logger.LogInfo(debugMessage);
         }
 
 
