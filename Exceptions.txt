@@ -1,3 +1,5 @@
+//errors related to pups being in the room outside a shelter?
+
 IndexOutOfRangeException: Index was outside the bounds of the array.
 World.GetNode (WorldCoordinate c) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
 AbstractCreatureAI.RandomMoveToOtherRoom (System.Int32 maxRoamDistance) (at <0d3d3bd248b74a708fd84538ba1e82f5>:0)
