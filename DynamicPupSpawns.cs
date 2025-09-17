@@ -15,7 +15,8 @@ namespace dynamicpupspawns
     public class DynamicPupSpawns : BaseUnityPlugin
     {
         private const string _MOD_ID = "dynamicpupspawns";
-
+        private DPSOptionsMenu _options;
+        
         private World _world;
         private Dictionary<string, List<PersistentPupData>> _persistentPups;
         private List<CustomSettingsWrapper> _settings;
@@ -40,8 +41,11 @@ namespace dynamicpupspawns
             On.Creature.Die += LogPupDeath;
 
             On.ModManager.WrapPostModsInit += ProcessCustomData;
-        }
 
+            CreateOptionsMenuInstance();
+            On.ModManager.WrapModsInit += LoadOptionsMenu;
+        }
+        
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
         {
             _world = self;
@@ -992,6 +996,24 @@ namespace dynamicpupspawns
                 return value[1];
             }
             return null;
+        }
+        
+        public void CreateOptionsMenuInstance()
+        {
+            _options = new DPSOptionsMenu(this);
+        }
+        
+        private void LoadOptionsMenu(On.ModManager.orig_WrapModsInit orig)
+        {
+            try
+            {
+                MachineConnector.SetRegisteredOI(_MOD_ID, _options);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                Logger.LogError(e.Message);
+            }
         }
 
         private void PrintNullReturnError(string value, string source, string cause)
