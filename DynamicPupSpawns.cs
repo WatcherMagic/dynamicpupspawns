@@ -103,8 +103,35 @@ namespace dynamicpupspawns
                     maxPupsInRegion = trySettings.PupSpawnSettings.MaxPups;
                     spawnChance = trySettings.PupSpawnSettings.SpawnChance;
                     spawnsPups = trySettings.PupSpawnSettings.SpawnsDynamicPups;
+
+                    string appliedSettingsLog = "Applied custom settings from " + _runtimeSettings.ModID + " for " + trySettings.ID;
                     
-                    Logger.LogInfo("Adjusted spawnings settings to use " + _runtimeSettings.ModID + " " + trySettings.ID);
+                    if (trySettings.HasOverrides())
+                    {
+                        CustomSettingsObject overrideSettings = null;
+                        
+                        switch (trySettings.SettingType)
+                        {
+                            case CustomSettingsObject.SettingsType.Campaign:
+                                overrideSettings = trySettings.GetOverride(self.name.ToLower());
+                                break;
+                            default:
+                                Logger.LogInfo("Found invalid override type when looking for overrides");
+                                break;
+                        }
+                        
+                        if (overrideSettings != null) 
+                        {
+                            minPupsInRegion = overrideSettings.PupSpawnSettings.MinPups;
+                            maxPupsInRegion = overrideSettings.PupSpawnSettings.MaxPups;
+                            spawnChance = overrideSettings.PupSpawnSettings.SpawnChance;
+                            spawnsPups = overrideSettings.PupSpawnSettings.SpawnsDynamicPups;
+
+                            appliedSettingsLog += "; Applied override " + overrideSettings.ID;
+                        }
+                    }
+                    
+                    Logger.LogInfo(appliedSettingsLog);
                 }
             }
 
@@ -789,7 +816,7 @@ namespace dynamicpupspawns
                 bool succeedAdd = wrap.AddNewSettings(set);
                 if (!succeedAdd)
                 {
-                    Logger.LogWarning("Failed to add " + set.Type + " settings for " + set.ID + " to settings wrapper!");
+                    Logger.LogWarning("Failed to add " + set.SettingType + " settings for " + set.ID + " to settings wrapper!");
                 }
             }
 
@@ -887,7 +914,7 @@ namespace dynamicpupspawns
                     bool succeedAdd = result.AddOverride(o);
                     if (!succeedAdd)
                     {
-                        Logger.LogWarning("You cannot add objects of type " + o.Type + " to overrides of objects with type " + result.Type);
+                        Logger.LogWarning("You cannot add objects of type " + o.SettingType + " to overrides of objects with type " + result.SettingType);
                     }
                 }
             }
