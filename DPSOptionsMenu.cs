@@ -7,6 +7,7 @@ namespace dynamicpupspawns;
 public class DPSOptionsMenu : OptionInterface
 {
     public readonly Configurable<bool> pupsSpawn;
+    public readonly Configurable<bool> randomizeUsingGaussian;
     public readonly Configurable<bool> persistence;
     public readonly Configurable<int> minPups;
     public readonly Configurable<int> maxPups;
@@ -17,14 +18,14 @@ public class DPSOptionsMenu : OptionInterface
     
     public readonly Configurable<bool> survivorPupsSpawn;
     public readonly Configurable<bool> survivorPersistence;
-    public readonly Configurable<bool> survivorUseGeneralExtraSpawnsSettings;
+    //public readonly Configurable<bool> survivorUseGeneralExtraSpawnsSettings;
     public readonly Configurable<int> survivorSpawnChance;
     public readonly Configurable<int> survivorMinPups;
     public readonly Configurable<int> survivorMaxPups;
     
     public readonly Configurable<bool> monkPupsSpawn;
     public readonly Configurable<bool> monkPersistence;
-    public readonly Configurable<bool> monkUseGeneralExtraSpawnsSettings;
+    //public readonly Configurable<bool> monkUseGeneralExtraSpawnsSettings;
     public readonly Configurable<int> monkSpawnChance;
     public readonly Configurable<int> monkMinPups;
     public readonly Configurable<int> monkMaxPups;
@@ -36,6 +37,7 @@ public class DPSOptionsMenu : OptionInterface
     public DPSOptionsMenu(DynamicPupSpawns plugin)
     {
         pupsSpawn = config.Bind<bool>("PupsSpawn", true);
+        randomizeUsingGaussian = config.Bind<bool>("GausssianRandomize", true);
         persistence = config.Bind<bool>("Persistence", true);
         minPups = config.Bind<int>("MinPups", _defaultMin);
         maxPups = config.Bind<int>("MaxPups", _defaultMax);
