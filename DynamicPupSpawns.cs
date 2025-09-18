@@ -20,6 +20,8 @@ namespace dynamicpupspawns
         private World _world;
         private Dictionary<string, List<PersistentPupData>> _persistentPups;
         private List<CustomSettingsWrapper> _settings;
+        private Dictionary<string, string> _modContentToModIDMap;
+        private CustomSettingsWrapper _runtimeSettings;
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
@@ -34,25 +36,25 @@ namespace dynamicpupspawns
         private void OnEnable()
         {
             On.World.SpawnPupNPCs += SpawnPups;
-
+            
             On.SaveState.SaveToString += SaveDataToString;
             On.SaveState.LoadGame += GetSaveDataFromString;
 
             On.Creature.Die += LogPupDeath;
 
-            On.ModManager.WrapPostModsInit += ProcessCustomData;
+            On.ModManager.WrapPostModsInit += WrapPostInit;
 
             CreateOptionsMenuInstance();
             On.ModManager.WrapModsInit += LoadOptionsMenu;
         }
-        
+
         private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
         {
             _world = self;
             
-            int minPupsInRegion = 1;
-            int maxPupsInRegion = 5;
-            float spawnChance = 0.3f;
+            int minPupsInRegion = _options.minPups.Value;
+            int maxPupsInRegion = _options.maxPups.Value;
+            float spawnChance = _options.spawnChance.Value * 0.01f;
             
             //generate number of pups for this cycle
             // + 1 to max to account for rounding down w/ cast to int
@@ -61,6 +63,30 @@ namespace dynamicpupspawns
             //respawn pups from save data
             pupNum = SpawnPersistentPups(self, pupNum);
 
+            if (_runtimeSettings == null)
+            {
+                Logger.LogInfo("Looking for " + self.game.GetStorySession.saveStateNumber.ToString() +
+                               " in mod content map");
+                if (_modContentToModIDMap.TryGetValue(self.game.GetStorySession.saveStateNumber.ToString(), out string mod))
+                {
+                    Logger.LogInfo("Found " + mod + "!");
+                    foreach (CustomSettingsWrapper wrapper in _settings)
+                    {
+                        if (wrapper.ModID == mod)
+                        {
+                            Logger.LogInfo("Found settings wrapper for " + mod + ": " + wrapper.ModID);
+                            _runtimeSettings = wrapper;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Logger.LogInfo("The _runtimeSettings were already found previously, object is already assigned! " +
+                               _runtimeSettings.ModID);
+            }
+            
             bool spawnThisCycle = DoPupsSpawn(spawnChance);
 
             if (spawnThisCycle 
@@ -106,7 +132,7 @@ namespace dynamicpupspawns
             
             return orig(self);
         }
-
+        
         private int RandomPupGaussian(float min, float max)
         {
             //thanks lancelot18
@@ -547,44 +573,49 @@ namespace dynamicpupspawns
             orig(self);
         }
 
-        private void ProcessCustomData(On.ModManager.orig_WrapPostModsInit orig)
+        private void WrapPostInit(On.ModManager.orig_WrapPostModsInit orig)
         {
             orig();
-            
+            ProcessCustomData();
+            //ProcessBuiltInSettings();
+        }
+        
+        private void ProcessCustomData()
+        {
             if (_settings == null)
             {
                 Logger.LogInfo("Creating new global settings list");
                 _settings = new List<CustomSettingsWrapper>();
             }
 
-             foreach (ModManager.Mod mod in ModManager.ActiveMods)
-             {
-                 bool depends = false;
-                 string filePath = mod.path + "\\dynamicpups\\settings.txt";
-                 for (int i = 0; i < mod.requirements.Length; i++)
-                 {
-                     if (mod.requirements[i] == _MOD_ID)
-                     {
-                         depends = true;
-                         Logger.LogInfo("Found dependent!: " + mod.name);
-                         ProcessSettings(filePath, mod.id, false);
-                         break;
-                     }
-                 }
+            foreach (ModManager.Mod mod in ModManager.ActiveMods)
+            {
+                bool depends = false;
+                string filePath = mod.path + "\\dynamicpups\\settings.txt";
+                for (int i = 0; i < mod.requirements.Length; i++)
+                {
+                    if (mod.requirements[i] == _MOD_ID)
+                    {
+                        depends = true;
+                        Logger.LogInfo("Found dependent!: " + mod.name);
+                        ProcessSettings(filePath, mod.id, false);
+                        break;
+                    }
+                }
             
-                 if (!depends)
-                 {
-                     for (int i = 0; i < mod.priorities.Length; i++)
-                     {
-                         if (mod.priorities[i] == _MOD_ID)
-                         {
-                             Logger.LogInfo("Found priority!: " + mod.name);
-                             ProcessSettings(filePath, mod.id, false);
-                             break;
-                         }
-                     }
-                 }
-             }
+                if (!depends)
+                {
+                    for (int i = 0; i < mod.priorities.Length; i++)
+                    {
+                        if (mod.priorities[i] == _MOD_ID)
+                        {
+                            Logger.LogInfo("Found priority!: " + mod.name);
+                            ProcessSettings(filePath, mod.id, false);
+                            break;
+                        }
+                    }
+                }
+            }
 
             // string[] testSettingsArray = SettingTestData();
             // for (int i = 0; i < testSettingsArray.Length; i++)
@@ -599,7 +630,7 @@ namespace dynamicpupspawns
             }
             Logger.LogInfo(message);
         }
-
+        
         private void ProcessSettings(string filePath, string modID, bool testing)
         {
             Logger.LogInfo("Parsing settings for " + modID + ":");
@@ -702,6 +733,19 @@ namespace dynamicpupspawns
             {
                 PrintNullReturnError("CustomSettingsWrapper", "ParseGeneralSettings()", "contains no setting objects");
                 return null;
+            }
+
+            //add ids and mod id to _modContentToModIDMap for easier setting retrieval at runtime
+            if (_modContentToModIDMap == null)
+            {
+                _modContentToModIDMap = new Dictionary<string, string>();
+            }
+            
+            List<string> contentIDs = settings.GetAllSettingsIDs();
+            foreach (string contentID in contentIDs)
+            {
+                Logger.LogInfo("Adding " + contentID + " | " + settings.ModID + " to content to ID map");
+                _modContentToModIDMap.Add(contentID, settings.ModID);
             }
             return settings;
         }
