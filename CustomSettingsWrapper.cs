@@ -75,6 +75,23 @@ public class CustomSettingsWrapper
         }
         return false;
     }
+
+    public List<string> GetAllSettingsIDs()
+    {
+        List<string> ids = new List<string>();
+
+        foreach (CustomSettingsObject campaignSetting in _campaignSettings)
+        {
+            ids.Add(campaignSetting.ID);
+        }
+
+        foreach (CustomSettingsObject regionSetting in _regionSettings)
+        {
+            ids.Add(regionSetting.ID);
+        }
+
+        return ids;
+    }
     
     public override string ToString()
     {
