@@ -4,14 +4,14 @@ namespace dynamicpupspawns;
 
 public class CustomSettingsObject
 {
-    public enum ObjectType
+    public enum SettingsType
     {
         Campaign,
         Region
     }
 
-    public ObjectType Type { get => _type; }
-    private ObjectType _type;
+    public SettingsType Type { get => _type; }
+    private SettingsType _type;
     
     public string ID { get; set; }
     
@@ -20,13 +20,13 @@ public class CustomSettingsObject
     
     private List<CustomSettingsObject> _overrides = new List<CustomSettingsObject>();
 
-    public CustomSettingsObject(ObjectType t, string id)
+    public CustomSettingsObject(SettingsType t, string id)
     {
         _type = t;
         ID = id;
     }
 
-    public CustomSettingsObject(ObjectType t, string id, PupSpawnSettings pupSettings)
+    public CustomSettingsObject(SettingsType t, string id, PupSpawnSettings pupSettings)
     {
         _type = t;
         ID = id;
@@ -35,9 +35,9 @@ public class CustomSettingsObject
     
     public bool AddOverride(CustomSettingsObject over)
     {
-        if (Type == ObjectType.Campaign)
+        if (Type == SettingsType.Campaign)
         {
-            if (over.Type == ObjectType.Region)
+            if (over.Type == SettingsType.Region)
             {
                 _overrides.Add(over);
                 return true;
