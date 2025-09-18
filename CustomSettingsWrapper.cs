@@ -16,13 +16,13 @@ public class CustomSettingsWrapper
 
     public bool AddNewSettings(CustomSettingsObject settings)
     {
-        if (settings.Type == CustomSettingsObject.ObjectType.Campaign)
+        if (settings.Type == CustomSettingsObject.SettingsType.Campaign)
         {
             _campaignSettings.Add(settings);
             return true;
         }
         
-        if (settings.Type == CustomSettingsObject.ObjectType.Region)
+        if (settings.Type == CustomSettingsObject.SettingsType.Region)
         {
             _regionSettings.Add(settings);
             return true;
@@ -31,9 +31,9 @@ public class CustomSettingsWrapper
         return false;
     }
 
-    public CustomSettingsObject GetSettings(CustomSettingsObject.ObjectType t, string id)
+    public CustomSettingsObject GetSettings(CustomSettingsObject.SettingsType t, string id)
     {
-        if (t == CustomSettingsObject.ObjectType.Campaign)
+        if (t == CustomSettingsObject.SettingsType.Campaign)
         {
             foreach (CustomSettingsObject campaign in _campaignSettings)
             {
@@ -44,7 +44,7 @@ public class CustomSettingsWrapper
             }
         }
 
-        if (t == CustomSettingsObject.ObjectType.Region)
+        if (t == CustomSettingsObject.SettingsType.Region)
         {
             foreach (CustomSettingsObject region in _regionSettings)
             {
