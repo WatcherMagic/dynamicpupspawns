@@ -55,79 +55,108 @@ namespace dynamicpupspawns
             int minPupsInRegion = _options.minPups.Value;
             int maxPupsInRegion = _options.maxPups.Value;
             float spawnChance = _options.spawnChance.Value * 0.01f;
+            bool pupPersistence = true;
+            bool spawnsPups;
             
-            //generate number of pups for this cycle
-            // + 1 to max to account for rounding down w/ cast to int
-            int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
-
-            //respawn pups from save data
-            pupNum = SpawnPersistentPups(self, pupNum);
-
+            //check whether campaign allows pups (i.e, surv vs saint); this value can later be overridden by custom settings
+            if (self.game.GetStorySession.slugPupMaxCount != 0)
+            {
+                spawnsPups = true; //survivor, hunter, gourmand
+            }
+            else
+            {
+                spawnsPups = false; //monk, artificer, spearmaster, rivulet, saint, watcher
+            }
+            
+            //check for settings
             if (_runtimeSettings == null)
             {
-                Logger.LogInfo("Looking for " + self.game.GetStorySession.saveStateNumber.ToString() +
-                               " in mod content map");
                 if (_modContentToModIDMap.TryGetValue(self.game.GetStorySession.saveStateNumber.ToString(), out string mod))
                 {
-                    Logger.LogInfo("Found " + mod + "!");
                     foreach (CustomSettingsWrapper wrapper in _settings)
                     {
                         if (wrapper.ModID == mod)
                         {
-                            Logger.LogInfo("Found settings wrapper for " + mod + ": " + wrapper.ModID);
+                            Logger.LogInfo("Found settings wrapper for " + mod + "!");
                             _runtimeSettings = wrapper;
                             break;
                         }
                     }
                 }
             }
+
+            //apply campaign- or region-specific settings
+            if (_runtimeSettings != null)
+            {
+                CustomSettingsObject trySettings = null;
+                
+                trySettings = _runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Campaign,
+                    self.game.GetStorySession.saveStateNumber.ToString());
+                if (trySettings == null)
+                {
+                    trySettings = _runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Region, self.name);
+                }
+
+                if (trySettings != null)
+                {
+                    minPupsInRegion = trySettings.PupSpawnSettings.MinPups;
+                    maxPupsInRegion = trySettings.PupSpawnSettings.MaxPups;
+                    spawnChance = trySettings.PupSpawnSettings.SpawnChance;
+                    spawnsPups = trySettings.PupSpawnSettings.SpawnsDynamicPups;
+                    
+                    Logger.LogInfo("Adjusted spawnings settings to use " + _runtimeSettings.ModID + " " + trySettings.ID);
+                }
+            }
+
+            //generate number of pups for this cycle
+            // + 1 to max to account for rounding down w/ cast to int
+            int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
+
+            //respawn pups from save data
+            pupNum = SpawnPersistentPups(self, pupNum);
+            
+            if (spawnsPups)
+            {
+                bool spawnThisCycle = DoPupsSpawn(spawnChance);
+
+                if (spawnThisCycle && pupNum > 0)
+                {
+                    Debug.Log("DynamicPupSpawns: spawning " + pupNum + " new pups this cycle");
+                
+                    //get rooms with unsubmerged den nodes
+                    Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
+
+                    //determine room spawn weight based on number of dens in room
+                    Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
+
+                    //get dict of rooms and weights in parallel arrays
+                    Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
+                    float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
+                
+                    //get random room for each pup
+                    for (int i = 0; i < pupNum; i++)
+                    {
+                        AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
+                        if (self.game.IsStorySession)
+                        {
+                            PutPupInRoom(self.game, self, spawnRoom, null, false, self.game.GetStorySession.characterStats.name);
+                        }
+                    }
+            
+                }
+                else if (!spawnThisCycle)
+                {
+                    Debug.Log("DynamicPupSpawns: Chance to spawn new pups failed this cycle!");
+                }
+                else if (pupNum > 0)
+                {
+                    Debug.Log("DynamicPupSpawns: WARNING! The number of possible pups this cycle was greater than zero, but no pups spawned!");
+                    Logger.LogWarning("The number of possible pups this cycle was greater than zero, but no pups spawned!");
+                }
+            }
             else
             {
-                Logger.LogInfo("The _runtimeSettings were already found previously, object is already assigned! " +
-                               _runtimeSettings.ModID);
-            }
-            
-            bool spawnThisCycle = DoPupsSpawn(spawnChance);
-
-            if (spawnThisCycle 
-                && self.game.GetStorySession.slugPupMaxCount != 0
-                && pupNum > 0)
-            {
-                Debug.Log("DynamicPupSpawns: spawning " + pupNum + " new pups this cycle");
-                
-                //get rooms with unsubmerged den nodes
-                Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
-
-                //determine room spawn weight based on number of dens in room
-                Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
-
-                //get dict of rooms and weights in parallel arrays
-                Dictionary<AbstractRoom[], float[]> parallelArrays = CreateParallelRoomWeightArrays(roomWeights);
-                float[] weightsScale = AssignSortedRoomScaleValues(parallelArrays.ElementAt(0).Value);
-                
-                //get random room for each pup
-                for (int i = 0; i < pupNum; i++)
-                {
-                    AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
-                    if (self.game.IsStorySession)
-                    {
-                        PutPupInRoom(self.game, self, spawnRoom, null, false, self.game.GetStorySession.characterStats.name);
-                    }
-                }
-            
-            }
-            else if (self.game.GetStorySession.slugPupMaxCount == 0)
-            {
-                Debug.Log("DynamicPupSpawns: This campaign does not allow pups or pups are not unlocked!");
-            }
-            else if (!spawnThisCycle)
-            {
-                Debug.Log("DynamicPupSpawns: Chance to spawn new pups failed this cycle!");
-            }
-            else if (pupNum > 0)
-            {
-                Debug.Log("DynamicPupSpawns: Something went wrong trying to spawn new pups!");
-                Logger.LogWarning("Something went wrong trying to spawn new pups!");
+                Debug.Log("DynamicPupSpawns: Pups cannot spawn in this campaign or region!");
             }
             
             return orig(self);
@@ -156,7 +185,7 @@ namespace dynamicpupspawns
 
             return (int)result;
         }
-
+        
         private bool DoPupsSpawn(float spawnChance)
         {
             if (Random.value < spawnChance)
@@ -685,7 +714,7 @@ namespace dynamicpupspawns
                         if (symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DIVIDE
                             || symbols[i].ToLower() == _REGION_SETTINGS_DELIM)
                         {
-                            settings = AddSetting(cSettings, settings, CustomSettingsObject.ObjectType.Campaign);
+                            settings = AddSetting(cSettings, settings, CustomSettingsObject.SettingsType.Campaign);
                             cSettings.Clear();
                             if (symbols[i].ToLower() == _REGION_SETTINGS_DELIM)
                             {
@@ -698,7 +727,7 @@ namespace dynamicpupspawns
                     }
                     if (cSettings.Count > 0)
                     {
-                        settings = AddSetting(cSettings, settings, CustomSettingsObject.ObjectType.Campaign);
+                        settings = AddSetting(cSettings, settings, CustomSettingsObject.SettingsType.Campaign);
                     }
                     continue;
                 }
@@ -711,7 +740,7 @@ namespace dynamicpupspawns
                         if (symbols[i].ToLower() == _REGION_SETTINGS_DIVIDE
                             || symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DELIM)
                         {
-                            settings = AddSetting(rSettings, settings, CustomSettingsObject.ObjectType.Region);
+                            settings = AddSetting(rSettings, settings, CustomSettingsObject.SettingsType.Region);
                             rSettings.Clear();
                             if (symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DELIM)
                             {
@@ -724,7 +753,7 @@ namespace dynamicpupspawns
                     }
                     if (rSettings.Count > 0)
                     {
-                        settings = AddSetting(rSettings, settings, CustomSettingsObject.ObjectType.Region);
+                        settings = AddSetting(rSettings, settings, CustomSettingsObject.SettingsType.Region);
                     }
                 }
             }
@@ -751,7 +780,7 @@ namespace dynamicpupspawns
         }
 
         private CustomSettingsWrapper AddSetting(List<string> settings, CustomSettingsWrapper wrap,
-            CustomSettingsObject.ObjectType t)
+            CustomSettingsObject.SettingsType t)
         {
             //_parseSettingsRecursed = 0;
             CustomSettingsObject set = ParseSettings(settings, t);
@@ -767,7 +796,7 @@ namespace dynamicpupspawns
             return wrap;
         }
         
-        private CustomSettingsObject ParseSettings(List<string> symbols, CustomSettingsObject.ObjectType t)
+        private CustomSettingsObject ParseSettings(List<string> symbols, CustomSettingsObject.SettingsType t)
         {
             //Logger.LogInfo("Recursive passes through ParseSettings(): " + _parseSettingsRecursed);
             //_parseSettingsRecursed++;
@@ -812,11 +841,11 @@ namespace dynamicpupspawns
                         overridesList = new List<CustomSettingsObject>();
                         for (int x = 0; x < allOverrides.Count; x++)
                         {
-                            if (t == CustomSettingsObject.ObjectType.Campaign)
+                            if (t == CustomSettingsObject.SettingsType.Campaign)
                             {
                                 if (allOverrides[x].ToLower() == _REGION_SETTINGS_DIVIDE)
                                 {
-                                    CustomSettingsObject overrideObject = ParseSettings(singleObject, CustomSettingsObject.ObjectType.Region);
+                                    CustomSettingsObject overrideObject = ParseSettings(singleObject, CustomSettingsObject.SettingsType.Region);
                                     singleObject.Clear();
                                     overridesList.Add(overrideObject);
                                     continue;
@@ -824,9 +853,9 @@ namespace dynamicpupspawns
                                 singleObject.Add(allOverrides[x]);
                             }
                         }
-                        if (t == CustomSettingsObject.ObjectType.Campaign)
+                        if (t == CustomSettingsObject.SettingsType.Campaign)
                         {
-                            CustomSettingsObject overrideObject = ParseSettings(singleObject, CustomSettingsObject.ObjectType.Region);
+                            CustomSettingsObject overrideObject = ParseSettings(singleObject, CustomSettingsObject.SettingsType.Region);
                             overridesList.Add(overrideObject);
                         }
                     }
