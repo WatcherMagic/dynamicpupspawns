@@ -16,13 +16,13 @@ public class CustomSettingsWrapper
 
     public bool AddNewSettings(CustomSettingsObject settings)
     {
-        if (settings.Type == CustomSettingsObject.SettingsType.Campaign)
+        if (settings.SettingType == CustomSettingsObject.SettingsType.Campaign)
         {
             _campaignSettings.Add(settings);
             return true;
         }
         
-        if (settings.Type == CustomSettingsObject.SettingsType.Region)
+        if (settings.SettingType == CustomSettingsObject.SettingsType.Region)
         {
             _regionSettings.Add(settings);
             return true;
