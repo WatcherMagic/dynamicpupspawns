@@ -14,7 +14,7 @@ public class CustomSettingsWrapper
         ModID = id;
     }
 
-    public bool AddNewSettings(CustomSettingsObject settings)
+    public bool AddSetting(CustomSettingsObject settings)
     {
         if (settings.SettingType == CustomSettingsObject.SettingsType.Campaign)
         {
