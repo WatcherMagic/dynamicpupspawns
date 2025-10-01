@@ -53,7 +53,7 @@ namespace dynamicpupspawns
             //default spawning settings for campaigns without specified spawn settings
             int minPupsInRegion = _options.MinPups.Value;
             int maxPupsInRegion = _options.MaxPups.Value;
-            float spawnChance = _options.SpawnChance.Value;
+            float spawnChance = _options.SpawnChance.Value * 0.01f;
             
             //turns on or off whether campaigns without specified spawn settings have persistent pups;
             // overriden by specified settings
@@ -64,68 +64,16 @@ namespace dynamicpupspawns
             bool spawnsPups = _options.DynamicSpawnsPossible.Value && self.game.GetStorySession.slugPupMaxCount != 0;
             
             //check for settings
-            CustomSettingsWrapper runtimeSettings = null;
-            if (_contentToModIDMap.TryGetValue(self.game.GetStorySession.saveStateNumber.ToString(), out string mod))
+            CustomSettingsObject currentSettings = GetRuntimeSettings(self);
+            if (currentSettings != null)
             {
-                foreach (CustomSettingsWrapper wrapper in _settings)
-                {
-                    if (wrapper.ModID == mod)
-                    {
-                        Logger.LogInfo("Found settings wrapper for " + mod + "!");
-                        runtimeSettings = wrapper;
-                        break;
-                    }
-                }
-            }
-
-            //apply campaign- or region-specific settings
-            if (runtimeSettings != null)
-            {
-                CustomSettingsObject trySettings;
+                minPupsInRegion = currentSettings.PupSpawnSettings.MinPups;
+                maxPupsInRegion = currentSettings.PupSpawnSettings.MaxPups;
+                spawnChance = currentSettings.PupSpawnSettings.SpawnChance;
+                spawnsPups = currentSettings.PupSpawnSettings.SpawnsDynamicPups;
+                pupPersistence = currentSettings.PupSpawnSettings.PersistentPups;
                 
-                trySettings = runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Campaign,
-                    self.game.GetStorySession.saveStateNumber.ToString());
-                if (trySettings == null)
-                {
-                    trySettings = runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Region, self.name);
-                }
-
-                if (trySettings != null)
-                {
-                    minPupsInRegion = trySettings.PupSpawnSettings.MinPups;
-                    maxPupsInRegion = trySettings.PupSpawnSettings.MaxPups;
-                    spawnChance = trySettings.PupSpawnSettings.SpawnChance;
-                    spawnsPups = trySettings.PupSpawnSettings.SpawnsDynamicPups;
-
-                    string appliedSettingsLog = "Applied custom settings from " + runtimeSettings.ModID + " for " + trySettings.ID;
-                    
-                    if (trySettings.HasOverrides())
-                    {
-                        CustomSettingsObject overrideSettings = null;
-                        
-                        switch (trySettings.SettingType)
-                        {
-                            case CustomSettingsObject.SettingsType.Campaign:
-                                overrideSettings = trySettings.GetOverride(self.name.ToLower());
-                                break;
-                            default:
-                                Logger.LogInfo("Found invalid override type when looking for overrides");
-                                break;
-                        }
-                        
-                        if (overrideSettings != null) 
-                        {
-                            minPupsInRegion = overrideSettings.PupSpawnSettings.MinPups;
-                            maxPupsInRegion = overrideSettings.PupSpawnSettings.MaxPups;
-                            spawnChance = overrideSettings.PupSpawnSettings.SpawnChance;
-                            spawnsPups = overrideSettings.PupSpawnSettings.SpawnsDynamicPups;
-
-                            appliedSettingsLog += "; Applied override " + overrideSettings.ID;
-                        }
-                    }
-                    
-                    Logger.LogInfo(appliedSettingsLog);
-                }
+                Logger.LogInfo("Applied returned custom settings!");
             }
 
             Debug.Log("DynamicPupSpawns: " + minPupsInRegion + " min, " + maxPupsInRegion + " max, " +
@@ -148,9 +96,9 @@ namespace dynamicpupspawns
                 if (spawnThisCycle && pupNum > 0)
                 {
                     Debug.Log("DynamicPupSpawns: spawning " + pupNum + " new pups this cycle");
-                
+                    
                     //get rooms with unsubmerged den nodes
-                    Dictionary<AbstractRoom, int> validSpawnRooms = GetRoomsWithViableDens(self);
+                    Dictionary<AbstractRoom, int> validSpawnRooms = GetSpawnRooms(self);
 
                     //determine room spawn weight based on number of dens in room
                     Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
@@ -187,6 +135,71 @@ namespace dynamicpupspawns
             
             return orig(self);
         }
+
+        private CustomSettingsObject GetRuntimeSettings(World world)
+        {
+            CustomSettingsWrapper runtimeSettings = null;
+            CustomSettingsObject returnedRuntimeSettings = null;
+            
+            if (_contentToModIDMap.TryGetValue(world.game.GetStorySession.saveStateNumber.ToString(), out string mod))
+            {
+                foreach (CustomSettingsWrapper wrapper in _settings)
+                {
+                    if (wrapper.ModID == mod)
+                    {
+                        Logger.LogInfo("Found settings wrapper for " + mod + "!");
+                        runtimeSettings = wrapper;
+                        break;
+                    }
+                }
+            }
+
+            //apply campaign- or region-specific settings
+            if (runtimeSettings != null)
+            {
+                CustomSettingsObject trySettings;
+                
+                trySettings = runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Campaign,
+                    world.game.GetStorySession.saveStateNumber.ToString());
+                if (trySettings == null)
+                {
+                    trySettings = runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Region, world.name);
+                }
+
+                if (trySettings != null)
+                {
+                    returnedRuntimeSettings = trySettings;
+
+                    string appliedSettingsLog = "Found custom settings from " + runtimeSettings.ModID + " for " + trySettings.ID;
+                    
+                    if (trySettings.HasOverrides())
+                    {
+                        CustomSettingsObject overrideSettings = null;
+                        
+                        switch (trySettings.SettingType)
+                        {
+                            case CustomSettingsObject.SettingsType.Campaign:
+                                overrideSettings = trySettings.GetOverride(world.name.ToLower());
+                                break;
+                            default:
+                                Logger.LogInfo("Found invalid override type when looking for overrides");
+                                break;
+                        }
+                        
+                        if (overrideSettings != null)
+                        {
+                            returnedRuntimeSettings = overrideSettings;
+
+                            appliedSettingsLog += "; Found override " + overrideSettings.ID;
+                        }
+                    }
+                    
+                    Logger.LogInfo(appliedSettingsLog);
+                }
+            }
+
+            return returnedRuntimeSettings;
+        }
         
         private int RandomPupGaussian(float min, float max)
         {
@@ -221,10 +234,10 @@ namespace dynamicpupspawns
             return false;
         }
         
-        private Dictionary<AbstractRoom, int> GetRoomsWithViableDens(World world)
+        private Dictionary<AbstractRoom, int> GetSpawnRooms(World world)
         {
             //get all rooms in region with den nodes that are not submerged
-            Dictionary<AbstractRoom, int> roomsWithDens = new Dictionary<AbstractRoom, int>();
+            Dictionary<AbstractRoom, int> validRoomsAndDensInRoom = new Dictionary<AbstractRoom, int>();
 
             int densInRoom = 0;
             foreach (AbstractRoom room in world.abstractRooms)
@@ -233,22 +246,22 @@ namespace dynamicpupspawns
                 {
                     foreach (AbstractRoomNode node in room.nodes)
                     {
-                        if (node.type == AbstractRoomNode.Type.Den && !node.submerged)
+                        if (node.type == AbstractRoomNode.Type.Den && (!node.submerged || _options.AllowSubmergedDens.Value))
                         {
                             densInRoom++;
                         }
                     }
 
-                    if (densInRoom != 0)
+                    if (densInRoom != 0 || _options.UseAllRooms.Value)
                     {
-                        roomsWithDens.Add(room, densInRoom);
+                        validRoomsAndDensInRoom.Add(room, densInRoom);
                     }
 
                     densInRoom = 0;
                 }
             }
 
-            return roomsWithDens;
+            return validRoomsAndDensInRoom;
         }
 
         private Dictionary<AbstractRoom, float> CalculateRoomSpawnWeight(Dictionary<AbstractRoom, int> roomsAndDens)
@@ -257,13 +270,28 @@ namespace dynamicpupspawns
             Dictionary<AbstractRoom, float> spawnWeights = new Dictionary<AbstractRoom, float>();
 
             int totalDens = 0;
+            int roomsWithDens = 0;
             foreach (KeyValuePair<AbstractRoom, int> pair in roomsAndDens)
             {
                 totalDens += pair.Value;
+                roomsWithDens++;
             }
 
+
+            int averageDensPerRoom = -1;
+            if (roomsWithDens > 0)
+            {
+                averageDensPerRoom = Convert.ToInt32(totalDens / roomsWithDens);
+            }
+            
+                
             foreach (KeyValuePair<AbstractRoom, int> pair in roomsAndDens)
             {
+                if (pair.Value <= 0 && _options.UseAllRooms.Value)
+                {
+                    spawnWeights.Add(pair.Key, averageDensPerRoom / (float)totalDens);
+                    continue;
+                }
                 spawnWeights.Add(pair.Key, pair.Value / (float)totalDens);
             }
 
@@ -306,6 +334,16 @@ namespace dynamicpupspawns
 
         private AbstractRoom PickRandomRoomByWeight(AbstractRoom[] roomsArray, float[] weightsArray)
         {
+            if (!_options.WeighRooms.Value)
+            {
+                int numOfRooms = roomsArray.Length;
+                int randomlyChosenRoom = Random.Range(0, numOfRooms);
+                /*Unity.Random's int range has an exclusive max value,
+                 so no need to worry about out of array bounds error here*/
+                
+                return roomsArray[randomlyChosenRoom];
+            }
+            
             //pick room that corresponds to the randomly selected number on the weight scale
             float totalWeight = weightsArray[weightsArray.Length - 1];
 
@@ -429,7 +467,7 @@ namespace dynamicpupspawns
 
             string modSaveData = _SAVE_DATA_DELIMITER;
             
-            string message = "Adding pups to save data...\n";
+            //string message = "Adding pups to save data...\n";
             if (_world != null)
             {
                 for (int i = 0; i < _world.abstractRooms.Length; i++)
@@ -442,8 +480,8 @@ namespace dynamicpupspawns
                         {
                             if (abstractCreature.ID.number < 1000)
                             {
-                                message += "Found shelter " + _world.abstractRooms[i].name + " for "
-                                           + abstractCreature.type + " " + abstractCreature.ID.number + "; skipping\n";
+                                // message += "Found shelter " + _world.abstractRooms[i].name + " for "
+                                //            + abstractCreature.type + " " + abstractCreature.ID.number + "; skipping\n";
                                 playersShelter = true;
                                 break;
                             }
@@ -721,7 +759,8 @@ namespace dynamicpupspawns
                 new PupSpawnSettings(_options.SurvivorPupsSpawn.Value,
                     _options.SurvivorMinPups.Value,
                     _options.SurvivorMaxPups.Value,
-                    _options.SurvivorSpawnChance.Value));
+                    _options.SurvivorSpawnChance.Value * 0.01f,
+                    _options.SurvivorPersistence.Value));
             survivorSettings.AddOverride(fpOverride);
             
             CustomSettingsObject monkSettings = new CustomSettingsObject(
@@ -730,7 +769,8 @@ namespace dynamicpupspawns
                 new PupSpawnSettings(_options.MonkPupsSpawn.Value,
                     _options.MonkMinPups.Value,
                     _options.MonkMaxPups.Value,
-                    _options.MonkSpawnChance.Value));
+                    _options.MonkSpawnChance.Value * 0.01f,
+                    _options.MonkPersistence.Value));
             monkSettings.AddOverride(fpOverride);
             
             CustomSettingsObject hunterSettings = new CustomSettingsObject(
@@ -739,7 +779,8 @@ namespace dynamicpupspawns
                 new PupSpawnSettings(_options.HunterPupsSpawn.Value,
                     _options.HunterMinPups.Value,
                     _options.HunterMaxPups.Value,
-                    _options.HunterSpawnChance.Value));
+                    _options.HunterSpawnChance.Value * 0.01f,
+                    _options.HunterPersistence.Value));
             hunterSettings.AddOverride(fpOverride);
 
             baseGameSettings.AddSetting(survivorSettings);
@@ -773,7 +814,8 @@ namespace dynamicpupspawns
                 new PupSpawnSettings(_options.GourmandPupsSpawn.Value,
                     _options.GourmandMinPups.Value,
                     _options.GourmandMaxPups.Value,
-                    _options.GourmandSpawnChance.Value));
+                    _options.GourmandSpawnChance.Value * 0.01f,
+                    _options.GourmandPersistence.Value));
             gourmandSettings.AddOverride(fpOverride);
             
             CustomSettingsObject artificerSettings = new CustomSettingsObject(
@@ -782,7 +824,8 @@ namespace dynamicpupspawns
                 new PupSpawnSettings(_options.ArtificerPupsSpawn.Value,
                     _options.ArtificerMinPups.Value,
                     _options.ArtificerMaxPups.Value,
-                    _options.ArtificerSpawnChance.Value));
+                    _options.ArtificerSpawnChance.Value * 0.01f,
+                    _options.ArtificerPersistence.Value));
             artificerSettings.AddOverride(fpOverride);
             
             CustomSettingsObject spearmasterSettings = new CustomSettingsObject(
@@ -791,7 +834,8 @@ namespace dynamicpupspawns
                 new PupSpawnSettings(_options.SpearmasterPupsSpawn.Value,
                     _options.SpearmasterMinPups.Value,
                     _options.SpearmasterMaxPups.Value,
-                    _options.SpearmasterSpawnChance.Value));
+                    _options.SpearmasterSpawnChance.Value * 0.01f,
+                    _options.SpearmasterPersistence.Value));
             spearmasterSettings.AddOverride(fpOverride);
             spearmasterSettings.AddOverride(new CustomSettingsObject(CustomSettingsObject.SettingsType.Region, "dm", new PupSpawnSettings()));
             
@@ -801,7 +845,8 @@ namespace dynamicpupspawns
                 new PupSpawnSettings(_options.RivuletPupsSpawn.Value,
                     _options.RivuletMinPups.Value,
                     _options.RivuletMaxPups.Value,
-                    _options.RivuletSpawnChance.Value));
+                    _options.RivuletSpawnChance.Value * 0.01f,
+                    _options.RivuletPersistence.Value));
             rivuletSettings.AddOverride(fpOverride);
             
             CustomSettingsObject saintSettings = new CustomSettingsObject(
@@ -810,7 +855,8 @@ namespace dynamicpupspawns
                 new PupSpawnSettings(_options.SaintPupsSpawn.Value,
                     _options.SaintMinPups.Value,
                     _options.SaintMaxPups.Value,
-                    _options.SaintSpawnChance.Value));
+                    _options.SaintSpawnChance.Value * 0.01f,
+                    _options.SaintPersistence.Value));
             saintSettings.AddOverride(fpOverride);
 
             downpourSettings.AddSetting(gourmandSettings);
@@ -855,7 +901,8 @@ namespace dynamicpupspawns
                 new PupSpawnSettings(_options.WatcherPupsSpawn.Value,
                     _options.WatcherMinPups.Value,
                     _options.WatcherMaxPups.Value,
-                    _options.WatcherSpawnChance.Value));
+                    _options.WatcherSpawnChance.Value * 0.01f,
+                    _options.WatcherPersistence.Value));
             
             watcherDLCSettings.AddSetting(watcherSettings);
             
@@ -1173,7 +1220,7 @@ namespace dynamicpupspawns
                 object o = ParseValue(s);
                 if (o != null)
                 {
-                    if (s.StartsWith("pupsDynamicSpawn"))
+                    if (s.ToLower().StartsWith("pupsdynamicspawn"))
                     {
                         try
                         {
@@ -1193,7 +1240,7 @@ namespace dynamicpupspawns
                             return new PupSpawnSettings();
                         }
                     }
-                    else if (s.StartsWith("SpawnChance"))
+                    else if (s.ToLower().StartsWith("spawnchance"))
                     {
                         try
                         {
@@ -1209,7 +1256,7 @@ namespace dynamicpupspawns
                             }
                         }
                     }
-                    else if (s.StartsWith("min"))
+                    else if (s.ToLower().StartsWith("min"))
                     {
                         try
                         {
@@ -1226,7 +1273,7 @@ namespace dynamicpupspawns
                             }
                         }
                     }
-                    else if (s.StartsWith("max"))
+                    else if (s.ToLower().StartsWith("max"))
                     {
                         try
                         {
