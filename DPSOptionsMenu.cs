@@ -8,6 +8,7 @@ public class DPSOptionsMenu : OptionInterface
 {
     public readonly Configurable<bool> DynamicSpawnsPossible;
     public readonly Configurable<bool> RandomizeUsingGaussian;
+    public readonly Configurable<bool> OverrideNoPupCampaigns;
     public readonly Configurable<bool> Persistence;
     public readonly Configurable<int> MinPups;
     public readonly Configurable<int> MaxPups;
@@ -18,14 +19,12 @@ public class DPSOptionsMenu : OptionInterface
     
     public readonly Configurable<bool> SurvivorPupsSpawn;
     public readonly Configurable<bool> SurvivorPersistence;
-    //public readonly Configurable<bool> SurvivorUseGeneralExtraSpawnsSettings;
     public readonly Configurable<int> SurvivorSpawnChance;
     public readonly Configurable<int> SurvivorMinPups;
     public readonly Configurable<int> SurvivorMaxPups;
     
     public readonly Configurable<bool> MonkPupsSpawn;
     public readonly Configurable<bool> MonkPersistence;
-    //public readonly Configurable<bool> MonkUseGeneralExtraSpawnsSettings;
     public readonly Configurable<int> MonkSpawnChance;
     public readonly Configurable<int> MonkMinPups;
     public readonly Configurable<int> MonkMaxPups;
@@ -80,13 +79,14 @@ public class DPSOptionsMenu : OptionInterface
     {
         DynamicSpawnsPossible = config.Bind("DynamicSpawnsPossible", true);
         RandomizeUsingGaussian = config.Bind("GausssianRandomize", true);
+        OverrideNoPupCampaigns = config.Bind("OverrideNoPups", false);
         Persistence = config.Bind("Persistence", true);
         MinPups = config.Bind("MinPups", _defaultMin);
         MaxPups = config.Bind("MaxPups", _defaultMax);
         SpawnChance = config.Bind("SpawnChance", _defaultChance);
         UseAllRooms = config.Bind("UseAllRooms", false);
         WeighRooms = config.Bind("WeighRooms", true);
-        AllowSubmergedDens = config.Bind<bool>("AllowSubmergedDens", false);
+        AllowSubmergedDens = config.Bind("AllowSubmergedDens", false);
         
         SurvivorPupsSpawn = config.Bind("SurvivorPupsSpawn", true);
         SurvivorPersistence = config.Bind("SurvivorPersistence", true);
@@ -147,72 +147,47 @@ public class DPSOptionsMenu : OptionInterface
     {
         base.Initialize();
         OpTab generalSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("General"));
+        OpTab baseGameSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("Base Game"));
+        OpTab downpourSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("Downpour"));
+        OpTab watcherSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("Watcher"));
         Tabs = new []
         {
-            generalSettings
+            generalSettings,
+            baseGameSettings,
+            downpourSettings,
+            watcherSettings
         };
         
-        UIelement[] optionsUI =
+        UIelement[] generalSettingsUI =
         {
             new OpLabel(10f, 550f, "General Settings", true),
             
-            new OpCheckBox(DynamicSpawnsPossible, 10f, 500f),
-            new OpLabel(50f, 497f, "Dynamic Pups Spawn"),
-            new OpLabel(190f, 497f, "Check this box for extra pups to be placed in random rooms"),
             
-            new OpCheckBox(Persistence, 10f, 457f),
-            new OpLabel(50f, 457f, "Persistence"),
-            new OpLabel(190f, 457f, "Check this box for living pups to be respawned each cycle"),
-            
-            new OpCheckBox(UseAllRooms, 10f, 417f),
-            new OpLabel(50f, 417f, "Use All Rooms"),
-            new OpLabel(190f, 417f, "Check to allow spawning in any room in the region"),
-            
-            new OpCheckBox(WeighRooms, 10f, 377f),
-            new OpLabel(50f, 377f, "Weight Rooms"),
-            new OpLabel(190f, 377f, "Rooms with more dens are more likely to spawn pups"),
-            
-            new OpCheckBox(AllowSubmergedDens, 10f, 337f),
-            new OpLabel(50f, 337f, "Allow Submerged"),
-            new OpLabel(190f, 337f, "Check to let submerged dens be factored into room weight"),
-            
-            new OpSlider(SpawnChance, new Vector2(10f, 290f), 100),
-            new OpLabel(120f, 290f, "Spawn Chance (%)"),
-            
-            new OpDragger(MinPups, 250f, 290f),
-            new OpLabel(280f, 290f, "Min Pups Possible"),
-            
-            new OpDragger(MaxPups, 400f, 290f),
-            new OpLabel(430f, 290f, "Max Pups Possible"),
-            
-            new OpLabel(10f, 230f, "Base Game Settings Override", true),
-            new OpLabel(10f, 160f, "Pups Spawn"),
-            new OpLabel(10f, 130f, "Persistent"),
-            new OpLabel(10f, 100f, "Spawn Chance"),
-            new OpLabel(10f, 70f, "Min"),
-            new OpLabel(10f, 40f, "Max"),
-            
-            new OpLabel(120f, 190f, "Monk"),
-            new OpCheckBox(MonkPupsSpawn, 120f, 157f),
-            new OpCheckBox(MonkPersistence, 120f, 127f),
-            new OpSlider(MonkSpawnChance, new Vector2(120f, 100f), 100),
-            new OpDragger(MonkMinPups, 120f, 67f),
-            new OpDragger(MonkMaxPups, 120f, 37f),
-            
-            new OpLabel(260f, 190f, "Survivor"),
-            new OpCheckBox(SurvivorPupsSpawn, 260f, 157f),
-            new OpCheckBox(SurvivorPersistence, 260f, 127f),
-            new OpSlider(SurvivorSpawnChance, new Vector2(260f, 100f), 100),
-            new OpDragger(SurvivorMinPups, 260f, 67f),
-            new OpDragger(SurvivorMaxPups, 260f, 37f),
-            
-            new OpLabel(400f, 190f, "Hunter"),
-            new OpCheckBox(HunterPupsSpawn, 400f, 157f),
-            new OpCheckBox(HunterPersistence, 400f, 127f),
-            new OpSlider(HunterSpawnChance, new Vector2(400f, 100f), 100),
-            new OpDragger(HunterMinPups, 400f, 67f),
-            new OpDragger(HunterMaxPups, 400f, 37f),
         };
-        generalSettings.AddItems(optionsUI);
+        generalSettings.AddItems(generalSettingsUI);
+        
+        UIelement[] baseGameSettingsUI =
+        {
+            new OpLabel(10f, 550f, "Base Game Settings", true),
+            
+            
+        };
+        baseGameSettings.AddItems(baseGameSettingsUI);
+        
+        UIelement[] downpourSettingsUI =
+        {
+            new OpLabel(10f, 550f, "Downpour Settings", true),
+            
+            
+        };
+        downpourSettings.AddItems(downpourSettingsUI);
+        
+        UIelement[] watcherSettingsUI =
+        {
+            new OpLabel(10f, 550f, "Watcher Settings", true),
+            
+            
+        };
+        watcherSettings.AddItems(watcherSettingsUI);
     }
 }
