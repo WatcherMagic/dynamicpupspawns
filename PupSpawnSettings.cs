@@ -1,9 +1,20 @@
+using BepInEx.Logging;
+
 namespace dynamicpupspawns;
 
 public class PupSpawnSettings
 {
+    private ManualLogSource logger = new ManualLogSource("PupSpawnSettings_Logger");
+    
     public bool SpawnsDynamicPups { get; }
 
+    private bool _persistence = true;
+
+    public bool PersistentPups
+    {
+        get => _persistence;
+    }
+    
     public float SpawnChance { get; }
 
     private bool _setMinMaxSucceeded = true;
@@ -34,7 +45,19 @@ public class PupSpawnSettings
     {
         SpawnsDynamicPups = spawns;
         SetMinAndMaxPups(min, max);
+        logger.LogInfo("chance: " + chance + "; calculating... " + "chance > 1f is " + (chance > 1f));
         SpawnChance = chance > 1f ? 1f : chance;
+        logger.LogInfo("result of equation 'chance > 1f ? 1f : chance' is " + SpawnChance);
+    }
+    
+    public PupSpawnSettings(bool spawns, int min, int max, float chance, bool persistence)
+    {
+        SpawnsDynamicPups = spawns;
+        SetMinAndMaxPups(min, max);
+        logger.LogInfo("chance: " + chance + "; calculating... " + "chance > 1f is " + (chance > 1f));
+        SpawnChance = chance > 1f ? 1f : chance;
+        logger.LogInfo("result of equation 'chance > 1f ? 1f : chance' is " + SpawnChance);
+        _persistence = persistence;
     }
     
     private void SetMinAndMaxPups(int min, int max)

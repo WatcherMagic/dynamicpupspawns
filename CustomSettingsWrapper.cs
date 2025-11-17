@@ -14,15 +14,15 @@ public class CustomSettingsWrapper
         ModID = id;
     }
 
-    public bool AddNewSettings(CustomSettingsObject settings)
+    public bool AddSetting(CustomSettingsObject settings)
     {
-        if (settings.Type == CustomSettingsObject.ObjectType.Campaign)
+        if (settings.SettingType == CustomSettingsObject.SettingsType.Campaign)
         {
             _campaignSettings.Add(settings);
             return true;
         }
         
-        if (settings.Type == CustomSettingsObject.ObjectType.Region)
+        if (settings.SettingType == CustomSettingsObject.SettingsType.Region)
         {
             _regionSettings.Add(settings);
             return true;
@@ -31,9 +31,9 @@ public class CustomSettingsWrapper
         return false;
     }
 
-    public CustomSettingsObject GetSettings(CustomSettingsObject.ObjectType t, string id)
+    public CustomSettingsObject GetSettings(CustomSettingsObject.SettingsType t, string id)
     {
-        if (t == CustomSettingsObject.ObjectType.Campaign)
+        if (t == CustomSettingsObject.SettingsType.Campaign)
         {
             foreach (CustomSettingsObject campaign in _campaignSettings)
             {
@@ -44,7 +44,7 @@ public class CustomSettingsWrapper
             }
         }
 
-        if (t == CustomSettingsObject.ObjectType.Region)
+        if (t == CustomSettingsObject.SettingsType.Region)
         {
             foreach (CustomSettingsObject region in _regionSettings)
             {
@@ -74,6 +74,23 @@ public class CustomSettingsWrapper
             return true;
         }
         return false;
+    }
+
+    public List<string> GetAllSettingsIDs()
+    {
+        List<string> ids = new List<string>();
+
+        foreach (CustomSettingsObject campaignSetting in _campaignSettings)
+        {
+            ids.Add(campaignSetting.ID);
+        }
+
+        foreach (CustomSettingsObject regionSetting in _regionSettings)
+        {
+            ids.Add(regionSetting.ID);
+        }
+
+        return ids;
     }
     
     public override string ToString()

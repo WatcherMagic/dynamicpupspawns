@@ -4,14 +4,14 @@ namespace dynamicpupspawns;
 
 public class CustomSettingsObject
 {
-    public enum ObjectType
+    public enum SettingsType
     {
         Campaign,
         Region
     }
 
-    public ObjectType Type { get => _type; }
-    private ObjectType _type;
+    public SettingsType SettingType { get => _settingType; }
+    private SettingsType _settingType;
     
     public string ID { get; set; }
     
@@ -20,28 +20,51 @@ public class CustomSettingsObject
     
     private List<CustomSettingsObject> _overrides = new List<CustomSettingsObject>();
 
-    public CustomSettingsObject(ObjectType t, string id)
+    public CustomSettingsObject(SettingsType t, string id)
     {
-        _type = t;
+        _settingType = t;
         ID = id;
     }
 
-    public CustomSettingsObject(ObjectType t, string id, PupSpawnSettings pupSettings)
+    public CustomSettingsObject(SettingsType t, string id, PupSpawnSettings pupSettings)
     {
-        _type = t;
+        _settingType = t;
         ID = id;
         _pupSpawnSettings = pupSettings;
     }
     
     public bool AddOverride(CustomSettingsObject over)
     {
-        if (Type == ObjectType.Campaign)
+        if (SettingType == SettingsType.Campaign)
         {
-            if (over.Type == ObjectType.Region)
+            if (over.SettingType == SettingsType.Region)
             {
                 _overrides.Add(over);
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    public CustomSettingsObject GetOverride(string id)
+    {
+        foreach (CustomSettingsObject overrideSettings in _overrides)
+        {
+            if (overrideSettings.ID == id)
+            {
+                return overrideSettings;
+            }
+        }
+        
+        return null;
+    }
+
+    public bool HasOverrides()
+    {
+        if (_overrides.Count > 0)
+        {
+            return true;
         }
 
         return false;
@@ -54,7 +77,7 @@ public class CustomSettingsObject
             "ID: {1}\n" +
             PupSpawnSettings.ToString() + "\n" +
             "Overrides:\n",
-            Type, ID);
+            SettingType, ID);
         foreach (CustomSettingsObject ob in _overrides)
         {
             s += ob.ToString();
