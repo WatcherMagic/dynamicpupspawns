@@ -321,7 +321,9 @@ namespace dynamicpupspawns
                 try
                 {
                     (abstractPup.state as PlayerNPCState).foodInStomach = 1;
-                    (abstractPup.abstractAI as SlugNPCAbstractAI).isTamed = isTame;
+                    //(abstractPup.abstractAI as SlugNPCAbstractAI).isTamed = isTame;
+                    /*^ seems to have no effect on actual pup tamed status, removed to avoid undefined behavior
+                     until actual pups spawning tamed is implemented*/
                 }
                 catch (Exception e)
                 {
