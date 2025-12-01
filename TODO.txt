@@ -1,0 +1,114 @@
+TEST:
+- pups saved moving between regions?
+- game no longer crashes if placing a pup in a shelter the player is not in
+- persistent pups are different across campaigns
+- pups that respawn in rooms just outside shelters actually spawn?
+- unique settings such as chance and min/max are properly loaded in different campaigns
+- FP refuses spawns in all campaigns
+- moon refuses spawn in spearmaster campaign
+
+TODO:
+- Add options buttons, integrate with plugin & test
+    - DynamicSpawnsPossible
+    - RandomizeGaussian
+    - OverrideNoPupCampaign
+    - Persistence
+    - MinPups
+    - MaxPups
+    - SpawnChance
+    - UseAllRooms
+    - WeighRooms
+    - AllowSubmergedDens
+    - MonkPupsSpawn
+    - MonkPersistence
+    - MonkSpawnChance
+    - MonkMinPups
+    - MonkMaxPups
+    - SurvivorPupsSpawn
+    - SurvivorPersistence
+    - SurvivorSpawnChance
+    - SurvivorMinPups
+    - SurvivorMaxPups
+    - HunterPupsSpawn
+    - HunterPersistence
+    - HunterSpawnChance
+    - HunterMinPups
+    - HunterMaxPups
+    - GourmandPupsSpawn
+    - GourmandPersistence
+    - GourmandSpawnChance
+    - GourmandMinPups
+    - GourmandMaxPups
+    - ArtificerPupsSpawn
+    - ArtificerPersistence
+    - ArtificerSpawnChance
+    - ArtificerMinPups
+    - ArtificerMaxPups
+    - SpearmasterPupsSpawn
+    - SpearmasterPersistence
+    - SpearmasterSpawnChance
+    - SpearmasterMinPups
+    - SpearmasterMaxPups
+    - RivuletPupsSpawn
+    - RivuletPersistence
+    - RivuletSpawnChance
+    - RivuletMinPups
+    - RivuletMaxPups
+    - SaintPupsSpawn
+    - SaintPersistence
+    - SaintSpawnChance
+    - SaintMinPups
+    - SaintMaxPups
+    - WatcherPupsSpawn
+    - WatcherPersistence
+    - WatcherSpawnChance
+    - WatcherMinPups
+    - WatcherMaxPups
+- add settings.txt parse ability to choose pup persistence
+- pups placed in room are put on a random free tile instead of in connections
+- add Inv options
+
+DEBUGGING:
+- ISSUE: Pups respawn in test region but are impossible to find--likely level-editing related error, investigate
+
+Optional:
+- persistent pups that spawn tamed begin the cycle *actually* tamed
+    - Player HUD: need to add pup food bar & associate it with correct pup
+    - pup FriendTracker: add appropriate player
+    - ???
+    - profit
+    - dis gonna be hard
+- simulate hibernation; pups that do not find enough food will die,
+    pups that survive have their food decreased next cycle.
+    If player hibernates with less than 3/4 cycle time remaining, randomly determine which pups get enough food
+    - edits to PupAI will be needed to make feasible
+- compatibility with PupKarma (pups killed by the player will not return to life)
+    - untamed pups that die of natural causes return with lowered karma value?
+- mod support for Outsider mothpups & Beecat bups
+- further modpup support
+- options menu automatically creates toggles for dependent mods??
+    
+    
+DONE:
+
+- Spawn pups randomly on cycle start
+    - Detect rooms with den nodes
+    - Give rooms different spawn weights according to number of dens
+    - Randomly select number of new pups
+    - Randomly select room by weight for each new pup
+    - Place new pup in room
+- Reload pups that have survived on next cycle
+    - Locate all pups in region which are not in shelters
+    - If alive, retrieve pup ID and current room -TODO: double check this works as intended (i.e pup carcasses aren't saved)
+    - Save ID and room to save data with correlation to each other
+    - Retrieve ID and room from data
+    - Respawn saved pups, subtracting from random number of new pups each time
+- Gaussian random selection for number of pups each cycle
+- Retrieve customizations for mod characters & regions from .txt files
+    - Campaign specfic min/max pups per cycle
+    - Region specific min/max pups per cycle
+    - Forbidden regions/campaigns
+- Pup carcasses will no longer respawn as living pups
+- Campaign settings can specify whether or not dynamic pups spawn, the min and max amount, and spawn chance
+- Campaigns that normally cannot spawn pups don't spawn dynamic pups either
+- Settings for official slugcat campaigns
