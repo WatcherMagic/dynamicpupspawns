@@ -71,13 +71,13 @@ TODO:
 DEBUGGING:
 - ISSUE: Pups respawn in test region but are impossible to find--likely level-editing related error, investigate
 
-Optional:
+Post-v1.0:
 - persistent pups that spawn tamed begin the cycle *actually* tamed
     - Player HUD: need to add pup food bar & associate it with correct pup
     - pup FriendTracker: add appropriate player
     - ???
     - profit
-    - dis gonna be hard
+    - gonna be hard
 - simulate hibernation; pups that do not find enough food will die,
     pups that survive have their food decreased next cycle.
     If player hibernates with less than 3/4 cycle time remaining, randomly determine which pups get enough food
@@ -99,7 +99,7 @@ DONE:
     - Place new pup in room
 - Reload pups that have survived on next cycle
     - Locate all pups in region which are not in shelters
-    - If alive, retrieve pup ID and current room -TODO: double check this works as intended (i.e pup carcasses aren't saved)
+    - If alive, retrieve pup ID and current room
     - Save ID and room to save data with correlation to each other
     - Retrieve ID and room from data
     - Respawn saved pups, subtracting from random number of new pups each time
