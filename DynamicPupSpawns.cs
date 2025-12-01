@@ -382,7 +382,7 @@ namespace dynamicpupspawns
                                 AbstractRoom room = world.GetAbstractRoom(pup.Room);
                                 if (room != null)
                                 {
-                                    PutPupInRoom(world.game, world, room, pup.ID, pup.IsTame,
+                                    PutPupInRoom(world.game, world, room, pup.PupID, pup.IsTame,
                                         world.game.GetStorySession.characterStats.name);
                                     pupNum--; //persistent pups count towards the total pups spawned per cycle
                                 }
