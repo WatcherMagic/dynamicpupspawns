@@ -162,7 +162,7 @@ public class DPSOptionsMenu : OptionInterface
         {
             new OpLabel(10f, 550f, "General Settings", true),
             
-            
+            new OpSlider(SpawnChance, new Vector2(10f, 500f), 100, false),
         };
         generalSettings.AddItems(generalSettingsUI);
         
