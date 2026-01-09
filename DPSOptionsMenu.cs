@@ -71,7 +71,7 @@ public class DPSOptionsMenu : OptionInterface
     public readonly Configurable<int> WatcherMinPups;
     public readonly Configurable<int> WatcherMaxPups;
 
-    private readonly int _defaultChance = 5; //percent
+    private readonly int _defaultChancePercent = 5;
     private readonly int _defaultMin = 1;
     private readonly int _defaultMax = 3;
     
@@ -83,62 +83,62 @@ public class DPSOptionsMenu : OptionInterface
         Persistence = config.Bind("Persistence", true);
         MinPups = config.Bind("MinPups", _defaultMin);
         MaxPups = config.Bind("MaxPups", _defaultMax);
-        SpawnChance = config.Bind("SpawnChance", _defaultChance);
+        SpawnChance = config.Bind("SpawnChance", _defaultChancePercent);
         UseAllRooms = config.Bind("UseAllRooms", false);
         WeighRooms = config.Bind("WeighRooms", true);
         AllowSubmergedDens = config.Bind("AllowSubmergedDens", false);
         
         SurvivorPupsSpawn = config.Bind("SurvivorPupsSpawn", true);
         SurvivorPersistence = config.Bind("SurvivorPersistence", true);
-        SurvivorSpawnChance = config.Bind("SurvivorSpawnChance", _defaultChance);
+        SurvivorSpawnChance = config.Bind("SurvivorSpawnChance", _defaultChancePercent);
         SurvivorMinPups = config.Bind("SurvivorMinPups", _defaultMin);
         SurvivorMaxPups = config.Bind("SurvivorMaxPups", _defaultMax);
         
         MonkPupsSpawn = config.Bind("MonkPupsSpawn", false);
         MonkPersistence = config.Bind("MonkPersistence", true);
-        MonkSpawnChance = config.Bind("MonkSpawnChance", _defaultChance);
+        MonkSpawnChance = config.Bind("MonkSpawnChance", _defaultChancePercent);
         MonkMinPups = config.Bind("MonkMinPups", _defaultMin);
         MonkMaxPups = config.Bind("MonkMaxPups", _defaultMax);
         
         HunterPupsSpawn = config.Bind("HunterPupsSpawn", true);
         HunterPersistence = config.Bind("HunterPersistence", true);
-        HunterSpawnChance = config.Bind("HunterSpawnChance", _defaultChance);
+        HunterSpawnChance = config.Bind("HunterSpawnChance", _defaultChancePercent);
         HunterMinPups = config.Bind("HunterMinPups", _defaultMin);
         HunterMaxPups = config.Bind("HunterMaxPups", _defaultMax);
         
         GourmandPupsSpawn = config.Bind("GourmandPupsSpawn", true);
         GourmandPersistence = config.Bind("GourmandPersistence", true);
-        GourmandSpawnChance = config.Bind("GourmandSpawnChance", _defaultChance);
+        GourmandSpawnChance = config.Bind("GourmandSpawnChance", _defaultChancePercent);
         GourmandMinPups = config.Bind("GourmandMinPups", _defaultMin);
         GourmandMaxPups = config.Bind("GourmandMaxPups", _defaultMax);
         
         ArtificerPupsSpawn = config.Bind("ArtificerPupsSpawn", false);
         ArtificerPersistence = config.Bind("ArtificerPersistence", true);
-        ArtificerSpawnChance = config.Bind("ArtificerSpawnChance", _defaultChance);
+        ArtificerSpawnChance = config.Bind("ArtificerSpawnChance", _defaultChancePercent);
         ArtificerMinPups = config.Bind("ArtificerMinPups", _defaultMin);
         ArtificerMaxPups = config.Bind("ArtificerMaxPups", _defaultMax);
         
         SpearmasterPupsSpawn = config.Bind("SpearmasterPupsSpawn", false);
         SpearmasterPersistence = config.Bind("SpearmasterPersistence", true);
-        SpearmasterSpawnChance = config.Bind("SpearmasterSpawnChance", _defaultChance);
+        SpearmasterSpawnChance = config.Bind("SpearmasterSpawnChance", _defaultChancePercent);
         SpearmasterMinPups = config.Bind("SpearmasterMinPups", _defaultMin);
         SpearmasterMaxPups = config.Bind("SpearmasterMaxPups", _defaultMax);
         
         RivuletPupsSpawn = config.Bind("RivuletPupsSpawn", false);
         RivuletPersistence = config.Bind("RivuletPersistence", true);
-        RivuletSpawnChance = config.Bind("RivuletSpawnChance", _defaultChance);
+        RivuletSpawnChance = config.Bind("RivuletSpawnChance", _defaultChancePercent);
         RivuletMinPups = config.Bind("RivuletMinPups", _defaultMin);
         RivuletMaxPups = config.Bind("RivuletMaxPups", _defaultMax);
         
         SaintPupsSpawn = config.Bind("SaintPupsSpawn", false);
         SaintPersistence = config.Bind("SaintPersistence", true);
-        SaintSpawnChance = config.Bind("SaintSpawnChance", _defaultChance);
+        SaintSpawnChance = config.Bind("SaintSpawnChance", _defaultChancePercent);
         SaintMinPups = config.Bind("SaintMinPups", _defaultMin);
         SaintMaxPups = config.Bind("SaintMaxPups", _defaultMax);
         
         WatcherPupsSpawn = config.Bind("WatcherPupsSpawn", false);
         WatcherPersistence = config.Bind("WatcherPersistence", true);
-        WatcherSpawnChance = config.Bind("WatcherSpawnChance", _defaultChance);
+        WatcherSpawnChance = config.Bind("WatcherSpawnChance", _defaultChancePercent);
         WatcherMinPups = config.Bind("WatcherMinPups", _defaultMin);
         WatcherMaxPups = config.Bind("WatcherMaxPups", _defaultMax);
     }
@@ -161,8 +161,50 @@ public class DPSOptionsMenu : OptionInterface
         UIelement[] generalSettingsUI =
         {
             new OpLabel(10f, 550f, "General Settings", true),
+            new OpLabel(10f, 510f, "These settings will be applied to all campaigns"),
             
-            new OpSlider(SpawnChance, new Vector2(10f, 500f), 100, false),
+            new OpCheckBox(OverrideNoPupCampaigns, 10, 477),
+            new OpLabel(50f, 480f, "Override No Pups"),
+            new OpLabel(190f, 480f, "Campaigns that don't allow pups to spawn will spawn dynamic pups"),
+            
+            new OpCheckBox(UseAllRooms, 10, 437),
+            new OpLabel(50f, 440f, "Use All Rooms"),
+            new OpLabel(190f, 440f, "Check to allow spawning in any room in the region"),
+            
+            new OpCheckBox(WeighRooms, 10, 397),
+            new OpLabel(50f, 400f, "Weigh Rooms"),
+            new OpLabel(190f, 400f, "Rooms with more dens are more likely to spawn pups"),
+            
+            new OpCheckBox(AllowSubmergedDens, 10, 357),
+            new OpLabel(50f, 360f, "Allow Submerged Dens"),
+            new OpLabel(190f, 360f, "Check to let submerged dens be factored into room weight"),
+            
+            new OpCheckBox(RandomizeUsingGaussian, 10, 317),
+            new OpLabel(50f, 320f, "Gaussian Random"),
+            new OpLabelLong(new Vector2(190f, 285f), new Vector2(400, 50), 
+                "\"Gaussian Distribution\" modifies random rates to fall within a specific zone of values more often than not; in this case if Min is 1 and Max is 5, values 2-3 are usually chosen, value 1 is less often, value 4 is rare, and value 5 is more rare. Uncheck for maximum chaos",
+                true, FLabelAlignment.Left),
+            
+            new OpLabel(10, 230, "These settings will be applied to mod campaigns that don't specify their own dynamic pup settings"),
+            
+            new OpCheckBox(DynamicSpawnsPossible, 10, 197),
+            new OpLabel(50f, 200f, "Dynamic Pups Spawn"),
+            new OpLabel(190f, 200f, "Check this box for extra pups to be placed in random rooms"),
+            
+            new OpCheckBox(Persistence, 10, 157),
+            new OpLabel(50f, 160f, "Persistence"),
+            new OpLabel(190f, 160f, "Check this box for living pups to be respawned each cycle"),
+            
+            new OpLabel(10, 120, "Spawn Chance (%)"),
+            new OpSlider(SpawnChance, new Vector2(130f, 117f), 4.6f, false),
+            
+            new OpDragger(MinPups, 10, 77),
+            new OpLabel(50, 80, "Min Pups Possible"),
+            
+            new OpDragger(MaxPups, 10, 47),
+            new OpLabel(50, 50, "Max Pups Possible"),
+            
+            new OpHoldButton(new Vector2(170, 43), new Vector2(410, 60), "Reset All Values", 80f),
         };
         generalSettings.AddItems(generalSettingsUI);
         
