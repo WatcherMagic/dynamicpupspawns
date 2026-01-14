@@ -115,10 +115,9 @@ namespace dynamicpupspawns
                         AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
                         if (self.game.IsStorySession)
                         {
-                            PutPupInRoom(self.game, self, spawnRoom, null, false, self.game.GetStorySession.characterStats.name);
+                            StartCoroutine(PutPupInRoom(self.game, self, spawnRoom, null, false, self.game.GetStorySession.characterStats.name));
                         }
                     }
-            
                 }
                 else if (!spawnThisCycle)
                 {
@@ -398,8 +397,8 @@ namespace dynamicpupspawns
                                 AbstractRoom room = world.GetAbstractRoom(pup.Room);
                                 if (room != null)
                                 {
-                                    PutPupInRoom(world.game, world, room, pup.PupID, pup.IsTame,
-                                        world.game.GetStorySession.characterStats.name);
+                                    StartCoroutine(PutPupInRoom(world.game, world, room, pup.PupID, pup.IsTame,
+                                        world.game.GetStorySession.characterStats.name));
                                     pupNum--; //persistent pups count towards the total pups spawned per cycle
                                 }
                                 else
@@ -427,7 +426,7 @@ namespace dynamicpupspawns
             return pupNum;
         }
 
-        public void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, string pupID, bool isTame,
+        public IEnumerator PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, string pupID, bool isTame,
             SlugcatStats.Name curSlug)
         {
             if (ModManager.MSC && game.IsStorySession)
@@ -455,6 +454,14 @@ namespace dynamicpupspawns
                 room.AddEntity(abstractPup);
                 if (room.realizedRoom != null)
                 {
+                    //thanks pipe cleaner!!
+                    var gameInstance = RWCustom.Custom.rainWorld.processManager.currentMainLoop as RainWorldGame;
+                    while (RWCustom.Custom.rainWorld.processManager.currentMainLoop == gameInstance
+                           && !abstractPup.slatedForDeletion
+                           && !abstractPup.Room.realizedRoom.readyForAI) yield return null;
+                    if (RWCustom.Custom.rainWorld.processManager.currentMainLoop != gameInstance
+                        || abstractPup.slatedForDeletion) yield break;
+                    
                     abstractPup.RealizeInRoom();
                 }
                 try

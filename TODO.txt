@@ -3,22 +3,23 @@ KNOWN ISSUES:
 - WARP: No pups, persistent or new, are spawned when moving between regions using the Warp menu
 
 TEST:
-- unique settings such as chance and min/max are properly loaded in different campaigns
 - FP refuses spawns in all campaigns
 - moon refuses spawn in spearmaster campaign
-- toggles for UseAllRooms, WeighRooms and AllowSubmergedDens work appropriately
+- toggles for WeighRooms and AllowSubmergedDens work appropriately
 
-TODO:
--
+TODO (v1.1):
+- Add hook to region transfers to both save pups from the previous region to save data and load pups in new region from save data
+    - save string kept & manipulated at runtime?
+- Fix custom region settings being overridden by campaign & general spawn settings
 
 DEBUGGING:
 - BUG: Pups respawn in test region but are trapped offscreen--likely level-editing related error, investigate
-- BUG: Persistent pups are not respawned if the spawn chance for new pups fails when moving between regions
-- BUG: Pups that have not been saved by hibernating will not respawn when moving between regions
-- BUG: When loading a pup in a shelter the player did not hibernate in at the cycle start, see Exceptions.txt
-- BUG: When loading pups in the room directly outside the player's shelter, see Exceptions.txt
-- ISSUE: Regions with custom spawn settings will not spawn pups if the campaign 
-    slugcat forbids them unless override is toggled for all campaigns; fix
+    - only happens occasionally, get statistics
+- ISSUE: Persistent pups are not respawned if the spawn chance for new pups fails when moving between regions
+- ISSUE: Pups that have not been saved by hibernating will not respawn when moving between regions
+- ISSUE: Regions with custom spawn settings get overridden by campaign settings
+- ISSUE: Pups saved in a shelter without the player automatically spawn in the adjacent room???
+- ISSUE: Untamed pups saved in any shelter without the player spawn tamed
 
 
 Post-v1.0:
@@ -117,4 +118,11 @@ DONE:
 - Campaign settings can specify whether or not dynamic pups spawn, the min and max amount, and spawn chance
 - Campaigns that normally cannot spawn pups don't spawn dynamic pups either
 - Persistent pups are unique across campaigns
-- Remix menu can modify general settings such as if dynamic pups spawn, min, max, spawn chance and persistence
+- Campaigns with different settings load appropriately
+- Remix menu can modify general settings such as:
+    - if dynamic pups spawn
+    - min/max possible pups
+    - spawn chance
+    - if pups are persistent
+    - override campaigns that don't naturally spawn pups
+    - whether to use all rooms in a region (excluding shelters)
