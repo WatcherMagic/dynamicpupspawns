@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -61,7 +62,7 @@ namespace dynamicpupspawns
             
             //turns on or off whether campaigns without specified spawn settings have dynamic pups;
             // overridden by specified settings
-            bool spawnsPups = _options.DynamicSpawnsPossible.Value && self.game.GetStorySession.slugPupMaxCount != 0;
+            bool spawnsPups = _options.DynamicSpawnsPossible.Value && (self.game.GetStorySession.slugPupMaxCount != 0 || _options.OverrideNoPupCampaigns.Value);
             
             //check for settings
             CustomSettingsObject currentSettings = GetRuntimeSettings(self);
@@ -81,11 +82,12 @@ namespace dynamicpupspawns
             
             //generate number of pups for this cycle
             // + 1 to max to account for rounding down w/ cast to int
-            int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
+            int pupNum = GetRandomNumOfPups(_options.RandomizeUsingGaussian.Value, minPupsInRegion, maxPupsInRegion + 1);
 
             //respawn pups from save data
             if (pupPersistence)
             {
+                //subtract preexisting pups from the number of new pups to be generated
                 pupNum = SpawnPersistentPups(self, pupNum);
             }
             
@@ -127,6 +129,10 @@ namespace dynamicpupspawns
                     Debug.Log("DynamicPupSpawns: WARNING! The number of possible pups this cycle was greater than zero, but no pups spawned!");
                     Logger.LogWarning("The number of possible pups this cycle was greater than zero, but no pups spawned!");
                 }
+            }
+            else if (!_options.DynamicSpawnsPossible.Value)
+            {
+                Debug.Log("DynamicPupSpawns: Dynamic spawning is turned off in the remix menu!");
             }
             else
             {
@@ -201,7 +207,17 @@ namespace dynamicpupspawns
             return returnedRuntimeSettings;
         }
         
-        private int RandomPupGaussian(float min, float max)
+        private int GetRandomNumOfPups(bool gaussian, int min, int max) 
+        {
+            if (gaussian)
+            {
+                return RandomPupGaussian(min, max);
+            }
+
+            return UnityEngine.Random.Range(min, max);
+        }
+        
+        private int RandomPupGaussian(int min, int max)
         {
             //thanks lancelot18
 
@@ -706,7 +722,7 @@ namespace dynamicpupspawns
             }
             
             ProcessCustomData();
-            ProcessBuiltInSettings();
+            //ProcessBuiltInSettings();
             
             //LogAllSettings();
         }

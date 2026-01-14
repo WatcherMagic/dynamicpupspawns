@@ -1,24 +1,31 @@
+KNOWN ISSUES:
+- Any pups left in SU_A22 when the cycle ends disappear
+- WARP: No pups, persistent or new, are spawned when moving between regions using the Warp menu
+
 TEST:
-- pups saved moving between regions?
-- game no longer crashes if placing a pup in a shelter the player is not in
-- persistent pups are different across campaigns
-- pups that respawn in rooms just outside shelters actually spawn?
 - unique settings such as chance and min/max are properly loaded in different campaigns
 - FP refuses spawns in all campaigns
 - moon refuses spawn in spearmaster campaign
+- toggles for UseAllRooms, WeighRooms and AllowSubmergedDens work appropriately
 
 TODO:
-- Add options buttons, integrate with plugin & test
-    - DynamicSpawnsPossible
-    - RandomizeGaussian
-    - OverrideNoPupCampaign
-    - Persistence
-    - MinPups
-    - MaxPups
-    - SpawnChance
-    - UseAllRooms
-    - WeighRooms
-    - AllowSubmergedDens
+-
+
+DEBUGGING:
+- BUG: Pups respawn in test region but are trapped offscreen--likely level-editing related error, investigate
+- BUG: Persistent pups are not respawned if the spawn chance for new pups fails when moving between regions
+- BUG: Pups that have not been saved by hibernating will not respawn when moving between regions
+- BUG: When loading a pup in a shelter the player did not hibernate in at the cycle start, see Exceptions.txt
+- BUG: When loading pups in the room directly outside the player's shelter, see Exceptions.txt
+- ISSUE: Regions with custom spawn settings will not spawn pups if the campaign 
+    slugcat forbids them unless override is toggled for all campaigns; fix
+
+
+Post-v1.0:
+
+v1.1:
+- pups placed in room are put on a random free tile instead of in connections
+- Campaign-specific settings for official campaigns
     - MonkPupsSpawn
     - MonkPersistence
     - MonkSpawnChance
@@ -64,31 +71,29 @@ TODO:
     - WatcherSpawnChance
     - WatcherMinPups
     - WatcherMaxPups
+    - InvPupsSpawn
+    - InvPersistence
+    - InvSpawnChance
+    - InvMinPups
+    - InvMaxPups
+
+v1.2+:
 - add settings.txt parse ability to choose pup persistence
-- pups placed in room are put on a random free tile instead of in connections
-- add Inv options
-
-DEBUGGING:
-- ISSUE: Pups respawn in test region but are impossible to find--likely level-editing related error, investigate
-
-Post-v1.0:
-- persistent pups that spawn tamed begin the cycle *actually* tamed
+- persistent pups that spawn tamed begin the cycle *actually* tamed?
     - Player HUD: need to add pup food bar & associate it with correct pup
     - pup FriendTracker: add appropriate player
     - ???
     - profit
-    - gonna be hard
-- simulate hibernation; pups that do not find enough food will die,
-    pups that survive have their food decreased next cycle.
+    - ???
+- simulate hibernation; pups that do not find enough food will die, pups that survive have their food decreased next cycle.
     If player hibernates with less than 3/4 cycle time remaining, randomly determine which pups get enough food
-    - edits to PupAI will be needed to make feasible
-- compatibility with PupKarma (pups killed by the player will not return to life)
-    - untamed pups that die of natural causes return with lowered karma value?
+    - edits to PupAI will be needed to make feasible (actively searching for food)
+- compatibility with PupKarma(?), untamed pups that die of natural causes return with lowered karma value
 - mod support for Outsider mothpups & Beecat bups
 - further modpup support
 - options menu automatically creates toggles for dependent mods??
-    
-    
+
+
 DONE:
 
 - Spawn pups randomly on cycle start
@@ -111,4 +116,5 @@ DONE:
 - Pup carcasses will no longer respawn as living pups
 - Campaign settings can specify whether or not dynamic pups spawn, the min and max amount, and spawn chance
 - Campaigns that normally cannot spawn pups don't spawn dynamic pups either
-- Settings for official slugcat campaigns
+- Persistent pups are unique across campaigns
+- Remix menu can modify general settings such as if dynamic pups spawn, min, max, spawn chance and persistence
