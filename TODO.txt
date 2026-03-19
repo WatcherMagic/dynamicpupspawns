@@ -1,82 +1,32 @@
 KNOWN ISSUES:
 - Any pups left in SU_A22 when the cycle ends disappear
 - WARP: No pups, persistent or new, are spawned when moving between regions using the Warp menu
+- TODO: Fix Persistent pups are not respawned if the spawn chance for new pups fails when moving between regions
+- TODO: Fix Pups that have not been saved by hibernating will not respawn when moving between regions
+- TODO: Fix Regions with custom spawn settings get overridden by campaign settings
+- TODO: Fix Pups saved in a shelter without the player automatically spawn in the adjacent room???
+- TODO: Fix Untamed pups saved in any shelter without the player spawn tamed
 
 TEST:
 - FP refuses spawns in all campaigns
 - moon refuses spawn in spearmaster campaign
 - toggles for WeighRooms and AllowSubmergedDens work appropriately
 
-TODO (v1.1):
-- Add hook to region transfers to both save pups from the previous region to save data and load pups in new region from save data
-    - save string kept & manipulated at runtime?
-- Fix custom region settings being overridden by campaign & general spawn settings
+TODO (v1.0):
+- proper loading and options menu integration for custom stats for official campaigns
+- options menu reset buttons functionality
 
 DEBUGGING:
 - BUG: Pups respawn in test region but are trapped offscreen--likely level-editing related error, investigate
     - only happens occasionally, get statistics
-- ISSUE: Persistent pups are not respawned if the spawn chance for new pups fails when moving between regions
-- ISSUE: Pups that have not been saved by hibernating will not respawn when moving between regions
-- ISSUE: Regions with custom spawn settings get overridden by campaign settings
-- ISSUE: Pups saved in a shelter without the player automatically spawn in the adjacent room???
-- ISSUE: Untamed pups saved in any shelter without the player spawn tamed
 
+KNOWN COMPATIBILITY ISSUES:
+- 
 
 Post-v1.0:
 
 v1.1:
 - pups placed in room are put on a random free tile instead of in connections
-- Campaign-specific settings for official campaigns
-    - MonkPupsSpawn
-    - MonkPersistence
-    - MonkSpawnChance
-    - MonkMinPups
-    - MonkMaxPups
-    - SurvivorPupsSpawn
-    - SurvivorPersistence
-    - SurvivorSpawnChance
-    - SurvivorMinPups
-    - SurvivorMaxPups
-    - HunterPupsSpawn
-    - HunterPersistence
-    - HunterSpawnChance
-    - HunterMinPups
-    - HunterMaxPups
-    - GourmandPupsSpawn
-    - GourmandPersistence
-    - GourmandSpawnChance
-    - GourmandMinPups
-    - GourmandMaxPups
-    - ArtificerPupsSpawn
-    - ArtificerPersistence
-    - ArtificerSpawnChance
-    - ArtificerMinPups
-    - ArtificerMaxPups
-    - SpearmasterPupsSpawn
-    - SpearmasterPersistence
-    - SpearmasterSpawnChance
-    - SpearmasterMinPups
-    - SpearmasterMaxPups
-    - RivuletPupsSpawn
-    - RivuletPersistence
-    - RivuletSpawnChance
-    - RivuletMinPups
-    - RivuletMaxPups
-    - SaintPupsSpawn
-    - SaintPersistence
-    - SaintSpawnChance
-    - SaintMinPups
-    - SaintMaxPups
-    - WatcherPupsSpawn
-    - WatcherPersistence
-    - WatcherSpawnChance
-    - WatcherMinPups
-    - WatcherMaxPups
-    - InvPupsSpawn
-    - InvPersistence
-    - InvSpawnChance
-    - InvMinPups
-    - InvMaxPups
 
 v1.2+:
 - add settings.txt parse ability to choose pup persistence
