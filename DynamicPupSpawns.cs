@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -11,8 +12,8 @@ using Watcher;
 
 namespace dynamicpupspawns
 {
-
     [BepInPlugin(_MOD_ID, "Dynamic Pup Spawns", "0.1")]
+    
     public class DynamicPupSpawns : BaseUnityPlugin
     {
         private const string _MOD_ID = "dynamicpupspawns";
@@ -22,6 +23,7 @@ namespace dynamicpupspawns
         private Dictionary<string, List<PersistentPupData>> _persistentPups;
         private List<CustomSettingsWrapper> _settings;
         private Dictionary<string, string> _contentToModIDMap;
+        private Dictionary<string, string> _currentPupsPerRegion = new ();
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
@@ -36,6 +38,7 @@ namespace dynamicpupspawns
         private void OnEnable()
         {
             On.World.SpawnPupNPCs += SpawnPups;
+            On.OverWorld.GateRequestsSwitchInitiation += SavePupsOnRegionLeave;
             
             On.SaveState.SaveToString += SaveDataToString;
             On.SaveState.LoadGame += GetSaveDataFromString;
@@ -61,10 +64,10 @@ namespace dynamicpupspawns
             
             //turns on or off whether campaigns without specified spawn settings have dynamic pups;
             // overridden by specified settings
-            bool spawnsPups = _options.DynamicSpawnsPossible.Value && self.game.GetStorySession.slugPupMaxCount != 0;
+            bool spawnsPups = _options.DynamicSpawnsPossible.Value && (self.game.GetStorySession.slugPupMaxCount != 0 || _options.OverrideNoPupCampaigns.Value);
             
             //check for settings
-            CustomSettingsObject currentSettings = GetRuntimeSettings(self);
+            CustomSettingsObject currentSettings = GetRuntimeSettings(_world);
             if (currentSettings != null)
             {
                 minPupsInRegion = currentSettings.PupSpawnSettings.MinPups;
@@ -81,12 +84,13 @@ namespace dynamicpupspawns
             
             //generate number of pups for this cycle
             // + 1 to max to account for rounding down w/ cast to int
-            int pupNum = RandomPupGaussian(minPupsInRegion, maxPupsInRegion + 1);
+            int pupNum = GetRandomNumOfPups(_options.RandomizeUsingGaussian.Value, minPupsInRegion, maxPupsInRegion + 1);
 
             //respawn pups from save data
             if (pupPersistence)
             {
-                pupNum = SpawnPersistentPups(self, pupNum);
+                //subtract preexisting pups from the number of new pups to be generated
+                pupNum = SpawnPersistentPups(_world, pupNum);
             }
             
             if (spawnsPups)
@@ -98,7 +102,7 @@ namespace dynamicpupspawns
                     Debug.Log("DynamicPupSpawns: spawning " + pupNum + " new pups this cycle");
                     
                     //get rooms with unsubmerged den nodes
-                    Dictionary<AbstractRoom, int> validSpawnRooms = GetSpawnRooms(self);
+                    Dictionary<AbstractRoom, int> validSpawnRooms = GetSpawnRooms(_world);
 
                     //determine room spawn weight based on number of dens in room
                     Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
@@ -113,10 +117,9 @@ namespace dynamicpupspawns
                         AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
                         if (self.game.IsStorySession)
                         {
-                            PutPupInRoom(self.game, self, spawnRoom, null, false, self.game.GetStorySession.characterStats.name);
+                            StartCoroutine(PutPupInRoom(self.game, _world, spawnRoom, null, false, self.game.GetStorySession.characterStats.name));
                         }
                     }
-            
                 }
                 else if (!spawnThisCycle)
                 {
@@ -128,11 +131,15 @@ namespace dynamicpupspawns
                     Logger.LogWarning("The number of possible pups this cycle was greater than zero, but no pups spawned!");
                 }
             }
+            else if (!_options.DynamicSpawnsPossible.Value)
+            {
+                Debug.Log("DynamicPupSpawns: Dynamic spawning is turned off in the remix menu!");
+            }
             else
             {
                 Debug.Log("DynamicPupSpawns: Pups cannot spawn in this campaign or region!");
             }
-            
+
             return orig(self);
         }
 
@@ -201,7 +208,17 @@ namespace dynamicpupspawns
             return returnedRuntimeSettings;
         }
         
-        private int RandomPupGaussian(float min, float max)
+        private int GetRandomNumOfPups(bool gaussian, int min, int max) 
+        {
+            if (gaussian)
+            {
+                return RandomPupGaussian(min, max);
+            }
+
+            return UnityEngine.Random.Range(min, max);
+        }
+        
+        private int RandomPupGaussian(int min, int max)
         {
             //thanks lancelot18
 
@@ -382,8 +399,8 @@ namespace dynamicpupspawns
                                 AbstractRoom room = world.GetAbstractRoom(pup.Room);
                                 if (room != null)
                                 {
-                                    PutPupInRoom(world.game, world, room, pup.PupID, pup.IsTame,
-                                        world.game.GetStorySession.characterStats.name);
+                                    StartCoroutine(PutPupInRoom(world.game, world, room, pup.PupID, pup.IsTame,
+                                        world.game.GetStorySession.characterStats.name));
                                     pupNum--; //persistent pups count towards the total pups spawned per cycle
                                 }
                                 else
@@ -411,7 +428,7 @@ namespace dynamicpupspawns
             return pupNum;
         }
 
-        public void PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, string pupID, bool isTame,
+        public IEnumerator PutPupInRoom(RainWorldGame game, World world, AbstractRoom room, string pupID, bool isTame,
             SlugcatStats.Name curSlug)
         {
             if (ModManager.MSC && game.IsStorySession)
@@ -439,6 +456,14 @@ namespace dynamicpupspawns
                 room.AddEntity(abstractPup);
                 if (room.realizedRoom != null)
                 {
+                    //thanks pipe cleaner!!
+                    var gameInstance = RWCustom.Custom.rainWorld.processManager.currentMainLoop as RainWorldGame;
+                    while (RWCustom.Custom.rainWorld.processManager.currentMainLoop == gameInstance
+                           && !abstractPup.slatedForDeletion
+                           && !abstractPup.Room.realizedRoom.readyForAI) yield return null;
+                    if (RWCustom.Custom.rainWorld.processManager.currentMainLoop != gameInstance
+                        || abstractPup.slatedForDeletion) yield break;
+                    
                     abstractPup.RealizeInRoom();
                 }
                 try
@@ -463,11 +488,9 @@ namespace dynamicpupspawns
             }
         }
 
-        private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
+        private string PupsInRegionToString()
         {
-            string gameSaveData = orig(self);
-
-            string modSaveData = _SAVE_DATA_DELIMITER;
+            string regionPups = _SAVE_DATA_DELIMITER;
             
             //string message = "Adding pups to save data...\n";
             if (_world != null)
@@ -500,12 +523,12 @@ namespace dynamicpupspawns
                         if (abstractCreature.creatureTemplate.type == MoreSlugcatsEnums.CreatureTemplateType.SlugNPC
                             && !abstractCreature.state.dead)
                         {
-                            modSaveData += abstractCreature.ID + _DATA_DIVIDER 
+                            regionPups += abstractCreature.ID + _DATA_DIVIDER 
                                         + _world.game.GetStorySession.saveStateNumber + _DATA_DIVIDER
                                         + _world.abstractRooms[i].name;
                             try
                             {
-                                modSaveData += _DATA_DIVIDER + (abstractCreature.abstractAI as SlugNPCAbstractAI).isTamed;
+                                regionPups += _DATA_DIVIDER + (abstractCreature.abstractAI as SlugNPCAbstractAI).isTamed;
                             }
                             catch (NullReferenceException e)
                             {
@@ -513,13 +536,13 @@ namespace dynamicpupspawns
                                 Logger.LogError(e.Message);
                             }
 
-                            modSaveData += _REGX_STR_SPLIT;
+                            regionPups += _REGX_STR_SPLIT;
                         }
                     }
                 }
                 
                 //remove trailing split sequence to prevent unrecognized data pair error at end in ExtractSaveValues()
-                modSaveData = modSaveData.Remove(modSaveData.Length - _REGX_STR_SPLIT.Length, _REGX_STR_SPLIT.Length);
+                regionPups = regionPups.Remove(regionPups.Length - _REGX_STR_SPLIT.Length, _REGX_STR_SPLIT.Length);
                 //message += "Final save string: " + modSaveData;
                 //Logger.LogInfo(message);
             }
@@ -528,6 +551,41 @@ namespace dynamicpupspawns
                 Logger.LogError("_world was null, cannot save abstract pups!");
             }
 
+            return regionPups;
+        }
+        
+        private void SavePupsOnRegionLeave(On.OverWorld.orig_GateRequestsSwitchInitiation orig, OverWorld self, RegionGate reportBackToGate)
+        {
+            UpdateCurrentPupsPerRegion();
+
+            orig(self, reportBackToGate);
+        }
+
+        private void UpdateCurrentPupsPerRegion()
+        {
+            string regionName = _world.name;
+
+            if (_currentPupsPerRegion.TryGetValue(regionName, out _))
+            {
+                _currentPupsPerRegion[regionName] = PupsInRegionToString();
+            }
+            else
+            {
+                _currentPupsPerRegion.Add(regionName, PupsInRegionToString());
+            }
+        }
+
+        private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
+        {
+            UpdateCurrentPupsPerRegion();
+            
+            string gameSaveData = orig(self);
+            string modSaveData = _SAVE_DATA_DELIMITER;
+            foreach (KeyValuePair<string, string> pair in _currentPupsPerRegion)
+            {
+                modSaveData += pair.Value + _REGX_STR_SPLIT;
+            }
+            
             gameSaveData = String.Concat(gameSaveData, modSaveData, "<svA>");
 
             return gameSaveData;
@@ -561,7 +619,7 @@ namespace dynamicpupspawns
             else
             {
                 Logger.LogInfo(message);
-                //Logger.LogInfo(modString);
+                Logger.LogInfo(modString);
                 ExtractSaveValues(modString);
             }
         }
@@ -706,7 +764,7 @@ namespace dynamicpupspawns
             }
             
             ProcessCustomData();
-            ProcessBuiltInSettings();
+            //ProcessBuiltInSettings();
             
             //LogAllSettings();
         }
