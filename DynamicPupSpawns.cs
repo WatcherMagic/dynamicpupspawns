@@ -12,8 +12,8 @@ using Watcher;
 
 namespace dynamicpupspawns
 {
-
     [BepInPlugin(_MOD_ID, "Dynamic Pup Spawns", "0.1")]
+    
     public class DynamicPupSpawns : BaseUnityPlugin
     {
         private const string _MOD_ID = "dynamicpupspawns";
@@ -65,7 +65,7 @@ namespace dynamicpupspawns
             bool spawnsPups = _options.DynamicSpawnsPossible.Value && (self.game.GetStorySession.slugPupMaxCount != 0 || _options.OverrideNoPupCampaigns.Value);
             
             //check for settings
-            CustomSettingsObject currentSettings = GetRuntimeSettings(self);
+            CustomSettingsObject currentSettings = GetRuntimeSettings(_world);
             if (currentSettings != null)
             {
                 minPupsInRegion = currentSettings.PupSpawnSettings.MinPups;
@@ -88,7 +88,7 @@ namespace dynamicpupspawns
             if (pupPersistence)
             {
                 //subtract preexisting pups from the number of new pups to be generated
-                pupNum = SpawnPersistentPups(self, pupNum);
+                pupNum = SpawnPersistentPups(_world, pupNum);
             }
             
             if (spawnsPups)
@@ -100,7 +100,7 @@ namespace dynamicpupspawns
                     Debug.Log("DynamicPupSpawns: spawning " + pupNum + " new pups this cycle");
                     
                     //get rooms with unsubmerged den nodes
-                    Dictionary<AbstractRoom, int> validSpawnRooms = GetSpawnRooms(self);
+                    Dictionary<AbstractRoom, int> validSpawnRooms = GetSpawnRooms(_world);
 
                     //determine room spawn weight based on number of dens in room
                     Dictionary<AbstractRoom, float> roomWeights = CalculateRoomSpawnWeight(validSpawnRooms);
@@ -115,7 +115,7 @@ namespace dynamicpupspawns
                         AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
                         if (self.game.IsStorySession)
                         {
-                            StartCoroutine(PutPupInRoom(self.game, self, spawnRoom, null, false, self.game.GetStorySession.characterStats.name));
+                            StartCoroutine(PutPupInRoom(self.game, _world, spawnRoom, null, false, self.game.GetStorySession.characterStats.name));
                         }
                     }
                 }
@@ -137,7 +137,7 @@ namespace dynamicpupspawns
             {
                 Debug.Log("DynamicPupSpawns: Pups cannot spawn in this campaign or region!");
             }
-            
+
             return orig(self);
         }
 
@@ -486,10 +486,8 @@ namespace dynamicpupspawns
             }
         }
 
-        private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
+        private string PupsInRegionToString()
         {
-            string gameSaveData = orig(self);
-
             string modSaveData = _SAVE_DATA_DELIMITER;
             
             //string message = "Adding pups to save data...\n";
@@ -550,6 +548,15 @@ namespace dynamicpupspawns
             {
                 Logger.LogError("_world was null, cannot save abstract pups!");
             }
+
+            return modSaveData;
+        }
+
+        private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
+        {
+            string gameSaveData = orig(self);
+
+            string modSaveData = PupsInRegionToString();
 
             gameSaveData = String.Concat(gameSaveData, modSaveData, "<svA>");
 
