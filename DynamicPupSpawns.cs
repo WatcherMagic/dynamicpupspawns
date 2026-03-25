@@ -23,6 +23,7 @@ namespace dynamicpupspawns
         private Dictionary<string, List<PersistentPupData>> _persistentPups;
         private List<CustomSettingsWrapper> _settings;
         private Dictionary<string, string> _contentToModIDMap;
+        private Dictionary<string, string> _currentPupsPerRegion = new ();
 
         private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
         private const string _REGX_STR_SPLIT = "<WM,DPS>";
@@ -37,6 +38,7 @@ namespace dynamicpupspawns
         private void OnEnable()
         {
             On.World.SpawnPupNPCs += SpawnPups;
+            On.OverWorld.GateRequestsSwitchInitiation += SavePupsOnRegionLeave;
             
             On.SaveState.SaveToString += SaveDataToString;
             On.SaveState.LoadGame += GetSaveDataFromString;
@@ -488,7 +490,7 @@ namespace dynamicpupspawns
 
         private string PupsInRegionToString()
         {
-            string modSaveData = _SAVE_DATA_DELIMITER;
+            string regionPups = _SAVE_DATA_DELIMITER;
             
             //string message = "Adding pups to save data...\n";
             if (_world != null)
@@ -521,12 +523,12 @@ namespace dynamicpupspawns
                         if (abstractCreature.creatureTemplate.type == MoreSlugcatsEnums.CreatureTemplateType.SlugNPC
                             && !abstractCreature.state.dead)
                         {
-                            modSaveData += abstractCreature.ID + _DATA_DIVIDER 
+                            regionPups += abstractCreature.ID + _DATA_DIVIDER 
                                         + _world.game.GetStorySession.saveStateNumber + _DATA_DIVIDER
                                         + _world.abstractRooms[i].name;
                             try
                             {
-                                modSaveData += _DATA_DIVIDER + (abstractCreature.abstractAI as SlugNPCAbstractAI).isTamed;
+                                regionPups += _DATA_DIVIDER + (abstractCreature.abstractAI as SlugNPCAbstractAI).isTamed;
                             }
                             catch (NullReferenceException e)
                             {
@@ -534,13 +536,13 @@ namespace dynamicpupspawns
                                 Logger.LogError(e.Message);
                             }
 
-                            modSaveData += _REGX_STR_SPLIT;
+                            regionPups += _REGX_STR_SPLIT;
                         }
                     }
                 }
                 
                 //remove trailing split sequence to prevent unrecognized data pair error at end in ExtractSaveValues()
-                modSaveData = modSaveData.Remove(modSaveData.Length - _REGX_STR_SPLIT.Length, _REGX_STR_SPLIT.Length);
+                regionPups = regionPups.Remove(regionPups.Length - _REGX_STR_SPLIT.Length, _REGX_STR_SPLIT.Length);
                 //message += "Final save string: " + modSaveData;
                 //Logger.LogInfo(message);
             }
@@ -549,15 +551,41 @@ namespace dynamicpupspawns
                 Logger.LogError("_world was null, cannot save abstract pups!");
             }
 
-            return modSaveData;
+            return regionPups;
+        }
+        
+        private void SavePupsOnRegionLeave(On.OverWorld.orig_GateRequestsSwitchInitiation orig, OverWorld self, RegionGate reportBackToGate)
+        {
+            UpdateCurrentPupsPerRegion();
+
+            orig(self, reportBackToGate);
+        }
+
+        private void UpdateCurrentPupsPerRegion()
+        {
+            string regionName = _world.name;
+
+            if (_currentPupsPerRegion.TryGetValue(regionName, out _))
+            {
+                _currentPupsPerRegion[regionName] = PupsInRegionToString();
+            }
+            else
+            {
+                _currentPupsPerRegion.Add(regionName, PupsInRegionToString());
+            }
         }
 
         private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
         {
+            UpdateCurrentPupsPerRegion();
+            
             string gameSaveData = orig(self);
-
-            string modSaveData = PupsInRegionToString();
-
+            string modSaveData = _SAVE_DATA_DELIMITER;
+            foreach (KeyValuePair<string, string> pair in _currentPupsPerRegion)
+            {
+                modSaveData += pair.Value + _REGX_STR_SPLIT;
+            }
+            
             gameSaveData = String.Concat(gameSaveData, modSaveData, "<svA>");
 
             return gameSaveData;
@@ -591,7 +619,7 @@ namespace dynamicpupspawns
             else
             {
                 Logger.LogInfo(message);
-                //Logger.LogInfo(modString);
+                Logger.LogInfo(modString);
                 ExtractSaveValues(modString);
             }
         }
