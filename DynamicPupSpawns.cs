@@ -764,7 +764,7 @@ namespace dynamicpupspawns
             }
             
             ProcessCustomData();
-            //ProcessBuiltInSettings();
+            ProcessBuiltInSettings();
             
             //LogAllSettings();
         }
