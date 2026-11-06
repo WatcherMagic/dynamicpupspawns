@@ -64,7 +64,9 @@ namespace dynamicpupspawns
             
             //turns on or off whether campaigns without specified spawn settings have dynamic pups;
             // overridden by specified settings
-            bool spawnsPups = _options.DynamicSpawnsPossible.Value && (self.game.GetStorySession.slugPupMaxCount != 0 || _options.OverrideNoPupCampaigns.Value);
+            bool spawnsPups = _options.DynamicSpawnsPossible.Value 
+                              && (self.game.GetStorySession.slugPupMaxCount != 0 
+                                  || _options.OverrideNoPupCampaigns.Value);
             
             //check for settings
             CustomSettingsObject currentSettings = GetRuntimeSettings(_world);
@@ -135,7 +137,7 @@ namespace dynamicpupspawns
             {
                 Debug.Log("DynamicPupSpawns: Dynamic spawning is turned off in the remix menu!");
             }
-            else
+            else //!spawnsPups
             {
                 Debug.Log("DynamicPupSpawns: Pups cannot spawn in this campaign or region!");
             }
@@ -164,9 +166,7 @@ namespace dynamicpupspawns
             //apply campaign- or region-specific settings
             if (runtimeSettings != null)
             {
-                CustomSettingsObject trySettings;
-                
-                trySettings = runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Campaign,
+                var trySettings = runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Campaign,
                     world.game.GetStorySession.saveStateNumber.ToString());
                 if (trySettings == null)
                 {
