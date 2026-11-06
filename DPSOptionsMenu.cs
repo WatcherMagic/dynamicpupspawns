@@ -22,63 +22,63 @@ public class DPSOptionsMenu : OptionInterface
     public readonly Configurable<int> SurvivorSpawnChance;
     public readonly Configurable<int> SurvivorMinPups;
     public readonly Configurable<int> SurvivorMaxPups;
-    private readonly Configurable<bool> SurvivorUseGeneralSettings;
+    private readonly Configurable<bool> OverrideSurvivor;
     
     public readonly Configurable<bool> MonkPupsSpawn;
     public readonly Configurable<bool> MonkPersistence;
     public readonly Configurable<int> MonkSpawnChance;
     public readonly Configurable<int> MonkMinPups;
     public readonly Configurable<int> MonkMaxPups;
-    private readonly Configurable<bool> MonkUseGeneralSettings;
+    private readonly Configurable<bool> OverrideMonk;
     
     public readonly Configurable<bool> HunterPupsSpawn;
     public readonly Configurable<bool> HunterPersistence;
     public readonly Configurable<int> HunterSpawnChance;
     public readonly Configurable<int> HunterMinPups;
     public readonly Configurable<int> HunterMaxPups;
-    private readonly Configurable<bool> HunterUseGeneralSettings;
+    private readonly Configurable<bool> OverrideHunter;
 
     public readonly Configurable<bool> GourmandPupsSpawn;
     public readonly Configurable<bool> GourmandPersistence;
     public readonly Configurable<int> GourmandSpawnChance;
     public readonly Configurable<int> GourmandMinPups;
     public readonly Configurable<int> GourmandMaxPups;
-    private readonly Configurable<bool> GourmandUseGeneralSettings;
+    private readonly Configurable<bool> OverrideGourmand;
     
     public readonly Configurable<bool> ArtificerPupsSpawn;
     public readonly Configurable<bool> ArtificerPersistence;
     public readonly Configurable<int> ArtificerSpawnChance;
     public readonly Configurable<int> ArtificerMinPups;
     public readonly Configurable<int> ArtificerMaxPups;
-    private readonly Configurable<bool> ArtificerUseGeneralSettings;
+    private readonly Configurable<bool> OverrideArtificer;
     
     public readonly Configurable<bool> SpearmasterPupsSpawn;
     public readonly Configurable<bool> SpearmasterPersistence;
     public readonly Configurable<int> SpearmasterSpawnChance;
     public readonly Configurable<int> SpearmasterMinPups;
     public readonly Configurable<int> SpearmasterMaxPups;
-    private readonly Configurable<bool> SpearmasterUseGeneralSettings;
+    private readonly Configurable<bool> OverrideSpearmaster;
     
     public readonly Configurable<bool> RivuletPupsSpawn;
     public readonly Configurable<bool> RivuletPersistence;
     public readonly Configurable<int> RivuletSpawnChance;
     public readonly Configurable<int> RivuletMinPups;
     public readonly Configurable<int> RivuletMaxPups;
-    private readonly Configurable<bool> RivuletUseGeneralSettings;
+    private readonly Configurable<bool> OverrideRivulet;
     
     public readonly Configurable<bool> SaintPupsSpawn;
     public readonly Configurable<bool> SaintPersistence;
     public readonly Configurable<int> SaintSpawnChance;
     public readonly Configurable<int> SaintMinPups;
     public readonly Configurable<int> SaintMaxPups;
-    private readonly Configurable<bool> SaintUseGeneralSettings;
+    private readonly Configurable<bool> OverrideSaint;
     
     public readonly Configurable<bool> WatcherPupsSpawn;
     public readonly Configurable<bool> WatcherPersistence;
     public readonly Configurable<int> WatcherSpawnChance;
     public readonly Configurable<int> WatcherMinPups;
     public readonly Configurable<int> WatcherMaxPups;
-    private readonly Configurable<bool> WatcherUseGeneralSettings;
+    private readonly Configurable<bool> OverrideWatcher;
 
     private readonly int _defaultChancePercent = 5;
     private readonly int _defaultMin = 1;
@@ -102,21 +102,21 @@ public class DPSOptionsMenu : OptionInterface
         SurvivorSpawnChance = config.Bind("SurvivorSpawnChance", _defaultChancePercent);
         SurvivorMinPups = config.Bind("SurvivorMinPups", _defaultMin);
         SurvivorMaxPups = config.Bind("SurvivorMaxPups", _defaultMax);
-        SurvivorUseGeneralSettings = config.Bind("SurvivorUseGeneralSettings", false);
+        OverrideSurvivor = config.Bind("OverrideSurvivor", true);
         
         MonkPupsSpawn = config.Bind("MonkPupsSpawn", false);
         MonkPersistence = config.Bind("MonkPersistence", true);
         MonkSpawnChance = config.Bind("MonkSpawnChance", _defaultChancePercent);
         MonkMinPups = config.Bind("MonkMinPups", _defaultMin);
         MonkMaxPups = config.Bind("MonkMaxPups", _defaultMax);
-        MonkUseGeneralSettings = config.Bind("MonkUseGeneralSettings", false);
+        OverrideMonk = config.Bind("OverrideMonk", true);
         
         HunterPupsSpawn = config.Bind("HunterPupsSpawn", true);
         HunterPersistence = config.Bind("HunterPersistence", true);
         HunterSpawnChance = config.Bind("HunterSpawnChance", _defaultChancePercent);
         HunterMinPups = config.Bind("HunterMinPups", _defaultMin);
         HunterMaxPups = config.Bind("HunterMaxPups", _defaultMax);
-        HunterUseGeneralSettings = config.Bind("HunterUseGeneralSettings", false);
+        OverrideHunter = config.Bind("OverrideHunter", false);
         
         GourmandPupsSpawn = config.Bind("GourmandPupsSpawn", true);
         GourmandPersistence = config.Bind("GourmandPersistence", true);
