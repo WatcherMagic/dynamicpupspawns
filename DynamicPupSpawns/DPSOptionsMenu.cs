@@ -2,7 +2,7 @@ using Menu.Remix.MixedUI;
 using RWCustom;
 using UnityEngine;
 
-namespace dynamicpupspawns;
+namespace DynamicPupSpawns;
 
 public class DPSOptionsMenu : OptionInterface
 {

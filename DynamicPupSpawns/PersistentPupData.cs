@@ -1,4 +1,4 @@
-namespace dynamicpupspawns;
+namespace DynamicPupSpawns;
 
 public class PersistentPupData
 {

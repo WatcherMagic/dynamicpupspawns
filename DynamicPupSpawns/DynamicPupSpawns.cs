@@ -10,7 +10,7 @@ using System.IO;
 using MoreSlugcats;
 using Watcher;
 
-namespace dynamicpupspawns
+namespace DynamicPupSpawns
 {
     [BepInPlugin(ModID, "Dynamic Pup Spawns", "0.1")]
     

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace dynamicpupspawns;
+namespace DynamicPupSpawns;
 
 public class CustomSettingsObject
 {

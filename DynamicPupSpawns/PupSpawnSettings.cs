@@ -1,6 +1,6 @@
 using BepInEx.Logging;
 
-namespace dynamicpupspawns;
+namespace DynamicPupSpawns;
 
 public class PupSpawnSettings
 {
