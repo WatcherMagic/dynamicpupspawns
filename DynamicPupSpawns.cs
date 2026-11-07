@@ -12,11 +12,11 @@ using Watcher;
 
 namespace dynamicpupspawns
 {
-    [BepInPlugin(_MOD_ID, "Dynamic Pup Spawns", "0.1")]
+    [BepInPlugin(ModID, "Dynamic Pup Spawns", "0.1")]
     
     public class DynamicPupSpawns : BaseUnityPlugin
     {
-        private const string _MOD_ID = "dynamicpupspawns";
+        private const string ModID = "dynamicpupspawns";
         private DPSOptionsMenu _options;
         
         private World _world;
@@ -25,13 +25,13 @@ namespace dynamicpupspawns
         private Dictionary<string, string> _contentToModIDMap;
         private Dictionary<string, string> _currentPupsPerRegion = new ();
 
-        private const string _SAVE_DATA_DELIMITER = "DynamicPupSpawnsData";
-        private const string _REGX_STR_SPLIT = "<WM,DPS>";
-        private const string _DATA_DIVIDER = ":";
-        private const string _CAMPAIGN_SETTINGS_DELIM = "campaigns";
-        private const string _CAMPAIGN_SETTINGS_DIVIDE = "campaign";
-        private const string _REGION_SETTINGS_DELIM = "regions";
-        private const string _REGION_SETTINGS_DIVIDE = "region";
+        private const string SaveDataDelimiter = "DynamicPupSpawnsData";
+        private const string RegxStrSplit = "<WM,DPS>";
+        private const string DataDivider = ":";
+        private const string CampaignSettingsDelim = "campaigns";
+        private const string CampaignSettingsDivide = "campaign";
+        private const string RegionSettingsDelim = "regions";
+        private const string RegionSettingsDivide = "region";
 
         //private int _parseSettingsRecursed = 0;
         
@@ -490,7 +490,7 @@ namespace dynamicpupspawns
 
         private string PupsInRegionToString()
         {
-            string regionPups = _SAVE_DATA_DELIMITER;
+            string regionPups = SaveDataDelimiter;
             
             //string message = "Adding pups to save data...\n";
             if (_world != null)
@@ -523,12 +523,12 @@ namespace dynamicpupspawns
                         if (abstractCreature.creatureTemplate.type == MoreSlugcatsEnums.CreatureTemplateType.SlugNPC
                             && !abstractCreature.state.dead)
                         {
-                            regionPups += abstractCreature.ID + _DATA_DIVIDER 
-                                        + _world.game.GetStorySession.saveStateNumber + _DATA_DIVIDER
+                            regionPups += abstractCreature.ID + DataDivider 
+                                        + _world.game.GetStorySession.saveStateNumber + DataDivider
                                         + _world.abstractRooms[i].name;
                             try
                             {
-                                regionPups += _DATA_DIVIDER + (abstractCreature.abstractAI as SlugNPCAbstractAI).isTamed;
+                                regionPups += DataDivider + (abstractCreature.abstractAI as SlugNPCAbstractAI).isTamed;
                             }
                             catch (NullReferenceException e)
                             {
@@ -536,13 +536,13 @@ namespace dynamicpupspawns
                                 Logger.LogError(e.Message);
                             }
 
-                            regionPups += _REGX_STR_SPLIT;
+                            regionPups += RegxStrSplit;
                         }
                     }
                 }
                 
                 //remove trailing split sequence to prevent unrecognized data pair error at end in ExtractSaveValues()
-                regionPups = regionPups.Remove(regionPups.Length - _REGX_STR_SPLIT.Length, _REGX_STR_SPLIT.Length);
+                regionPups = regionPups.Remove(regionPups.Length - RegxStrSplit.Length, RegxStrSplit.Length);
                 //message += "Final save string: " + modSaveData;
                 //Logger.LogInfo(message);
             }
@@ -580,10 +580,10 @@ namespace dynamicpupspawns
             UpdateCurrentPupsPerRegion();
             
             string gameSaveData = orig(self);
-            string modSaveData = _SAVE_DATA_DELIMITER;
+            string modSaveData = SaveDataDelimiter;
             foreach (KeyValuePair<string, string> pair in _currentPupsPerRegion)
             {
-                modSaveData += pair.Value + _REGX_STR_SPLIT;
+                modSaveData += pair.Value + RegxStrSplit;
             }
             
             gameSaveData = String.Concat(gameSaveData, modSaveData, "<svA>");
@@ -601,12 +601,12 @@ namespace dynamicpupspawns
             string modString = null;
             for (int i = 0; i < self.unrecognizedSaveStrings.Count; i++)
             {
-                if (self.unrecognizedSaveStrings[i].StartsWith(_SAVE_DATA_DELIMITER))
+                if (self.unrecognizedSaveStrings[i].StartsWith(SaveDataDelimiter))
                 {
                     modString = self.unrecognizedSaveStrings[i];
                     message += "String found!";
                     self.unrecognizedSaveStrings.RemoveAt(i);
-                    modString = modString.Substring(_SAVE_DATA_DELIMITER.Length);
+                    modString = modString.Substring(SaveDataDelimiter.Length);
                     break;
                 }
             }
@@ -626,7 +626,7 @@ namespace dynamicpupspawns
 
         private void ExtractSaveValues(string modString)
         {
-            string[] pups = Regex.Split(modString, _REGX_STR_SPLIT);
+            string[] pups = Regex.Split(modString, RegxStrSplit);
             
             if (_persistentPups == null)
             {
@@ -640,7 +640,7 @@ namespace dynamicpupspawns
             string[] pupValues;
             foreach (string pup in pups)
             {
-                pupValues = Regex.Split(pup, _DATA_DIVIDER);
+                pupValues = Regex.Split(pup, DataDivider);
                 if (pupValues.Length >= 4)
                 {
                     string id = pupValues[0];
@@ -743,7 +743,7 @@ namespace dynamicpupspawns
         {
             try
             {
-                MachineConnector.SetRegisteredOI(_MOD_ID, _options);
+                MachineConnector.SetRegisteredOI(ModID, _options);
             }
             catch (Exception e)
             {
@@ -985,7 +985,7 @@ namespace dynamicpupspawns
                 string filePath = mod.path + "\\dynamicpups\\settings.txt";
                 for (int i = 0; i < mod.requirements.Length; i++)
                 {
-                    if (mod.requirements[i] == _MOD_ID)
+                    if (mod.requirements[i] == ModID)
                     {
                         depends = true;
                         Logger.LogInfo("Found dependent!: " + mod.name);
@@ -998,7 +998,7 @@ namespace dynamicpupspawns
                 {
                     for (int i = 0; i < mod.priorities.Length; i++)
                     {
-                        if (mod.priorities[i] == _MOD_ID)
+                        if (mod.priorities[i] == ModID)
                         {
                             Logger.LogInfo("Found priority!: " + mod.name);
                             ProcessModSettings(filePath, mod.id, false);
@@ -1068,17 +1068,17 @@ namespace dynamicpupspawns
         {
             for (int i = 0; i < symbols.Count; i++)
             {
-                if (symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DELIM)
+                if (symbols[i].ToLower() == CampaignSettingsDelim)
                 {
                     List<string> cSettings = new List<string>();
                     for (i++; i < symbols.Count; i++)
                     {
-                        if (symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DIVIDE
-                            || symbols[i].ToLower() == _REGION_SETTINGS_DELIM)
+                        if (symbols[i].ToLower() == CampaignSettingsDivide
+                            || symbols[i].ToLower() == RegionSettingsDelim)
                         {
                             settings = AddSetting(cSettings, settings, CustomSettingsObject.SettingsType.Campaign);
                             cSettings.Clear();
-                            if (symbols[i].ToLower() == _REGION_SETTINGS_DELIM)
+                            if (symbols[i].ToLower() == RegionSettingsDelim)
                             {
                                 i--;
                                 break;
@@ -1093,18 +1093,18 @@ namespace dynamicpupspawns
                     }
                     continue;
                 }
-                if (symbols[i].ToLower() == _REGION_SETTINGS_DELIM)
+                if (symbols[i].ToLower() == RegionSettingsDelim)
                 {
                     List<string> rSettings = new List<string>();
 
                     for (i++; i < symbols.Count; i++)
                     {
-                        if (symbols[i].ToLower() == _REGION_SETTINGS_DIVIDE
-                            || symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DELIM)
+                        if (symbols[i].ToLower() == RegionSettingsDivide
+                            || symbols[i].ToLower() == CampaignSettingsDelim)
                         {
                             settings = AddSetting(rSettings, settings, CustomSettingsObject.SettingsType.Region);
                             rSettings.Clear();
-                            if (symbols[i].ToLower() == _CAMPAIGN_SETTINGS_DELIM)
+                            if (symbols[i].ToLower() == CampaignSettingsDelim)
                             {
                                 i--;
                                 break;
@@ -1210,7 +1210,7 @@ namespace dynamicpupspawns
                         {
                             if (t == CustomSettingsObject.SettingsType.Campaign)
                             {
-                                if (allOverrides[x].ToLower() == _REGION_SETTINGS_DIVIDE)
+                                if (allOverrides[x].ToLower() == RegionSettingsDivide)
                                 {
                                     CustomSettingsObject overrideObject = ParseSettings(singleObject, CustomSettingsObject.SettingsType.Region);
                                     singleObject.Clear();
