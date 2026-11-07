@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dynamicpupspawns", "dynamicpupspawns.csproj", "{118C14E1-3D13-4D07-AAD6-92CC2D8B31EA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicPupSpawns", "DynamicPupSpawns\dynamicpupspawns.csproj", "{118C14E1-3D13-4D07-AAD6-92CC2D8B31EA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicSpawnsTests", "DynamicSpawnsTests\DynamicSpawnsTests.csproj", "{2BEE639A-4211-4556-8D9C-E52D0EE2A43E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{118C14E1-3D13-4D07-AAD6-92CC2D8B31EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{118C14E1-3D13-4D07-AAD6-92CC2D8B31EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{118C14E1-3D13-4D07-AAD6-92CC2D8B31EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BEE639A-4211-4556-8D9C-E52D0EE2A43E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BEE639A-4211-4556-8D9C-E52D0EE2A43E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BEE639A-4211-4556-8D9C-E52D0EE2A43E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BEE639A-4211-4556-8D9C-E52D0EE2A43E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

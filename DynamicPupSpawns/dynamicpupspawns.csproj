@@ -8,11 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="../Reference/BepInEx/core/BepInEx.dll"/>
-    <Reference Include="../Reference/BepInEx/plugins/HOOKS-Assembly-CSharp.dll"/>
-    <Reference Include="../Reference/BepInEx/utils/PUBLIC-Assembly-CSharp.dll"/>
-    <Reference Include="../Reference/RainWorld_Data/Managed/UnityEngine.dll"/>
-    <Reference Include="../Reference/RainWorld_Data/Managed/UnityEngine.CoreModule.dll"/>
+    <Reference Include="../../Reference/BepInEx/core/BepInEx.dll"/>
+    <Reference Include="../../Reference/BepInEx/plugins/HOOKS-Assembly-CSharp.dll"/>
+    <Reference Include="../../Reference/BepInEx/utils/PUBLIC-Assembly-CSharp.dll"/>
+    <Reference Include="../../Reference/RainWorld_Data/Managed/UnityEngine.dll"/>
+    <Reference Include="../../Reference/RainWorld_Data/Managed/UnityEngine.CoreModule.dll"/>
   </ItemGroup>
 
   <Target Name="GenerateMod" AfterTargets="PostBuildEvent">
