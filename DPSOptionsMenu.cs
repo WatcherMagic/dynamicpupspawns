@@ -79,6 +79,8 @@ public class DPSOptionsMenu : OptionInterface
     public readonly Configurable<int> WatcherMinPups;
     public readonly Configurable<int> WatcherMaxPups;
     private readonly Configurable<bool> OverrideWatcher;
+    
+    private readonly Configurable<bool> OverrideMods;
 
     private readonly int _defaultChancePercent = 5;
     private readonly int _defaultMin = 1;
@@ -116,70 +118,71 @@ public class DPSOptionsMenu : OptionInterface
         HunterSpawnChance = config.Bind("HunterSpawnChance", _defaultChancePercent);
         HunterMinPups = config.Bind("HunterMinPups", _defaultMin);
         HunterMaxPups = config.Bind("HunterMaxPups", _defaultMax);
-        OverrideHunter = config.Bind("OverrideHunter", false);
+        OverrideHunter = config.Bind("OverrideHunter", true);
         
         GourmandPupsSpawn = config.Bind("GourmandPupsSpawn", true);
         GourmandPersistence = config.Bind("GourmandPersistence", true);
         GourmandSpawnChance = config.Bind("GourmandSpawnChance", _defaultChancePercent);
         GourmandMinPups = config.Bind("GourmandMinPups", _defaultMin);
         GourmandMaxPups = config.Bind("GourmandMaxPups", _defaultMax);
-        GourmandUseGeneralSettings = config.Bind("GourmandUseGeneralSettings", false);
+        OverrideGourmand = config.Bind("OverrideGourmand", true);
         
         ArtificerPupsSpawn = config.Bind("ArtificerPupsSpawn", false);
         ArtificerPersistence = config.Bind("ArtificerPersistence", true);
         ArtificerSpawnChance = config.Bind("ArtificerSpawnChance", _defaultChancePercent);
         ArtificerMinPups = config.Bind("ArtificerMinPups", _defaultMin);
         ArtificerMaxPups = config.Bind("ArtificerMaxPups", _defaultMax);
-        ArtificerUseGeneralSettings = config.Bind("ArtificerUseGeneralSettings", false);
+        OverrideArtificer = config.Bind("OverrideArtificer", false);
         
         SpearmasterPupsSpawn = config.Bind("SpearmasterPupsSpawn", false);
         SpearmasterPersistence = config.Bind("SpearmasterPersistence", true);
         SpearmasterSpawnChance = config.Bind("SpearmasterSpawnChance", _defaultChancePercent);
         SpearmasterMinPups = config.Bind("SpearmasterMinPups", _defaultMin);
         SpearmasterMaxPups = config.Bind("SpearmasterMaxPups", _defaultMax);
-        SpearmasterUseGeneralSettings = config.Bind("SpearmasterUseGeneralSettings", false);
+        OverrideSpearmaster = config.Bind("OverrideSpearmaster", false);
         
         RivuletPupsSpawn = config.Bind("RivuletPupsSpawn", false);
         RivuletPersistence = config.Bind("RivuletPersistence", true);
         RivuletSpawnChance = config.Bind("RivuletSpawnChance", _defaultChancePercent);
         RivuletMinPups = config.Bind("RivuletMinPups", _defaultMin);
         RivuletMaxPups = config.Bind("RivuletMaxPups", _defaultMax);
-        RivuletUseGeneralSettings = config.Bind("RivuletUseGeneralSettings", false);
+        OverrideRivulet = config.Bind("OverrideRivulet", false);
         
         SaintPupsSpawn = config.Bind("SaintPupsSpawn", false);
         SaintPersistence = config.Bind("SaintPersistence", true);
         SaintSpawnChance = config.Bind("SaintSpawnChance", _defaultChancePercent);
         SaintMinPups = config.Bind("SaintMinPups", _defaultMin);
         SaintMaxPups = config.Bind("SaintMaxPups", _defaultMax);
-        SaintUseGeneralSettings = config.Bind("SaintUseGeneralSettings", false);
+        OverrideSaint = config.Bind("OverrideSaint", false);
         
         WatcherPupsSpawn = config.Bind("WatcherPupsSpawn", false);
         WatcherPersistence = config.Bind("WatcherPersistence", true);
         WatcherSpawnChance = config.Bind("WatcherSpawnChance", _defaultChancePercent);
         WatcherMinPups = config.Bind("WatcherMinPups", _defaultMin);
         WatcherMaxPups = config.Bind("WatcherMaxPups", _defaultMax);
-        WatcherUseGeneralSettings = config.Bind("WatcherUseGeneralSettings", false);
+        OverrideWatcher = config.Bind("OverrideWatcher", false);
+
+        OverrideMods = config.Bind("OverrideMods", false);
     }
 
     public override void Initialize()
     {
         base.Initialize();
         OpTab generalSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("General"));
-        OpTab baseGameSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("Base Game"));
-        OpTab downpourSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("Downpour"));
-        OpTab watcherSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("Watcher"));
+        // OpTab baseGameSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("Base Game"));
+        // OpTab downpourSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("Downpour"));
+        // OpTab watcherSettings = new OpTab(this, Custom.rainWorld.inGameTranslator.Translate("Watcher"));
         Tabs = new []
         {
             generalSettings,
-            baseGameSettings,
-            downpourSettings,
-            watcherSettings
+            // baseGameSettings,
+            // downpourSettings,
+            // watcherSettings
         };
         
         UIelement[] generalSettingsUI =
         {
             new OpLabel(10f, 550f, "General Settings", true),
-            new OpLabel(10f, 510f, "These settings will be applied to all campaigns"),
             
             new OpCheckBox(OverrideNoPupCampaigns, 10, 477),
             new OpLabel(50f, 480f, "Override No Pups"),
@@ -226,28 +229,28 @@ public class DPSOptionsMenu : OptionInterface
         };
         generalSettings.AddItems(generalSettingsUI);
         
-        UIelement[] baseGameSettingsUI =
-        {
-            new OpLabel(10f, 550f, "Base Game Settings", true),
-            
-            
-        };
-        baseGameSettings.AddItems(baseGameSettingsUI);
-        
-        UIelement[] downpourSettingsUI =
-        {
-            new OpLabel(10f, 550f, "Downpour Settings", true),
-            
-            
-        };
-        downpourSettings.AddItems(downpourSettingsUI);
-        
-        UIelement[] watcherSettingsUI =
-        {
-            new OpLabel(10f, 550f, "Watcher Settings", true),
-            
-            
-        };
-        watcherSettings.AddItems(watcherSettingsUI);
+        // UIelement[] baseGameSettingsUI =
+        // {
+        //     new OpLabel(10f, 550f, "Base Game Settings", true),
+        //     
+        //     
+        // };
+        // baseGameSettings.AddItems(baseGameSettingsUI);
+        //
+        // UIelement[] downpourSettingsUI =
+        // {
+        //     new OpLabel(10f, 550f, "Downpour Settings", true),
+        //     
+        //     
+        // };
+        // downpourSettings.AddItems(downpourSettingsUI);
+        //
+        // UIelement[] watcherSettingsUI =
+        // {
+        //     new OpLabel(10f, 550f, "Watcher Settings", true),
+        //     
+        //     
+        // };
+        // watcherSettings.AddItems(watcherSettingsUI);
     }
 }
