@@ -81,20 +81,13 @@ public class DPSMain
         CustomSettingsObject currentSettings = GetRuntimeSettings(_world);
         if (currentSettings != null)
         {
-            bool overridden = CheckForOverrides(currentSettings);
-
-            if (!overridden)
-            {
-                minPupsInRegion = currentSettings.PupSpawnSettings.MinPups;
-                maxPupsInRegion = currentSettings.PupSpawnSettings.MaxPups;
-                spawnChance = currentSettings.PupSpawnSettings.SpawnChance;
-                spawnsPups = currentSettings.PupSpawnSettings.SpawnsDynamicPups;
-                pupPersistence = currentSettings.PupSpawnSettings.PersistentPups;
-                
-                _logger.LogInfo("Applied returned custom settings!");
-            }
-
-            _logger.LogInfo("Returned custom settings were overridden by generals!");
+            minPupsInRegion = currentSettings.PupSpawnSettings.MinPups;
+            maxPupsInRegion = currentSettings.PupSpawnSettings.MaxPups;
+            spawnChance = currentSettings.PupSpawnSettings.SpawnChance;
+            spawnsPups = currentSettings.PupSpawnSettings.SpawnsDynamicPups;
+            pupPersistence = currentSettings.PupSpawnSettings.PersistentPups;
+            
+            _logger.LogInfo("Applied returned custom settings!");
         }
 
         Debug.Log("DynamicPupSpawns: " + minPupsInRegion + " min, " + maxPupsInRegion + " max, " +
@@ -161,12 +154,6 @@ public class DPSMain
         return orig(self);
     }
 
-    internal bool CheckForOverrides(CustomSettingsObject currentSettings)
-    {
-        
-        return false;
-    }
-
     private CustomSettingsObject GetRuntimeSettings(World world)
     {
         CustomSettingsWrapper runtimeSettings = null;
@@ -185,49 +172,132 @@ public class DPSMain
             }
         }
 
-        //apply campaign- or region-specific settings
-        if (runtimeSettings != null)
+        if (runtimeSettings == null)
         {
-            var trySettings = runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Campaign,
-                world.game.GetStorySession.saveStateNumber.ToString());
+            return null;
+        }
+        
+        //find specific campaign settings
+        CustomSettingsObject trySettings = runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Campaign,
+            world.game.GetStorySession.saveStateNumber.ToString());
+        
+        //check for save-state-level overrides
+        if (trySettings != null)
+        {
+            bool overridden = CheckForCampaignOverrides(trySettings);
+
+            if (overridden)
+            {
+                _logger.LogInfo("Custom runtime settings were overridden by generals!");
+                return null;
+            }
+        }
+        
+        //find region specific settings
+        if (trySettings == null)
+        {
+            trySettings = runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Region, world.name);
             if (trySettings == null)
             {
-                trySettings = runtimeSettings.GetSettings(CustomSettingsObject.SettingsType.Region, world.name);
-            }
-
-            if (trySettings != null)
-            {
-                returnedRuntimeSettings = trySettings;
-
-                string appliedSettingsLog = "Found custom settings from " + runtimeSettings.ModID + " for " + trySettings.ID;
-                
-                if (trySettings.HasOverrides())
-                {
-                    CustomSettingsObject overrideSettings = null;
-                    
-                    switch (trySettings.SettingType)
-                    {
-                        case CustomSettingsObject.SettingsType.Campaign:
-                            overrideSettings = trySettings.GetOverride(world.name.ToLower());
-                            break;
-                        default:
-                            _logger.LogInfo("Found invalid override type when looking for overrides");
-                            break;
-                    }
-                    
-                    if (overrideSettings != null)
-                    {
-                        returnedRuntimeSettings = overrideSettings;
-
-                        appliedSettingsLog += "; Found override " + overrideSettings.ID;
-                    }
-                }
-                
-                _logger.LogInfo(appliedSettingsLog);
+                return null;
             }
         }
 
+        //apply campaign- or region-specific settings
+        returnedRuntimeSettings = trySettings;
+
+        string appliedSettingsLog = "Found custom settings from " + runtimeSettings.ModID + " for " + trySettings.ID;
+        
+        if (trySettings.HasOverrides())
+        {
+            CustomSettingsObject overrideSettings = null;
+            
+            switch (trySettings.SettingType)
+            {
+                case CustomSettingsObject.SettingsType.Campaign:
+                    overrideSettings = trySettings.GetOverride(world.name.ToLower());
+                    break;
+                default:
+                    _logger.LogInfo("Found invalid override type when looking for overrides");
+                    break;
+            }
+            
+            if (overrideSettings != null)
+            {
+                returnedRuntimeSettings = overrideSettings;
+
+                appliedSettingsLog += "; Found override " + overrideSettings.ID;
+            }
+        }
+        
+        _logger.LogInfo(appliedSettingsLog);
+        
         return returnedRuntimeSettings;
+    }
+    
+    internal bool CheckForCampaignOverrides(CustomSettingsObject campaign)
+    {
+        if (Options == null)
+        {
+            _logger.LogError("Options menu was not initialized in time for checking overrides!");
+            return false;
+        }
+        
+        //check base game slugcats
+        if (campaign.ID == SlugcatStats.Name.White.ToString() && Options.OverrideSurvivor.Value)
+        {
+            return true;
+        }
+        if (campaign.ID == SlugcatStats.Name.Yellow.ToString() && Options.OverrideMonk.Value)
+        {
+            return true;
+        }
+        if (campaign.ID == SlugcatStats.Name.Red.ToString() && Options.OverrideHunter.Value)
+        {
+            return true;
+        }
+
+        //check downpour slugcats
+        if (ModManager.MSC)
+        {
+            if (campaign.ID == MoreSlugcatsEnums.SlugcatStatsName.Gourmand.ToString() && Options.OverrideGourmand.Value)
+            {
+                return true;
+            }
+            if (campaign.ID == MoreSlugcatsEnums.SlugcatStatsName.Artificer.ToString() && Options.OverrideHunter.Value)
+            {
+                return true;
+            }
+            if (campaign.ID == MoreSlugcatsEnums.SlugcatStatsName.Spear.ToString() && Options.OverrideSpearmaster.Value)
+            {
+                return true;
+            }
+            if (campaign.ID == MoreSlugcatsEnums.SlugcatStatsName.Rivulet.ToString() && Options.OverrideRivulet.Value)
+            {
+                return true;
+            }
+            if (campaign.ID == MoreSlugcatsEnums.SlugcatStatsName.Saint.ToString() && Options.OverrideSaint.Value)
+            {
+                return true;
+            }
+        }
+
+        //check Watcher
+        if (ModManager.Watcher)
+        {
+            if (campaign.ID == WatcherEnums.SlugcatStatsName.Watcher.ToString() && Options.OverrideWatcher.Value)
+            {
+                return true;
+            }
+        }
+
+        //mods
+        if (Options.OverrideMods.Value)
+        {
+            return true;
+        }
+        
+        return false;
     }
     
     private int GetRandomNumOfPups(bool gaussian, int min, int max) 
@@ -833,6 +903,7 @@ public class DPSMain
         string survivorID = SlugcatStats.Name.White.ToString();
         string monkID = SlugcatStats.Name.Yellow.ToString();
         string hunterID = SlugcatStats.Name.Red.ToString();
+        
         CustomSettingsWrapper baseGameSettings = new CustomSettingsWrapper(baseGameID);
         
         CustomSettingsObject survivorSettings = new CustomSettingsObject(
@@ -975,6 +1046,7 @@ public class DPSMain
     {
         string watcherDLCID = nameof(OfficialCampaignIDs.WatcherDLC);
         string watcherID = WatcherEnums.SlugcatStatsName.Watcher.ToString();
+        
         CustomSettingsWrapper watcherDLCSettings = new CustomSettingsWrapper(watcherDLCID);
         
         CustomSettingsObject watcherSettings = new CustomSettingsObject(
