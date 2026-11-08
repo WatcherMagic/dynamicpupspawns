@@ -200,6 +200,62 @@ public class DynamicPupSpawnsPluginTests
         Assert.That(pups.MaxPups, Is.EqualTo(99), $"Max dynamic pups was parsed incorrectly: {pups.MaxPups}");
         Assert.That(pups.SpawnChance, Is.EqualTo(0.2f), $"Dynamic spawn chance was parsed incorrectly: {pups.SpawnChance}");
     }
+    
+    [Test]
+    public void Settings_ModRegionFound()
+    {
+        string path = Path.Combine(
+            TestContext.CurrentContext.TestDirectory,
+            "TestData",
+            "DummyRegion.txt"
+        );
+
+        var wrapper = ParseTestSettings(path);
+        
+        Assert.That(wrapper.HasRegionSettings(), Is.True, "Couldn't find the mod region in the settings object");
+    }
+
+    [Test]
+    public void Settings_ModRegionHasCorrectID()
+    {
+        string path = Path.Combine(
+            TestContext.CurrentContext.TestDirectory,
+            "TestData",
+            "DummyRegion.txt"
+        );
+        
+        var wrapper = ParseTestSettings(path);
+
+        var campaign = wrapper.GetSettings(
+            CustomSettingsObject.SettingsType.Region,
+            "myawesomeregion"
+        );
+        
+        Assert.That(campaign, Is.Not.Null, "Couldn't find the right region ID");
+    }
+
+    [Test]
+    public void Settings_ModRegionHasCorrectPupSettings()
+    {
+        string path = Path.Combine(
+            TestContext.CurrentContext.TestDirectory,
+            "TestData",
+            "DummyRegion.txt"
+        );
+        
+        var wrapper = ParseTestSettings(path);
+
+        var campaign = wrapper.GetSettings(
+            CustomSettingsObject.SettingsType.Region,
+            "myawesomeregion"
+        );
+        
+        Assert.That(campaign.PupSpawnSettings, Is.Not.Null, "PupSpawnSettings object was null");
+
+        var pups = campaign.PupSpawnSettings;
+        
+        Assert.That(pups.SpawnsDynamicPups, Is.False, "Dynamic spawns incorrectly parsed as true!");
+    }
 
     private CustomSettingsWrapper ParseTestSettings(string filePath)
     {

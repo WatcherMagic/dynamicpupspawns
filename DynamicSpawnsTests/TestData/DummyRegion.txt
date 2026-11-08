@@ -1,0 +1,6 @@
+REGIONS;
+id: myawesomeregion;
+pup_settings: {
+    pupsDynamicSpawn: false;
+};
+END_REGIONS;
