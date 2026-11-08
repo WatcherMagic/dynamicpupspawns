@@ -21,7 +21,18 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DynamicPupSpawns\dynamicpupspawns.csproj" />
+      <ProjectReference Include="..\DynamicPupSpawns\DynamicPupSpawns.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Reference Include="HOOKS-Assembly-CSharp">
+        <HintPath>..\..\Reference\BepInEx\plugins\HOOKS-Assembly-CSharp.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="TestData/**/*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
 </Project>

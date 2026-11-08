@@ -1,28 +1,33 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using BepInEx;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using System.IO;
+using BepInEx;
+using BepInEx.Logging;
 using MoreSlugcats;
 using Watcher;
+using System.Runtime.CompilerServices;
 
-namespace DynamicPupSpawns
+[assembly: InternalsVisibleTo("DynamicSpawnsTests")]
+
+namespace DynamicPupSpawns;
+
+public class DPSMain
 {
-    [BepInPlugin(ModID, "Dynamic Pup Spawns", "0.1")]
-    
-    public class DynamicPupSpawns : BaseUnityPlugin
-    {
-        private const string ModID = "dynamicpupspawns";
-        private DPSOptionsMenu _options;
+        internal DPSOptionsMenu Options;
+
+        private readonly ManualLogSource _logger = new ManualLogSource("Dynamic Pup Spawns");
+        
+        private readonly BaseUnityPlugin _unityPlugin;
         
         private World _world;
         private Dictionary<string, List<PersistentPupData>> _persistentPups;
         private List<CustomSettingsWrapper> _settings;
-        private Dictionary<string, string> _contentToModIDMap;
+        internal Dictionary<string, string> _contentToModIDMap;
         private Dictionary<string, string> _currentPupsPerRegion = new ();
 
         private const string SaveDataDelimiter = "DynamicPupSpawnsData";
@@ -34,39 +39,35 @@ namespace DynamicPupSpawns
         private const string RegionSettingsDivide = "region";
 
         //private int _parseSettingsRecursed = 0;
-        
-        private void OnEnable()
+
+        public DPSMain()
         {
-            On.World.SpawnPupNPCs += SpawnPups;
-            On.OverWorld.GateRequestsSwitchInitiation += SavePupsOnRegionLeave;
-            
-            On.SaveState.SaveToString += SaveDataToString;
-            On.SaveState.LoadGame += GetSaveDataFromString;
-
-            On.Creature.Die += LogPupDeath;
-
-            CreateOptionsMenuInstance();
-            On.RainWorld.OnModsInit += SetupModSettings;
+            //FOR UNIT TESTS ONLY
+        }
+        
+        public DPSMain(BaseUnityPlugin unityPlugin)
+        {
+            _unityPlugin = unityPlugin;
         }
 
-        private int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
+        internal int SpawnPups(On.World.orig_SpawnPupNPCs orig, World self)
         {
             _world = self;
             
             //default spawning settings for campaigns without specified spawn settings
-            int minPupsInRegion = _options.MinPups.Value;
-            int maxPupsInRegion = _options.MaxPups.Value;
-            float spawnChance = _options.SpawnChance.Value * 0.01f;
+            int minPupsInRegion = Options.MinPups.Value;
+            int maxPupsInRegion = Options.MaxPups.Value;
+            float spawnChance = Options.SpawnChance.Value * 0.01f;
             
             //turns on or off whether campaigns without specified spawn settings have persistent pups;
             // overriden by specified settings
-            bool pupPersistence = _options.Persistence.Value;
+            bool pupPersistence = Options.Persistence.Value;
             
             //turns on or off whether campaigns without specified spawn settings have dynamic pups;
             // overridden by specified settings
-            bool spawnsPups = _options.DynamicSpawnsPossible.Value 
+            bool spawnsPups = Options.DynamicSpawnsPossible.Value 
                               && (self.game.GetStorySession.slugPupMaxCount != 0 
-                                  || _options.OverrideNoPupCampaigns.Value);
+                                  || Options.OverrideNoPupCampaigns.Value);
             
             //check for settings
             CustomSettingsObject currentSettings = GetRuntimeSettings(_world);
@@ -78,7 +79,7 @@ namespace DynamicPupSpawns
                 spawnsPups = currentSettings.PupSpawnSettings.SpawnsDynamicPups;
                 pupPersistence = currentSettings.PupSpawnSettings.PersistentPups;
                 
-                Logger.LogInfo("Applied returned custom settings!");
+                _logger.LogInfo("Applied returned custom settings!");
             }
 
             Debug.Log("DynamicPupSpawns: " + minPupsInRegion + " min, " + maxPupsInRegion + " max, " +
@@ -86,7 +87,7 @@ namespace DynamicPupSpawns
             
             //generate number of pups for this cycle
             // + 1 to max to account for rounding down w/ cast to int
-            int pupNum = GetRandomNumOfPups(_options.RandomizeUsingGaussian.Value, minPupsInRegion, maxPupsInRegion + 1);
+            int pupNum = GetRandomNumOfPups(Options.RandomizeUsingGaussian.Value, minPupsInRegion, maxPupsInRegion + 1);
 
             //respawn pups from save data
             if (pupPersistence)
@@ -119,7 +120,7 @@ namespace DynamicPupSpawns
                         AbstractRoom spawnRoom = PickRandomRoomByWeight(parallelArrays.ElementAt(0).Key, weightsScale);
                         if (self.game.IsStorySession)
                         {
-                            StartCoroutine(PutPupInRoom(self.game, _world, spawnRoom, null, false, self.game.GetStorySession.characterStats.name));
+                            _unityPlugin.StartCoroutine(PutPupInRoom(self.game, _world, spawnRoom, null, false, self.game.GetStorySession.characterStats.name));
                         }
                     }
                 }
@@ -130,10 +131,10 @@ namespace DynamicPupSpawns
                 else if (pupNum > 0)
                 {
                     Debug.Log("DynamicPupSpawns: WARNING! The number of possible pups this cycle was greater than zero, but no pups spawned!");
-                    Logger.LogWarning("The number of possible pups this cycle was greater than zero, but no pups spawned!");
+                    _logger.LogWarning("The number of possible pups this cycle was greater than zero, but no pups spawned!");
                 }
             }
-            else if (!_options.DynamicSpawnsPossible.Value)
+            else if (!Options.DynamicSpawnsPossible.Value)
             {
                 Debug.Log("DynamicPupSpawns: Dynamic spawning is turned off in the remix menu!");
             }
@@ -156,7 +157,7 @@ namespace DynamicPupSpawns
                 {
                     if (wrapper.ModID == mod)
                     {
-                        Logger.LogInfo("Found settings wrapper for " + mod + "!");
+                        _logger.LogInfo("Found settings wrapper for " + mod + "!");
                         runtimeSettings = wrapper;
                         break;
                     }
@@ -189,7 +190,7 @@ namespace DynamicPupSpawns
                                 overrideSettings = trySettings.GetOverride(world.name.ToLower());
                                 break;
                             default:
-                                Logger.LogInfo("Found invalid override type when looking for overrides");
+                                _logger.LogInfo("Found invalid override type when looking for overrides");
                                 break;
                         }
                         
@@ -201,7 +202,7 @@ namespace DynamicPupSpawns
                         }
                     }
                     
-                    Logger.LogInfo(appliedSettingsLog);
+                    _logger.LogInfo(appliedSettingsLog);
                 }
             }
 
@@ -263,13 +264,13 @@ namespace DynamicPupSpawns
                 {
                     foreach (AbstractRoomNode node in room.nodes)
                     {
-                        if (node.type == AbstractRoomNode.Type.Den && (!node.submerged || _options.AllowSubmergedDens.Value))
+                        if (node.type == AbstractRoomNode.Type.Den && (!node.submerged || Options.AllowSubmergedDens.Value))
                         {
                             densInRoom++;
                         }
                     }
 
-                    if (densInRoom != 0 || _options.UseAllRooms.Value)
+                    if (densInRoom != 0 || Options.UseAllRooms.Value)
                     {
                         validRoomsAndDensInRoom.Add(room, densInRoom);
                     }
@@ -304,7 +305,7 @@ namespace DynamicPupSpawns
                 
             foreach (KeyValuePair<AbstractRoom, int> pair in roomsAndDens)
             {
-                if (pair.Value <= 0 && _options.UseAllRooms.Value)
+                if (pair.Value <= 0 && Options.UseAllRooms.Value)
                 {
                     spawnWeights.Add(pair.Key, averageDensPerRoom / (float)totalDens);
                     continue;
@@ -351,7 +352,7 @@ namespace DynamicPupSpawns
 
         private AbstractRoom PickRandomRoomByWeight(AbstractRoom[] roomsArray, float[] weightsArray)
         {
-            if (!_options.WeighRooms.Value)
+            if (!Options.WeighRooms.Value)
             {
                 int numOfRooms = roomsArray.Length;
                 int randomlyChosenRoom = Random.Range(0, numOfRooms);
@@ -399,30 +400,30 @@ namespace DynamicPupSpawns
                                 AbstractRoom room = world.GetAbstractRoom(pup.Room);
                                 if (room != null)
                                 {
-                                    StartCoroutine(PutPupInRoom(world.game, world, room, pup.PupID, pup.IsTame,
+                                    _unityPlugin.StartCoroutine(PutPupInRoom(world.game, world, room, pup.PupID, pup.IsTame,
                                         world.game.GetStorySession.characterStats.name));
                                     pupNum--; //persistent pups count towards the total pups spawned per cycle
                                 }
                                 else
                                 {
-                                    Logger.LogInfo("Room " + pup.Room + " pulled from save data not recognized!");
+                                    _logger.LogInfo("Room " + pup.Room + " pulled from save data not recognized!");
                                 }
                             }
                         }
                         else
                         {
-                            Logger.LogError("Region acronym could not be pulled from room name " + pup.Room + "!");
+                            _logger.LogError("Region acronym could not be pulled from room name " + pup.Room + "!");
                         }
                     }
                 }
                 else
                 {
-                    Logger.LogInfo("No saved pups were found for " + world.game.GetStorySession.saveStateNumber + " at time of placement.");
+                    _logger.LogInfo("No saved pups were found for " + world.game.GetStorySession.saveStateNumber + " at time of placement.");
                 }
             }
             else
             {
-                Logger.LogInfo("There was no saved pup data!");
+                _logger.LogInfo("There was no saved pup data!");
             }
 
             return pupNum;
@@ -475,12 +476,12 @@ namespace DynamicPupSpawns
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError(e.Message);
+                    _logger.LogError(e.Message);
                 }
 
-                Logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " +
-                               abstractPup.Room.name + (persistent ? " PERSISTENT" : "")
-                               + (isTame ? " TAMED" : ""));
+                _logger.LogInfo(abstractPup.creatureTemplate.type + " " + abstractPup.ID + " spawned in " +
+                                abstractPup.Room.name + (persistent ? " PERSISTENT" : "")
+                                + (isTame ? " TAMED" : ""));
                 Debug.Log("DynamicPupSpawns: " + abstractPup.creatureTemplate.type + " " + abstractPup.ID +
                           " spawned in " + abstractPup.Room.name + (persistent ? " PERSISTENT" : "")
                           + (isTame ? " TAMED" : ""));
@@ -533,7 +534,7 @@ namespace DynamicPupSpawns
                             catch (NullReferenceException e)
                             {
                                 Debug.LogException(e);
-                                Logger.LogError(e.Message);
+                                _logger.LogError(e.Message);
                             }
 
                             regionPups += RegxStrSplit;
@@ -544,17 +545,17 @@ namespace DynamicPupSpawns
                 //remove trailing split sequence to prevent unrecognized data pair error at end in ExtractSaveValues()
                 regionPups = regionPups.Remove(regionPups.Length - RegxStrSplit.Length, RegxStrSplit.Length);
                 //message += "Final save string: " + modSaveData;
-                //Logger.LogInfo(message);
+                //_logger.LogInfo(message);
             }
             else
             {
-                Logger.LogError("_world was null, cannot save abstract pups!");
+                _logger.LogError("_world was null, cannot save abstract pups!");
             }
 
             return regionPups;
         }
         
-        private void SavePupsOnRegionLeave(On.OverWorld.orig_GateRequestsSwitchInitiation orig, OverWorld self, RegionGate reportBackToGate)
+        internal void SavePupsOnRegionLeave(On.OverWorld.orig_GateRequestsSwitchInitiation orig, OverWorld self, RegionGate reportBackToGate)
         {
             UpdateCurrentPupsPerRegion();
 
@@ -575,7 +576,7 @@ namespace DynamicPupSpawns
             }
         }
 
-        private string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
+        internal string SaveDataToString(On.SaveState.orig_SaveToString orig, SaveState self)
         {
             UpdateCurrentPupsPerRegion();
             
@@ -591,7 +592,7 @@ namespace DynamicPupSpawns
             return gameSaveData;
         }
 
-        private void GetSaveDataFromString(On.SaveState.orig_LoadGame orig, SaveState self, string str,
+        internal void GetSaveDataFromString(On.SaveState.orig_LoadGame orig, SaveState self, string str,
             RainWorldGame game)
         {
             orig(self, str, game);
@@ -614,12 +615,12 @@ namespace DynamicPupSpawns
             if (modString == null)
             {
                 message += "Couldn't find mod save data!";
-                Logger.LogInfo(message);
+                _logger.LogInfo(message);
             }
             else
             {
-                Logger.LogInfo(message);
-                Logger.LogInfo(modString);
+                _logger.LogInfo(message);
+                _logger.LogInfo(modString);
                 ExtractSaveValues(modString);
             }
         }
@@ -660,8 +661,8 @@ namespace DynamicPupSpawns
                 }
                 else
                 {
-                    Logger.LogWarning("Found invalid data set while loading pups from save data! Check the save string is formatted correctly.");
-                    //Logger.LogInfo("pupValues length: " + pupValues.Length);
+                    _logger.LogWarning("Found invalid data set while loading pups from save data! Check the save string is formatted correctly.");
+                    //_logger.LogInfo("pupValues length: " + pupValues.Length);
                 }
             }
 
@@ -674,11 +675,11 @@ namespace DynamicPupSpawns
             //         debugMessage += "\tPup: " + pup.ID + ", " + pup.Room + ", " + pup.IsTame + "\n";
             //     }
             // }
-            // Logger.LogInfo(debugMessage);
+            // _logger.LogInfo(debugMessage);
         }
 
 
-        private void LogPupDeath(On.Creature.orig_Die orig, Creature self)
+        internal void LogPupDeath(On.Creature.orig_Die orig, Creature self)
         {
             if (self.GetType() == typeof(Player)
                 && (self as Player).isNPC
@@ -719,14 +720,14 @@ namespace DynamicPupSpawns
                     deathMessage += "Unknown";
                 }
 
-                Logger.LogInfo(deathMessage);
+                _logger.LogInfo(deathMessage);
                 Debug.Log(deathMessage);
             }
 
             orig(self);
         }
 
-        private void SetupModSettings(On.RainWorld.orig_OnModsInit orig, RainWorld self)
+        internal void SetupModSettings(On.RainWorld.orig_OnModsInit orig, RainWorld self)
         {
             orig(self);
 
@@ -736,19 +737,19 @@ namespace DynamicPupSpawns
         
         public void CreateOptionsMenuInstance()
         {
-            _options = new DPSOptionsMenu(this);
+            Options = new DPSOptionsMenu((DynamicPupSpawnsPlugin)_unityPlugin);
         }
         
         private void LoadOptionsMenu()
         {
             try
             {
-                MachineConnector.SetRegisteredOI(ModID, _options);
+                MachineConnector.SetRegisteredOI(DynamicPupSpawnsPlugin.ModID, Options);
             }
             catch (Exception e)
             {
                 Debug.LogException(e);
-                Logger.LogError(e.Message);
+                _logger.LogError(e.Message);
             }
         }
         
@@ -771,15 +772,15 @@ namespace DynamicPupSpawns
 
         private void ProcessBuiltInSettings()
         {
-            if (_options == null)
+            if (Options == null)
             {
-                Logger.LogWarning("The options menu was not initialized in time to add official slugcat settings!");
+                _logger.LogWarning("The options menu was not initialized in time to add official slugcat settings!");
                 return;
             }
             
             if (_settings == null)
             {
-                Logger.LogInfo("Creating new global settings list");
+                _logger.LogInfo("Creating new global settings list");
                 _settings = new List<CustomSettingsWrapper>();
             }
             
@@ -816,31 +817,31 @@ namespace DynamicPupSpawns
             CustomSettingsObject survivorSettings = new CustomSettingsObject(
                 CustomSettingsObject.SettingsType.Campaign,
                 survivorID,
-                new PupSpawnSettings(_options.SurvivorPupsSpawn.Value,
-                    _options.SurvivorMinPups.Value,
-                    _options.SurvivorMaxPups.Value,
-                    _options.SurvivorSpawnChance.Value * 0.01f,
-                    _options.SurvivorPersistence.Value));
+                new PupSpawnSettings(Options.SurvivorPupsSpawn.Value,
+                    Options.SurvivorMinPups.Value,
+                    Options.SurvivorMaxPups.Value,
+                    Options.SurvivorSpawnChance.Value * 0.01f,
+                    Options.SurvivorPersistence.Value));
             survivorSettings.AddOverride(fpOverride);
             
             CustomSettingsObject monkSettings = new CustomSettingsObject(
                 CustomSettingsObject.SettingsType.Campaign,
                 monkID,
-                new PupSpawnSettings(_options.MonkPupsSpawn.Value,
-                    _options.MonkMinPups.Value,
-                    _options.MonkMaxPups.Value,
-                    _options.MonkSpawnChance.Value * 0.01f,
-                    _options.MonkPersistence.Value));
+                new PupSpawnSettings(Options.MonkPupsSpawn.Value,
+                    Options.MonkMinPups.Value,
+                    Options.MonkMaxPups.Value,
+                    Options.MonkSpawnChance.Value * 0.01f,
+                    Options.MonkPersistence.Value));
             monkSettings.AddOverride(fpOverride);
             
             CustomSettingsObject hunterSettings = new CustomSettingsObject(
                 CustomSettingsObject.SettingsType.Campaign,
                 hunterID,
-                new PupSpawnSettings(_options.HunterPupsSpawn.Value,
-                    _options.HunterMinPups.Value,
-                    _options.HunterMaxPups.Value,
-                    _options.HunterSpawnChance.Value * 0.01f,
-                    _options.HunterPersistence.Value));
+                new PupSpawnSettings(Options.HunterPupsSpawn.Value,
+                    Options.HunterMinPups.Value,
+                    Options.HunterMaxPups.Value,
+                    Options.HunterSpawnChance.Value * 0.01f,
+                    Options.HunterPersistence.Value));
             hunterSettings.AddOverride(fpOverride);
 
             baseGameSettings.AddSetting(survivorSettings);
@@ -871,52 +872,52 @@ namespace DynamicPupSpawns
             CustomSettingsObject gourmandSettings = new CustomSettingsObject(
                 CustomSettingsObject.SettingsType.Campaign,
                 gourmandID,
-                new PupSpawnSettings(_options.GourmandPupsSpawn.Value,
-                    _options.GourmandMinPups.Value,
-                    _options.GourmandMaxPups.Value,
-                    _options.GourmandSpawnChance.Value * 0.01f,
-                    _options.GourmandPersistence.Value));
+                new PupSpawnSettings(Options.GourmandPupsSpawn.Value,
+                    Options.GourmandMinPups.Value,
+                    Options.GourmandMaxPups.Value,
+                    Options.GourmandSpawnChance.Value * 0.01f,
+                    Options.GourmandPersistence.Value));
             gourmandSettings.AddOverride(fpOverride);
             
             CustomSettingsObject artificerSettings = new CustomSettingsObject(
                 CustomSettingsObject.SettingsType.Campaign,
                 artificerID,
-                new PupSpawnSettings(_options.ArtificerPupsSpawn.Value,
-                    _options.ArtificerMinPups.Value,
-                    _options.ArtificerMaxPups.Value,
-                    _options.ArtificerSpawnChance.Value * 0.01f,
-                    _options.ArtificerPersistence.Value));
+                new PupSpawnSettings(Options.ArtificerPupsSpawn.Value,
+                    Options.ArtificerMinPups.Value,
+                    Options.ArtificerMaxPups.Value,
+                    Options.ArtificerSpawnChance.Value * 0.01f,
+                    Options.ArtificerPersistence.Value));
             artificerSettings.AddOverride(fpOverride);
             
             CustomSettingsObject spearmasterSettings = new CustomSettingsObject(
                 CustomSettingsObject.SettingsType.Campaign,
                 spearmasterID,
-                new PupSpawnSettings(_options.SpearmasterPupsSpawn.Value,
-                    _options.SpearmasterMinPups.Value,
-                    _options.SpearmasterMaxPups.Value,
-                    _options.SpearmasterSpawnChance.Value * 0.01f,
-                    _options.SpearmasterPersistence.Value));
+                new PupSpawnSettings(Options.SpearmasterPupsSpawn.Value,
+                    Options.SpearmasterMinPups.Value,
+                    Options.SpearmasterMaxPups.Value,
+                    Options.SpearmasterSpawnChance.Value * 0.01f,
+                    Options.SpearmasterPersistence.Value));
             spearmasterSettings.AddOverride(fpOverride);
             spearmasterSettings.AddOverride(new CustomSettingsObject(CustomSettingsObject.SettingsType.Region, "dm", new PupSpawnSettings()));
             
             CustomSettingsObject rivuletSettings = new CustomSettingsObject(
                 CustomSettingsObject.SettingsType.Campaign,
                 rivuletID,
-                new PupSpawnSettings(_options.RivuletPupsSpawn.Value,
-                    _options.RivuletMinPups.Value,
-                    _options.RivuletMaxPups.Value,
-                    _options.RivuletSpawnChance.Value * 0.01f,
-                    _options.RivuletPersistence.Value));
+                new PupSpawnSettings(Options.RivuletPupsSpawn.Value,
+                    Options.RivuletMinPups.Value,
+                    Options.RivuletMaxPups.Value,
+                    Options.RivuletSpawnChance.Value * 0.01f,
+                    Options.RivuletPersistence.Value));
             rivuletSettings.AddOverride(fpOverride);
             
             CustomSettingsObject saintSettings = new CustomSettingsObject(
                 CustomSettingsObject.SettingsType.Campaign,
                 saintID,
-                new PupSpawnSettings(_options.SaintPupsSpawn.Value,
-                    _options.SaintMinPups.Value,
-                    _options.SaintMaxPups.Value,
-                    _options.SaintSpawnChance.Value * 0.01f,
-                    _options.SaintPersistence.Value));
+                new PupSpawnSettings(Options.SaintPupsSpawn.Value,
+                    Options.SaintMinPups.Value,
+                    Options.SaintMaxPups.Value,
+                    Options.SaintSpawnChance.Value * 0.01f,
+                    Options.SaintPersistence.Value));
             saintSettings.AddOverride(fpOverride);
 
             downpourSettings.AddSetting(gourmandSettings);
@@ -942,7 +943,7 @@ namespace DynamicPupSpawns
                 }
                 else
                 {
-                    Logger.LogWarning("The key " + settingID + " is already present in the content map!");
+                    _logger.LogWarning("The key " + settingID + " is already present in the content map!");
                 }
             }
             
@@ -958,11 +959,11 @@ namespace DynamicPupSpawns
             CustomSettingsObject watcherSettings = new CustomSettingsObject(
                 CustomSettingsObject.SettingsType.Campaign,
                 watcherID,
-                new PupSpawnSettings(_options.WatcherPupsSpawn.Value,
-                    _options.WatcherMinPups.Value,
-                    _options.WatcherMaxPups.Value,
-                    _options.WatcherSpawnChance.Value * 0.01f,
-                    _options.WatcherPersistence.Value));
+                new PupSpawnSettings(Options.WatcherPupsSpawn.Value,
+                    Options.WatcherMinPups.Value,
+                    Options.WatcherMaxPups.Value,
+                    Options.WatcherSpawnChance.Value * 0.01f,
+                    Options.WatcherPersistence.Value));
             
             watcherDLCSettings.AddSetting(watcherSettings);
             
@@ -975,7 +976,7 @@ namespace DynamicPupSpawns
         {
             if (_settings == null)
             {
-                Logger.LogInfo("Creating new global settings list");
+                _logger.LogInfo("Creating new global settings list");
                 _settings = new List<CustomSettingsWrapper>();
             }
 
@@ -985,10 +986,10 @@ namespace DynamicPupSpawns
                 string filePath = mod.path + "\\dynamicpups\\settings.txt";
                 for (int i = 0; i < mod.requirements.Length; i++)
                 {
-                    if (mod.requirements[i] == ModID)
+                    if (mod.requirements[i] == DynamicPupSpawnsPlugin.ModID)
                     {
                         depends = true;
-                        Logger.LogInfo("Found dependent!: " + mod.name);
+                        _logger.LogInfo("Found dependent!: " + mod.name);
                         ProcessModSettings(filePath, mod.id, false);
                         break;
                     }
@@ -998,9 +999,9 @@ namespace DynamicPupSpawns
                 {
                     for (int i = 0; i < mod.priorities.Length; i++)
                     {
-                        if (mod.priorities[i] == ModID)
+                        if (mod.priorities[i] == DynamicPupSpawnsPlugin.ModID)
                         {
-                            Logger.LogInfo("Found priority!: " + mod.name);
+                            _logger.LogInfo("Found priority!: " + mod.name);
                             ProcessModSettings(filePath, mod.id, false);
                             break;
                         }
@@ -1019,12 +1020,12 @@ namespace DynamicPupSpawns
             // {
             //     message += "\n" + wrapper.ToString();
             // }
-            // Logger.LogInfo(message);
+            // _logger.LogInfo(message);
         }
         
         private void ProcessModSettings(string filePath, string modID, bool testing)
         {
-            Logger.LogInfo("Parsing settings for " + modID + ":");
+            _logger.LogInfo("Parsing settings for " + modID + ":");
 
             CustomSettingsWrapper modSettings = new CustomSettingsWrapper(modID);
             List<string> symbols = new List<string>();
@@ -1035,7 +1036,6 @@ namespace DynamicPupSpawns
                 if (!testing)
                 {
                     settings = File.ReadAllText(filePath);
-                    
                 }
                 else
                 {
@@ -1046,12 +1046,12 @@ namespace DynamicPupSpawns
             }
             catch (FileNotFoundException e)
             {
-                Logger.LogError("Couldn't find the custom settings file for " + modID + "!");
+                _logger.LogError("Couldn't find the custom settings file for " + modID + "!");
                 Debug.LogException(e);
             }
             catch (Exception e)
             {
-                Logger.LogError(e.Message);
+                _logger.LogError(e.Message);
                 Debug.LogException(e);
             }
             
@@ -1061,11 +1061,21 @@ namespace DynamicPupSpawns
                 _settings.Add(modSettings);
             }
             
-            Logger.LogInfo("Finished parsing for " + modID + "!");
+            _logger.LogInfo("Finished parsing for " + modID + "!");
         }
 
-        private CustomSettingsWrapper ParseGeneralSettings(List<string> symbols, CustomSettingsWrapper settings)
+        internal CustomSettingsWrapper ParseGeneralSettings(List<string> symbols,
+            CustomSettingsWrapper settings,
+            Dictionary<string, string> contentMap = null)
         {
+            //for unit test compatibility
+            if (contentMap == null)
+            {
+                contentMap = _contentToModIDMap;
+            }
+
+            ManualLogSource log = new ManualLogSource("Dynamic Pup Spawns : ParseGeneralSettings");
+            
             for (int i = 0; i < symbols.Count; i++)
             {
                 if (symbols[i].ToLower() == CampaignSettingsDelim)
@@ -1122,25 +1132,25 @@ namespace DynamicPupSpawns
 
             if (!settings.HasCampaignSettings() && !settings.HasRegionSettings())
             {
-                PrintNullReturnError("CustomSettingsWrapper", "ParseGeneralSettings()", "contains no setting objects");
-                return null;
+                PrintSettingsReturnError("CustomSettingsWrapper", "ParseGeneralSettings()", "contains no setting objects");
+                return settings;
             }
 
             int duplicatePrevention = 2; //starts at 2 due to being appended to id name
             List<string> contentIDs = settings.GetAllSettingsIDs();
             foreach (string contentID in contentIDs)
             {
-                if (_contentToModIDMap.ContainsKey(contentID))
+                if (contentMap.ContainsKey(contentID))
                 {
                     string newContentID = contentID + duplicatePrevention;
                     duplicatePrevention++;
-                    _contentToModIDMap.Add(newContentID, settings.ModID);
-                    Logger.LogInfo("Added " + newContentID + " | " + settings.ModID + " to content to ID map");
+                    contentMap.Add(newContentID, settings.ModID);
+                    log.LogInfo("Added " + newContentID + " | " + settings.ModID + " to content to ID map");
                 }
                 else
                 {
-                    _contentToModIDMap.Add(contentID, settings.ModID);
-                    Logger.LogInfo("Added " + contentID + " | " + settings.ModID + " to content to ID map");
+                    contentMap.Add(contentID, settings.ModID);
+                    log.LogInfo("Added " + contentID + " | " + settings.ModID + " to content to ID map");
                 }
             }
             return settings;
@@ -1156,16 +1166,16 @@ namespace DynamicPupSpawns
                 bool succeedAdd = wrap.AddSetting(set);
                 if (!succeedAdd)
                 {
-                    Logger.LogWarning("Failed to add " + set.SettingType + " settings for " + set.ID + " to settings wrapper!");
+                    _logger.LogWarning("Failed to add " + set.SettingType + " settings for " + set.ID + " to settings wrapper!");
                 }
             }
 
             return wrap;
         }
         
-        private CustomSettingsObject ParseSettings(List<string> symbols, CustomSettingsObject.SettingsType t)
+        internal CustomSettingsObject ParseSettings(List<string> symbols, CustomSettingsObject.SettingsType t)
         {
-            //Logger.LogInfo("Recursive passes through ParseSettings(): " + _parseSettingsRecursed);
+            //_logger.LogInfo("Recursive passes through ParseSettings(): " + _parseSettingsRecursed);
             //_parseSettingsRecursed++;
             
             string id = "";
@@ -1174,7 +1184,6 @@ namespace DynamicPupSpawns
             
             for (int i = 0; i < symbols.Count; i++)
             {
-                
                 if (symbols[i].ToLower().StartsWith("id"))
                 {
                     object o = ParseValue(symbols[i]);
@@ -1190,7 +1199,7 @@ namespace DynamicPupSpawns
                     {
                         string pupSettingString = Convert.ToString(o);
                         pupSettingString = pupSettingString.Substring(1, pupSettingString.Length - 2);
-
+                        
                         List<string> pSettings = ParseSymbols(pupSettingString);
                         pupSettings = ParsePupSpawnSettings(pSettings);
                     }
@@ -1229,24 +1238,18 @@ namespace DynamicPupSpawns
                 }
                 else
                 {
-                    Logger.LogWarning("Unrecognized value for " + t + " setting!: " + symbols[i]);
+                    _logger.LogWarning("Unrecognized value for " + t + " setting!: " + symbols[i]);
                 }
             }
 
             if (id == "")
             {
-                PrintNullReturnError("CustomSettingsObject of type " + t, "ParseSettings()", "id");
+                PrintSettingsReturnError("CustomSettingsObject of type " + t, "ParseSettings()", "id");
                 return null;
             }
             CustomSettingsObject result;
-            if (pupSettings == null)
-            {
-                result = new CustomSettingsObject(t, id);
-            }
-            else
-            {
-                result = new CustomSettingsObject(t, id, pupSettings);
-            }
+            result = new CustomSettingsObject(t, id, pupSettings);
+            
             if (overridesList != null)
             {
                 foreach (CustomSettingsObject o in overridesList)
@@ -1254,7 +1257,7 @@ namespace DynamicPupSpawns
                     bool succeedAdd = result.AddOverride(o);
                     if (!succeedAdd)
                     {
-                        Logger.LogWarning("You cannot add objects of type " + o.SettingType + " to overrides of objects with type " + result.SettingType);
+                        _logger.LogWarning("You cannot add objects of type " + o.SettingType + " to overrides of objects with type " + result.SettingType);
                     }
                 }
             }
@@ -1262,11 +1265,11 @@ namespace DynamicPupSpawns
             return result;
         }
 
-        private PupSpawnSettings ParsePupSpawnSettings(List<string> pSettings)
+        internal PupSpawnSettings ParsePupSpawnSettings(List<string> pSettings)
         {
             if (pSettings.Count == 0)
             {
-                PrintNullReturnError("PupSpawnSettings Object", "ParsePupSpawnSettings()", "empty values list");
+                PrintSettingsReturnError("PupSpawnSettings Object", "ParsePupSpawnSettings()", "empty values list");
                 return null;
             }
             
@@ -1352,25 +1355,25 @@ namespace DynamicPupSpawns
                     }
                     else
                     {
-                        Logger.LogWarning("Unrecognized value in Pup Spawns settings!");
+                        _logger.LogWarning("Unrecognized value in Pup Spawns settings!");
                     }
                 }
                 else
                 {
-                    PrintNullReturnError("Setting String", "PupSpawnSettings()", "value");
+                    PrintSettingsReturnError("Setting String", "PupSpawnSettings()", "value");
                 }
             }
 
             PupSpawnSettings result = new PupSpawnSettings(spawns, min, max, chance);
             if (!result.SetMinMaxSucceeded)
             {
-                Logger.LogWarning("Failed to set min and max property in PupSpawnSettings! " + min + " > " + max);
+                _logger.LogWarning("Failed to set min and max property in PupSpawnSettings! " + min + " > " + max);
             }
             
             return new PupSpawnSettings(spawns, min, max, chance);
         }
         
-        private List<string> ParseSymbols(string settings, char openBracket = '{', char closeBracket = '}')
+        internal List<string> ParseSymbols(string settings, char openBracket = '{', char closeBracket = '}')
         {
             StringReader reader = new StringReader(settings);
             List<string> symbols = new List<string>();
@@ -1412,7 +1415,7 @@ namespace DynamicPupSpawns
             return symbols;
         }
         
-        private object ParseValue(string setting)
+        internal object ParseValue(string setting)
         {
             string[] value = setting.Split(":".ToCharArray(), 2, StringSplitOptions.RemoveEmptyEntries);
             
@@ -1424,11 +1427,11 @@ namespace DynamicPupSpawns
                     return parsedNum;
                 }
 
-                if (value[1].ToLower() == "false")
+                if (value[1].ToLower().StartsWith("f"))
                 {
                     return false;
                 }
-                if (value[1].ToLower() == "true")
+                if (value[1].ToLower().StartsWith("t"))
                 {
                     return true;
                 }
@@ -1438,15 +1441,15 @@ namespace DynamicPupSpawns
             return null;
         }
 
-        private void PrintNullReturnError(string value, string source, string cause)
+        private void PrintSettingsReturnError(string value, string source, string cause)
         {
-            Logger.LogError("A " + value + " returned null in " + source + "! Cause: " + cause);
+            _logger.LogError("A " + value + " returned null in " + source + "! Cause: " + cause);
         }
 
         private void PrintInvalidCastError(string failedObj, string triedType, string message)
         {
-            Logger.LogError("An invalid cast was encountered trying to convert " 
-                            + failedObj + " from object to " + triedType + "!:\n" + message);
+            _logger.LogError("An invalid cast was encountered trying to convert " 
+                             + failedObj + " from object to " + triedType + "!:\n" + message);
         }
 
         private void LogAllSettings()
@@ -1460,327 +1463,7 @@ namespace DynamicPupSpawns
                     log += setting.ToString();
                 }
                 
-                Logger.LogInfo(log);
+                _logger.LogInfo(log);
             }
         }
-        
-        private string[] SettingTestData()
-        {
-            return new[]
-            {
-                /*DATA SET 1 [X]
-                empty file
-                expected behavior: triggers PrintNullReturnError() in ProcessModSettings()
-                 due to missing campaign or region objects*/
-                "",
-                
-                /*DATA SET 2 [X]
-                empty campaign data
-                expected behavior: triggers PrintNullReturnError() in ParseSettings()
-                 due to missing a campaign ID*/
-                "CAMPAIGNS;\n",
-                
-                /*DATA SET 3 [X]
-                campaign data with no pup settings
-                expected behavior: results in a CustomSettingsObject of type Campaign
-                 with dynamic pup spawning defaulted to false*/
-                "CAMPAIGNS;\n" +
-                "id: Campaign with no pup settings;\n",
-                
-                /*DATA SET 4 [X]
-                campaign where pups spawn
-                expected behavior: results in a CustomSettingsWrapper object
-                 with one CustomSettingsObject of type Campaign*/
-                "CAMPAIGNS;\n" +
-                "id: 1st Campaign with pup settings (correct);\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 2;\n" +
-                "\tmax: 5;\n" +
-                "\tspawnChance: 1.0;\n" +
-                "};\n",
-                
-                /*DATA SET 5 [X]
-                campaign where pups don't spawn (explicit)
-                expected behavior: results in a CustomSettings object of type Campaign
-                 with pup spawns defaulted to false*/
-                "CAMPAIGNS;\n" +
-                "id: 2nd Campaign with pup settings (explicit);\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: false;\n" +
-                "};\n",
-                
-                /*DATA SET 6 [X]
-                empty region data
-                expected behavior: triggers PrintNullReturnError() in ParseSettings()
-                 due to missing id*/
-                "REGIONS;\n",
-
-                /*DATA SET 7 [X]
-                region with no pup settings
-                expected behavior: results in CustomSettingsObject of type Region
-                 with pup spawns defaulted to false*/
-                "REGIONS;\n" +
-                "id: Region with no pup settings;\n",
-                
-                /*DATA SET 8 [X]
-                region with empty pup settings
-                expected behavior: triggers PrintNullReturnError() in ParsePupSpawnSettings()
-                 due to empty settings list for pup settings*/
-                "REGIONS;\n" +
-                "id: Region with empty pup settings;\n" +
-                "pup_settings: {};\n",
-                
-                /*DATA SET 9 [X]
-                region where pups spawn (correct)
-                expected behavior: results in a CustomSettingsWrapper object
-                 which contains one CustomSettingsObject of type Region in _regionSettings*/
-                "REGIONS;\n" +
-                "id: 1st Region with pup settings (correct);\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 10;\n" +
-                "\tspawnChance: 1.0;\n" +
-                "};\n",
-                
-                /*DATA SET 10 [X]
-                region where pups don't spawn (explicit)
-                expected behavior: results in CustomSettingsObject of type Region
-                 with pup spawns defaulted to false*/
-                "REGIONS;\n" +
-                "id: 2nd Region with pup settings (explicit);\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: false;\n" +
-                "};\n",
-                
-                /*DATA SET 11 [X]
-                campaign with empty id value & explicit false pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseValue()
-                 due to empty id string*/
-                "CAMPAIGNS;\n" +
-                "id:  ;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: false;\n" +
-                "};\n",
-                
-                /*DATA SET 12 [X]
-                region with empty id value & no pup settings
-                expected behavior: triggers PrintNullReturnError() in ParseSettings()
-                 due to missing ID*/
-                "REGIONS;\n" +
-                "id:  ;\n",
-                
-                /*DATA SET 13 [X]
-                campaign with custom region overrides
-                expected behavior: will result in a CustomSettingsObject of type Campaign
-                 which has an _overrides list size of 1 CustomSettingsObject of type Region*/
-                "CAMPAIGNS;\n" +
-                "id: RegionOverrideWithoutSpawns;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 2;\n" +
-                "\tmax: 20;\n" +
-                "\tspawnChance: 0.2;\n" +
-                "};\n" +
-                "overrides: {\n" +
-                "\tid: TR;\n" +
-                "};\n",
-                
-                /*DATA SET 14 [X]
-                campaign with custom region overrides
-                expected behavior: will result in a CustomSettingsObject which
-                 has an _overrides list size of 1 CustomSettingsObject of type Region*/
-                "CAMPAIGNS;\n" +
-                "id: RegionOverrideWithSpawns;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: false;\n" +
-                "};\n" +
-                "overrides: {\n" +
-                "\tid: TR;\n" +
-                "\tpup_settings: [\n" +
-                "\t\tpupsDynamicSpawn: true;\n" +
-                "\t\tmin: 1;\n" +
-                "\t\tmax: 3;\n" +
-                "\t\tspawnChance: 0.5;\n" +
-                "\t];\n" +
-                "};\n",
-                
-                /*DATA SET 15 [X]
-                campaign with MULTIPLE custom region overrides
-                expected behavior: results in a CustomSettings object with pup spawns set to false by default, 
-                and an _overrides list of size 2 CustomSettingsObjects of type Region*/
-                "CAMPAIGNS;\n" +
-                "id: CampaignWithMultipleRegionOverrides;\n" +
-                "overrides: {\n" +
-                "\tid: AB;\n" +
-                "\tpup_settings: [\n" +
-                "\t\tpupsDynamicSpawn: true;\n" +
-                "\t\tmin: 10;\n" +
-                "\t\tmax: 50;\n" +
-                "\t\tspawnChance: 0.01;\n" +
-                "\t];\n" +
-                "\tREGION;\n" +
-                "\tid: BC;\n" +
-                "\tpup_settings: [\n" +
-                "\t\tpupsDynamicSpawn: true;\n" +
-                "\t\tmin: 2;\n" +
-                "\t\tmax: 7;\n" +
-                "\t\tspawnChance: 0.1;\n" +
-                "\t];\n" +
-                "};\n",
-                
-                /*DATA SET 16 [X]
-                multiple regions under one mod
-                expected behavior: results in a CustomSettingsWrapper object with a _regionSettings
-                list size of 3 CustomSettingsObjects of type Region*/
-                "REGIONS;\n" +
-                "id: SomeSpawnsRegion;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 3;\n" +
-                "\tspawnChance: 0.4;\n" +
-                "};\n" +
-                "REGION;\n" +
-                "id: NoSpawnsRegion;\n" +
-                "REGION;\n" +
-                "id: ManySpawnsRegion;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 100;\n" +
-                "\tmax: 200;\n" +
-                "\tspawnChance: 1;\n" +
-                "};\n",
-                
-                /*DATA SET 17 [X]
-                multiple campaign under one mod
-                expected behavior: results in 3 CustomSettingsObjects of type Campaign*/
-                "CAMPAIGNS;\n" +
-                "id: Campaign1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 10;\n" +
-                "\tmax: 10;\n" +
-                "\tspawnChance: 0.1;\n" +
-                "};\n" +
-                "CAMPAIGN;\n" +
-                "id: Campaign2;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 2;\n" +
-                "\tspawnChance: 0.75;\n" +
-                "};\n" +
-                "CAMPAIGN;\n" +
-                "id: Campaign3;",
-                
-                /*DATA SET 18 [X]
-                multiple campaigns and regions under one mod
-                expected behavior: results in 2 CustomSettingsObjects of type Campaign
-                 and 2 CustomSettingsObjects of type Region*/
-                "CAMPAIGNS;\n" +
-                "id: Campaign1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 10;\n" +
-                "\tmax: 10;\n" +
-                "\tspawnChance: 0.1;\n" +
-                "};\n" +
-                "CAMPAIGN;\n" +
-                "id: Campaign2;" +
-                "REGIONS;\n" +
-                "id: Region1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 3;\n" +
-                "\tspawnChance: 0.4;\n" +
-                "};\n" +
-                "REGION;\n" +
-                "id: Region2;\n",
-                
-                /*DATA SET 19 [X]
-                multiple campaigns and regions under one mod (reversed)
-                expected behavior: results in 2 CustomSettingsObjects of type Campaign
-                 and 2 CustomSettingsObjects of type Region*/
-                "REGIONS;\n" +
-                "id: Region1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 3;\n" +
-                "\tspawnChance: 0.4;\n" +
-                "};\n" +
-                "REGION;\n" +
-                "id: Region2;\n" +
-                "CAMPAIGNS;\n" +
-                "id: Campaign1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 10;\n" +
-                "\tmax: 10;\n" +
-                "\tspawnChance: 0.1;\n" +
-                "};\n" +
-                "CAMPAIGN;\n" +
-                "id: Campaign2;",
-                
-                /*DATA SET 20 [X]
-                multiple campaigns with multiple region overrides and multiple regions under one mod
-                expected behavior: results in 2 CustomSettingsObjects of type Campaign, each of which
-                 has 2 region overrides, and 2 CustomSettingsObjects of type Region*/
-                "CAMPAIGNS;\n" +
-                "id: Campaign1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 10;\n" +
-                "\tmax: 10;\n" +
-                "\tspawnChance: 0.1;\n" +
-                "};\n" +
-                "overrides: {\n" +
-                "\tid: AB;\n" +
-                "\tpup_settings: [\n" +
-                "\t\tpupsDynamicSpawn: false;\n" +
-                "\t];\n" +
-                "\tREGION;\n" +
-                "\tid: BC;\n" +
-                "\tpup_settings: [\n" +
-                "\t\tpupsDynamicSpawn: true;\n" +
-                "\t\tmin: 2;\n" +
-                "\t\tmax: 7;\n" +
-                "\t\tspawnChance: 0.1;\n" +
-                "\t];\n" +
-                "};\n" +
-                "CAMPAIGN;\n" +
-                "id: Campaign2;" +
-                "overrides: {\n" +
-                "\tid: AB;\n" +
-                "\tpup_settings: [\n" +
-                "\t\tpupsDynamicSpawn: true;\n" +
-                "\t\tmin: 10;\n" +
-                "\t\tmax: 50;\n" +
-                "\t\tspawnChance: 0.01;\n" +
-                "\t];\n" +
-                "\tREGION;\n" +
-                "\tid: BC;\n" +
-                "\tpup_settings: [\n" +
-                "\t\tpupsDynamicSpawn: true;\n" +
-                "\t\tmin: 2;\n" +
-                "\t\tmax: 7;\n" +
-                "\t\tspawnChance: 0.1;\n" +
-                "\t];\n" +
-                "};\n" +
-                "REGIONS;\n" +
-                "id: Region1;\n" +
-                "pup_settings: {\n" +
-                "\tpupsDynamicSpawn: true;\n" +
-                "\tmin: 1;\n" +
-                "\tmax: 3;\n" +
-                "\tspawnChance: 0.4;\n" +
-                "};\n" +
-                "REGION;\n" +
-                "id: Region2;\n"
-            };
-        }
-    }
 }

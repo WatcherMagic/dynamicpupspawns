@@ -1,0 +1,4 @@
+pupsDynamicSpawn: true;
+min: 100;
+max: 500;
+spawnChance: 1;

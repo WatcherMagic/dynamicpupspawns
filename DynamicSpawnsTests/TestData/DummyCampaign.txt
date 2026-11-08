@@ -1,0 +1,9 @@
+CAMPAIGNS;
+id: mycoolscug;
+pup_settings: {
+    pupsDynamicSpawn: true;
+    min: 0;
+    max: 99;
+    spawnChance: 0.2;
+};
+END_CAMPAIGNS;

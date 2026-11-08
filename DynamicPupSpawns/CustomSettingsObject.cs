@@ -20,12 +20,6 @@ public class CustomSettingsObject
     
     private List<CustomSettingsObject> _overrides = new List<CustomSettingsObject>();
 
-    public CustomSettingsObject(SettingsType t, string id)
-    {
-        _settingType = t;
-        ID = id;
-    }
-
     public CustomSettingsObject(SettingsType t, string id, PupSpawnSettings pupSettings)
     {
         _settingType = t;

@@ -86,7 +86,7 @@ public class DPSOptionsMenu : OptionInterface
     private readonly int _defaultMin = 1;
     private readonly int _defaultMax = 3;
     
-    public DPSOptionsMenu(DynamicPupSpawns plugin)
+    public DPSOptionsMenu(DynamicPupSpawnsPlugin plugin)
     {
         DynamicSpawnsPossible = config.Bind("DynamicSpawnsPossible", true);
         RandomizeUsingGaussian = config.Bind("GausssianRandomize", true);
