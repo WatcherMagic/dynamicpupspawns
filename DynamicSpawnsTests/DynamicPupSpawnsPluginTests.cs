@@ -1,7 +1,5 @@
 ﻿using System.Text.RegularExpressions;
 using DynamicPupSpawns;
-using IL.RWCustom;
-using On;
 
 namespace DynamicSpawnsTests;
 
@@ -257,6 +255,92 @@ public class DynamicPupSpawnsPluginTests
         Assert.That(pups.SpawnsDynamicPups, Is.False, "Dynamic spawns incorrectly parsed as true!");
     }
 
+    [Test]
+    public void Settings_MultiCampaignsAndRegions()
+    {
+        string path = Path.Combine(
+            TestContext.CurrentContext.TestDirectory,
+            "TestData",
+            "DummyMulti.txt"
+        );
+        
+        var wrapper = ParseTestSettings(path);
+
+        var campaign1 = wrapper.GetSettings(
+            CustomSettingsObject.SettingsType.Campaign,
+            "mycoolscug"
+        );
+        var campaign2 = wrapper.GetSettings(
+            CustomSettingsObject.SettingsType.Campaign,
+            "evencoolerscug"
+        );
+        var region1 = wrapper.GetSettings(
+            CustomSettingsObject.SettingsType.Region,
+            "myawesomeregion"
+        );
+        var region2 = wrapper.GetSettings(
+            CustomSettingsObject.SettingsType.Region,
+            "evenbetterregion"
+        );
+        
+        Assert.That(campaign1, Is.Not.Null, "Couldn't find the right ID for campaign1");
+        Assert.That(campaign2, Is.Not.Null, "Couldn't find the right ID for campaign2");
+        Assert.That(region1, Is.Not.Null, "Couldn't find the right ID for region1");
+        Assert.That(region2, Is.Not.Null, "Couldn't find the right ID for region2");
+    }
+    
+    [Test]
+    public void Settings_MultiCorrectPupSettings()
+    {
+        string path = Path.Combine(
+            TestContext.CurrentContext.TestDirectory,
+            "TestData",
+            "DummyMulti.txt"
+        );
+        
+        var wrapper = ParseTestSettings(path);
+
+        var campaign1 = wrapper.GetSettings(
+            CustomSettingsObject.SettingsType.Campaign,
+            "mycoolscug"
+        );
+        var campaign2 = wrapper.GetSettings(
+            CustomSettingsObject.SettingsType.Campaign,
+            "evencoolerscug"
+        );
+        var region1 = wrapper.GetSettings(
+            CustomSettingsObject.SettingsType.Region,
+            "myawesomeregion"
+        );
+        var region2 = wrapper.GetSettings(
+            CustomSettingsObject.SettingsType.Region,
+            "evenbetterregion"
+        );
+
+        var c1Pups = campaign1.PupSpawnSettings;
+        var c2Pups = campaign2.PupSpawnSettings;
+        var r1Pups = region1.PupSpawnSettings;
+        var r2Pups = region2.PupSpawnSettings;
+        
+        Assert.That(c1Pups, Is.Not.Null, "Campaign1's PupSpawnSettings object was null");
+        Assert.That(c2Pups, Is.Not.Null, "Campaign2's PupSpawnSettings object was null");
+        Assert.That(r1Pups, Is.Not.Null, "Region1's PupSpawnSettings object was null");
+        Assert.That(r2Pups, Is.Not.Null, "Region2's PupSpawnSettings object was null");
+        
+        Assert.That(c1Pups.SpawnsDynamicPups, Is.True, "Campaign1's dynamic spawns incorrectly parsed as false!");
+        Assert.That(c1Pups.MinPups, Is.EqualTo(1), $"Campaign1's min dynamic pups was parsed incorrectly: {c1Pups.MinPups}");
+        Assert.That(c1Pups.MaxPups, Is.EqualTo(1), $"Campaign1's max dynamic pups was parsed incorrectly: {c1Pups.MaxPups}");
+        Assert.That(c1Pups.SpawnChance, Is.EqualTo(0.7f), $"Campaign1's dynamic spawn chance was parsed incorrectly: {c1Pups.SpawnChance}");
+        
+        Assert.That(c2Pups.SpawnsDynamicPups, Is.False, "Campaign2's dynamic spawns incorrectly parsed as true!");
+        Assert.That(r1Pups.SpawnsDynamicPups, Is.False, "Region2's dynamic spawns incorrectly parsed as true!");
+        
+        Assert.That(r2Pups.SpawnsDynamicPups, Is.True, "Region2's dynamic spawns incorrectly parsed as false!");
+        Assert.That(r2Pups.MinPups, Is.EqualTo(3), $"Region2's min dynamic pups was parsed incorrectly: {r2Pups.MinPups}");
+        Assert.That(r2Pups.MaxPups, Is.EqualTo(7), $"Region2's max dynamic pups was parsed incorrectly: {r2Pups.MaxPups}");
+        Assert.That(r2Pups.SpawnChance, Is.EqualTo(1f), $"Region2's dynamic spawn chance was parsed incorrectly: {r2Pups.SpawnChance}");
+    }
+    
     private CustomSettingsWrapper ParseTestSettings(string filePath)
     {
         string settings = GetSettingsStringFromFile(filePath);

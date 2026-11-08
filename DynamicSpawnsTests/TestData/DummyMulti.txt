@@ -1,0 +1,28 @@
+CAMPAIGNS;
+id: mycoolscug;
+pup_settings: {
+    pupsDynamicSpawn: true;
+    min: 1;
+    max: 1;
+    spawnChance: 0.7;
+};
+CAMPAIGN;
+id: evencoolerscug;
+pup_settings: {
+    pupsDynamicSpawn: false;
+};
+END_CAMPAIGNS;
+REGIONS;
+id: myawesomeregion;
+pup_settings: {s
+    pupsDynamicSpawn: false;
+};
+REGION;
+id: evenbetterregion;
+pup_settings: {
+    pupsDynamicSpawn: true;
+    min: 3;
+    max: 7;
+    spawnChance: 1;
+};
+END_REGIONS
