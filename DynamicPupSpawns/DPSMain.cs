@@ -264,7 +264,7 @@ public class DPSMain
             {
                 return true;
             }
-            if (campaign.ID == MoreSlugcatsEnums.SlugcatStatsName.Artificer.ToString() && Options.OverrideHunter.Value)
+            if (campaign.ID == MoreSlugcatsEnums.SlugcatStatsName.Artificer.ToString() && Options.OverrideArtificer.Value)
             {
                 return true;
             }
