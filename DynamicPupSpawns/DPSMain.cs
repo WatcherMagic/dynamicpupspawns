@@ -154,12 +154,18 @@ public class DPSMain
         return orig(self);
     }
 
-    private CustomSettingsObject GetRuntimeSettings(World world)
+    private CustomSettingsObject GetRuntimeSettings(World world, Dictionary<string, string> contentMap = null)
     {
+        //Unit tests compatibility
+        if (contentMap == null)
+        {
+            contentMap = ContentToModIDMap;
+        }
+        
         CustomSettingsWrapper runtimeSettings = null;
         CustomSettingsObject returnedRuntimeSettings = null;
         
-        if (ContentToModIDMap.TryGetValue(world.game.GetStorySession.saveStateNumber.ToString(), out string mod))
+        if (contentMap.TryGetValue(world.game.GetStorySession.saveStateNumber.ToString(), out string mod))
         {
             foreach (CustomSettingsWrapper wrapper in _settings)
             {
@@ -844,16 +850,16 @@ public class DPSMain
         }
     }
     
-    private void CreateSettingsObjects()
+    private void CreateSettingsObjects(Dictionary<string, string> contentMap = null)
     {
-        if (ContentToModIDMap == null)
+        //Unit test compat
+        if (contentMap == null)
         {
-            ContentToModIDMap = new Dictionary<string, string>();
+            ContentToModIDMap ??= new Dictionary<string, string>();
+            contentMap = ContentToModIDMap;
         }
-        else
-        {
-            ContentToModIDMap.Clear();
-        }
+        
+        contentMap.Clear();
         
         ProcessCustomData();
         ProcessBuiltInSettings();
@@ -861,7 +867,7 @@ public class DPSMain
         //LogAllSettings();
     }
 
-    private void ProcessBuiltInSettings()
+    private void ProcessBuiltInSettings(Dictionary<string, string> contentMap = null)
     {
         if (Options == null)
         {
@@ -875,10 +881,10 @@ public class DPSMain
             _settings = new List<CustomSettingsWrapper>();
         }
         
-        //add ids and mod id to _contentToModIDMap for easier setting retrieval at runtime
-        if (ContentToModIDMap == null)
+        //Unit test compat
+        if (contentMap == null)
         {
-            ContentToModIDMap = new Dictionary<string, string>();
+            contentMap = ContentToModIDMap;
         }
         
         AddBaseGameSettings();
@@ -894,8 +900,14 @@ public class DPSMain
         }
     }
 
-    private void AddBaseGameSettings()
+    private void AddBaseGameSettings(Dictionary<string, string> contentMap = null)
     {
+        //Unit test compat
+        if (contentMap == null)
+        {
+            contentMap = ContentToModIDMap;
+        }
+        
         CustomSettingsObject fpOverride =
             new CustomSettingsObject(CustomSettingsObject.SettingsType.Region, "ss", new PupSpawnSettings());
         
@@ -909,46 +921,52 @@ public class DPSMain
         CustomSettingsObject survivorSettings = new CustomSettingsObject(
             CustomSettingsObject.SettingsType.Campaign,
             survivorID,
-            new PupSpawnSettings(Options.SurvivorPupsSpawn.Value,
-                Options.SurvivorMinPups.Value,
-                Options.SurvivorMaxPups.Value,
-                Options.SurvivorSpawnChance.Value * 0.01f,
-                Options.SurvivorPersistence.Value));
+            new PupSpawnSettings(DPSOptions.SurvivorPupsSpawn,
+                DPSOptions.SurvivorMinPups,
+                DPSOptions.SurvivorMaxPups,
+                DPSOptions.SurvivorSpawnChance * 0.01f,
+                DPSOptions.SurvivorPersistence));
         survivorSettings.AddOverride(fpOverride);
         
         CustomSettingsObject monkSettings = new CustomSettingsObject(
             CustomSettingsObject.SettingsType.Campaign,
             monkID,
-            new PupSpawnSettings(Options.MonkPupsSpawn.Value,
-                Options.MonkMinPups.Value,
-                Options.MonkMaxPups.Value,
-                Options.MonkSpawnChance.Value * 0.01f,
-                Options.MonkPersistence.Value));
+            new PupSpawnSettings(DPSOptions.MonkPupsSpawn,
+                DPSOptions.MonkMinPups,
+                DPSOptions.MonkMaxPups,
+                DPSOptions.MonkSpawnChance * 0.01f,
+                DPSOptions.MonkPersistence));
         monkSettings.AddOverride(fpOverride);
         
         CustomSettingsObject hunterSettings = new CustomSettingsObject(
             CustomSettingsObject.SettingsType.Campaign,
             hunterID,
-            new PupSpawnSettings(Options.HunterPupsSpawn.Value,
-                Options.HunterMinPups.Value,
-                Options.HunterMaxPups.Value,
-                Options.HunterSpawnChance.Value * 0.01f,
-                Options.HunterPersistence.Value));
+            new PupSpawnSettings(DPSOptions.HunterPupsSpawn,
+                DPSOptions.HunterMinPups,
+                DPSOptions.HunterMaxPups,
+                DPSOptions.HunterSpawnChance * 0.01f,
+                DPSOptions.HunterPersistence));
         hunterSettings.AddOverride(fpOverride);
 
         baseGameSettings.AddSetting(survivorSettings);
         baseGameSettings.AddSetting(monkSettings);
         baseGameSettings.AddSetting(hunterSettings);
         
-        ContentToModIDMap.Add(survivorID, baseGameID);
-        ContentToModIDMap.Add(monkID, baseGameID);
-        ContentToModIDMap.Add(hunterID, baseGameID);
+        contentMap.Add(survivorID, baseGameID);
+        contentMap.Add(monkID, baseGameID);
+        contentMap.Add(hunterID, baseGameID);
         
         _settings.Add(baseGameSettings);
     }
     
-    private void AddDownpourSettings()
+    private void AddDownpourSettings(Dictionary<string, string> contentMap = null)
     {
+        //Unit test compat
+        if (contentMap == null)
+        {
+            contentMap = ContentToModIDMap;
+        }
+        
         CustomSettingsObject fpOverride =
             new CustomSettingsObject(CustomSettingsObject.SettingsType.Region, "ss", new PupSpawnSettings());
         
@@ -964,52 +982,52 @@ public class DPSMain
         CustomSettingsObject gourmandSettings = new CustomSettingsObject(
             CustomSettingsObject.SettingsType.Campaign,
             gourmandID,
-            new PupSpawnSettings(Options.GourmandPupsSpawn.Value,
-                Options.GourmandMinPups.Value,
-                Options.GourmandMaxPups.Value,
-                Options.GourmandSpawnChance.Value * 0.01f,
-                Options.GourmandPersistence.Value));
+            new PupSpawnSettings(DPSOptions.GourmandPupsSpawn,
+                DPSOptions.GourmandMinPups,
+                DPSOptions.GourmandMaxPups,
+                DPSOptions.GourmandSpawnChance * 0.01f,
+                DPSOptions.GourmandPersistence));
         gourmandSettings.AddOverride(fpOverride);
         
         CustomSettingsObject artificerSettings = new CustomSettingsObject(
             CustomSettingsObject.SettingsType.Campaign,
             artificerID,
-            new PupSpawnSettings(Options.ArtificerPupsSpawn.Value,
-                Options.ArtificerMinPups.Value,
-                Options.ArtificerMaxPups.Value,
-                Options.ArtificerSpawnChance.Value * 0.01f,
-                Options.ArtificerPersistence.Value));
+            new PupSpawnSettings(DPSOptions.ArtificerPupsSpawn,
+                DPSOptions.ArtificerMinPups,
+                DPSOptions.ArtificerMaxPups,
+                DPSOptions.ArtificerSpawnChance * 0.01f,
+                DPSOptions.ArtificerPersistence));
         artificerSettings.AddOverride(fpOverride);
         
         CustomSettingsObject spearmasterSettings = new CustomSettingsObject(
             CustomSettingsObject.SettingsType.Campaign,
             spearmasterID,
-            new PupSpawnSettings(Options.SpearmasterPupsSpawn.Value,
-                Options.SpearmasterMinPups.Value,
-                Options.SpearmasterMaxPups.Value,
-                Options.SpearmasterSpawnChance.Value * 0.01f,
-                Options.SpearmasterPersistence.Value));
+            new PupSpawnSettings(DPSOptions.SpearmasterPupsSpawn,
+                DPSOptions.SpearmasterMinPups,
+                DPSOptions.SpearmasterMaxPups,
+                DPSOptions.SpearmasterSpawnChance * 0.01f,
+                DPSOptions.SpearmasterPersistence));
         spearmasterSettings.AddOverride(fpOverride);
         spearmasterSettings.AddOverride(new CustomSettingsObject(CustomSettingsObject.SettingsType.Region, "dm", new PupSpawnSettings()));
         
         CustomSettingsObject rivuletSettings = new CustomSettingsObject(
             CustomSettingsObject.SettingsType.Campaign,
             rivuletID,
-            new PupSpawnSettings(Options.RivuletPupsSpawn.Value,
-                Options.RivuletMinPups.Value,
-                Options.RivuletMaxPups.Value,
-                Options.RivuletSpawnChance.Value * 0.01f,
-                Options.RivuletPersistence.Value));
+            new PupSpawnSettings(DPSOptions.RivuletPupsSpawn,
+                DPSOptions.RivuletMinPups,
+                DPSOptions.RivuletMaxPups,
+                DPSOptions.RivuletSpawnChance * 0.01f,
+                DPSOptions.RivuletPersistence));
         rivuletSettings.AddOverride(fpOverride);
         
         CustomSettingsObject saintSettings = new CustomSettingsObject(
             CustomSettingsObject.SettingsType.Campaign,
             saintID,
-            new PupSpawnSettings(Options.SaintPupsSpawn.Value,
-                Options.SaintMinPups.Value,
-                Options.SaintMaxPups.Value,
-                Options.SaintSpawnChance.Value * 0.01f,
-                Options.SaintPersistence.Value));
+            new PupSpawnSettings(DPSOptions.SaintPupsSpawn,
+                DPSOptions.SaintMinPups,
+                DPSOptions.SaintMaxPups,
+                DPSOptions.SaintSpawnChance * 0.01f,
+                DPSOptions.SaintPersistence));
         saintSettings.AddOverride(fpOverride);
 
         downpourSettings.AddSetting(gourmandSettings);
@@ -1029,9 +1047,9 @@ public class DPSMain
 
         foreach (string settingID in idsArray)
         {
-            if (!ContentToModIDMap.ContainsKey(settingID))
+            if (!contentMap.ContainsKey(settingID))
             {
-                ContentToModIDMap.Add(settingID, downpourID);
+                contentMap.Add(settingID, downpourID);
             }
             else
             {
@@ -1042,8 +1060,14 @@ public class DPSMain
         _settings.Add(downpourSettings);
     }
 
-    private void AddWatcherSettings()
+    private void AddWatcherSettings(Dictionary<string, string> contentMap = null)
     {
+        //Unit test compat
+        if (contentMap == null)
+        {
+            contentMap = ContentToModIDMap;
+        }
+        
         string watcherDLCID = nameof(OfficialCampaignIDs.WatcherDLC);
         string watcherID = WatcherEnums.SlugcatStatsName.Watcher.ToString();
         
@@ -1052,15 +1076,15 @@ public class DPSMain
         CustomSettingsObject watcherSettings = new CustomSettingsObject(
             CustomSettingsObject.SettingsType.Campaign,
             watcherID,
-            new PupSpawnSettings(Options.WatcherPupsSpawn.Value,
-                Options.WatcherMinPups.Value,
-                Options.WatcherMaxPups.Value,
-                Options.WatcherSpawnChance.Value * 0.01f,
-                Options.WatcherPersistence.Value));
+            new PupSpawnSettings(DPSOptions.WatcherPupsSpawn,
+                DPSOptions.WatcherMinPups,
+                DPSOptions.WatcherMaxPups,
+                DPSOptions.WatcherSpawnChance * 0.01f,
+                DPSOptions.WatcherPersistence));
         
         watcherDLCSettings.AddSetting(watcherSettings);
         
-        ContentToModIDMap.Add(watcherID, watcherDLCID);
+        contentMap.Add(watcherID, watcherDLCID);
         
         _settings.Add(watcherDLCSettings);
     }

@@ -29,7 +29,7 @@ public class DPSOptionsMenu : OptionInterface
     
     public readonly Configurable<bool> OverrideMods;
     
-    public DPSOptionsMenu(DPSMain plugin)
+    public DPSOptionsMenu(DynamicPupSpawnsPlugin plugin)
     {
         DynamicSpawnsPossible = config.Bind("DynamicSpawnsPossible", DPSOptions.DynamicSpawnsPossible);
         RandomizeUsingGaussian = config.Bind("GausssianRandomize", DPSOptions.RandomizeUsingGaussian);
