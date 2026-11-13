@@ -1,0 +1,5 @@
+//Steam user bug: can't leave regions
+NullReferenceException: Object reference not set to an instance of an object
+| void DynamicPupSpawns.DPSMain.UpdateCurrentPupsPerRegion() at IL_0001
+<hook> | void DynamicPupSpawns.DPSMain.SavePupsOnRegionLeave(OverWorld.orig_GateRequestsSwitchInitiation, OverWorld, RegionGate) at IL_0001
+<IL*> | void RegionGate.Update(bool) at IL_010B
