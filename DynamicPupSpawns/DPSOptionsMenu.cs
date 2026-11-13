@@ -76,7 +76,7 @@ public class DPSOptionsMenu : OptionInterface
             
             new OpLabelLong(new Vector2(10f, 445), new Vector2(130f, 30f), "Use Gaussian Randomization"),
             new OpCheckBox(RandomizeUsingGaussian, 150, 442),
-            new OpLabelLong(new Vector2(190f, 390), new Vector2(400f, 70f), 
+            new OpLabelLong(new Vector2(190f, 390), new Vector2(435f, 70f), 
                 "\"Gaussian Distribution\" modifies random rates to fall within a specific zone of values more often than not; in this case if Min is 1 and Max is 5, values 2-3 are usually chosen, value 1 is less often, value 4 is rare, and value 5 is more rare. Uncheck for maximum chaos"),
             
             new OpLabel(10f, 385f, "Allow Submerged Dens"),

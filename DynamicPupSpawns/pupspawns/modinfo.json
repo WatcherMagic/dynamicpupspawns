@@ -1,9 +1,9 @@
 {
     "id": "dynamicpupspawns",
     "name": "Dynamic Pup Spawns",
-    "version": "0.1",
+    "version": "0.9",
     "authors": "WatcherMagic",
-    "description": "Puppies? Kitties? Sluppies!\n\nMakes slugpups spawn dynamically across regions and survive across multiple cycles, same as any other creature. Configurable spawn rate, locations, specific pup IDs, and campaign effects!",
+    "description": "Puppies? Kitties? Sluppies!\n\nMakes slugpups spawn dynamically across regions and survive across multiple cycles, same as any other creature. Configurable spawn rate, locations, specific pup IDs, and campaign effects!\n\nIncludes support for other mods to specify custom settings for their own campaigns and regions, instructions pending.\n\nIf any issues arise please leave a comment or make an issue on the github: https://github.com/WatcherMagic/dynamicpupspawns\n\nKNOWN ISSUES:\n- Pups in SU_A22 (the room after Survivor's tutorial) disappear when a cycle ends\n- Pups sometimes spawn out of world bounds in some modded regions\n- Pups are not saved or spawned when traversing regions via WARP",
     "requirements": [ "rwremix", "moreslugcats" ],
 	"requirements_names": [ "RainWorld Remix", "Downpour" ],
     "tags": [ "Dependency", "Game Mechanics", "Tools" ]
