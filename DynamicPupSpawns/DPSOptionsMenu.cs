@@ -32,7 +32,7 @@ public class DPSOptionsMenu : OptionInterface
     public DPSOptionsMenu(DynamicPupSpawnsPlugin plugin)
     {
         DynamicSpawnsPossible = config.Bind("DynamicSpawnsPossible", DPSOptions.DynamicSpawnsPossible);
-        RandomizeUsingGaussian = config.Bind("GausssianRandomize", DPSOptions.RandomizeUsingGaussian);
+        RandomizeUsingGaussian = config.Bind("GaussianRandomize", DPSOptions.RandomizeUsingGaussian);
         OverrideNoPupCampaigns = config.Bind("OverrideNoPups", DPSOptions.OverrideNoPupCampaigns);
         Persistence = config.Bind("Persistence", DPSOptions.Persistence);
         MinPups = config.Bind("MinPups", DPSOptions.MinPups);
@@ -72,24 +72,24 @@ public class DPSOptionsMenu : OptionInterface
             //===============SPAWN RULESs===================
             new OpLabel(10f, 505f, "Spawn Dynamic Pups"),
             new OpCheckBox(DynamicSpawnsPossible, 150, 502),
-            new OpLabel(190f, 502f, "Pups will be placed in random rooms across the region"),
+            new OpLabel(190f, 505f, "Pups will be placed in random rooms across the region"),
             
             new OpLabelLong(new Vector2(10f, 445), new Vector2(130f, 30f), "Use Gaussian Randomization"),
             new OpCheckBox(RandomizeUsingGaussian, 150, 442),
-            new OpLabelLong(new Vector2(190f, 390), new Vector2(435f, 70f), 
+            new OpLabelLong(new Vector2(190f, 420f), new Vector2(435f, 60f), 
                 "\"Gaussian Distribution\" modifies random rates to fall within a specific zone of values more often than not; in this case if Min is 1 and Max is 5, values 2-3 are usually chosen, value 1 is less often, value 4 is rare, and value 5 is more rare. Uncheck for maximum chaos"),
             
             new OpLabel(10f, 385f, "Allow Submerged Dens"),
             new OpCheckBox(AllowSubmergedDens, 150, 382),
-            new OpLabelLong(new Vector2(190f, 385), new Vector2(400f, 30f), "If checked, rooms with underwater dens count as viable spawn rooms, INCLUDING rooms with no air at all!"),
+            new OpLabelLong(new Vector2(190f, 382), new Vector2(400f, 30f), "If checked, rooms with underwater dens count as viable spawn rooms, INCLUDING rooms with no air at all!"),
             
-            new OpLabel(50f, 335f, "Use All Rooms"),
+            new OpLabel(10f, 335f, "Use All Rooms"),
             new OpCheckBox(UseAllRooms, 150, 332),
-            new OpLabelLong(new Vector2(190f, 332f), new Vector2(400f, 30f), "Normally, only rooms with dens will spawn pups; check to remove this constraint"),
+            new OpLabelLong(new Vector2(190f, 329f), new Vector2(400f, 30f), "Normally, only rooms with dens will spawn pups; check to remove this constraint"),
             
             new OpLabel(10f, 285f, "Weigh Rooms"),
             new OpCheckBox(WeighRooms, 150, 282),
-            new OpLabel(190f, 502f, "Rooms with more dens are more likely to spawn pups"),
+            new OpLabel(190f, 285f, "Rooms with more dens are more likely to spawn pups"),
             
             new OpLabel(10f, 241f, "Persistent Spawns"),
             new OpCheckBox(Persistence, 150, 238),
